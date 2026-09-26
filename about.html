@@ -157,9 +157,11 @@
 @media (max-width:560px){
   .ab-scatter{justify-items:center;gap:36px}
   .ab-scatter .pcard{width:min(276px,82%)}
-  .ab-scatter .pcard:nth-child(odd){transform:rotate(-2.5deg)}
-  .ab-scatter .pcard:nth-child(even){transform:rotate(2.5deg)}
 }
+
+/* persona cards: slight alternating tilt, like a pile of photos (all screen sizes) */
+.ab-scatter .pcard:nth-child(odd){transform:rotate(-2.5deg)}
+.ab-scatter .pcard:nth-child(even){transform:rotate(2.5deg)}
 </style>
 <link rel="stylesheet" href="cursors.css">
 
