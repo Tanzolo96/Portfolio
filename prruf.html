@@ -596,13 +596,14 @@ mark.hl{box-shadow:none}
 .cmp th{font-weight:400}
 
 /* ---- folder: macOS-style blue folder, back + tab always visible, papers pop individually ---- */
+.fanwrap{padding-bottom:9%}
 .folder{aspect-ratio:1.42/1}
 .fld__back{left:1.5%;right:1.5%;bottom:0;height:80%;border-radius:12px 14px 14px 14px;background:linear-gradient(180deg,#3f9ee9 0%,#2f8adb 100%);box-shadow:0 1px 0 rgba(255,255,255,.18) inset}
 .fld__tab{left:1.5%;bottom:79%;width:36%;height:9%;border-radius:10px 10px 0 0;background:#3f9ee9;z-index:0}
 .fld__tab::after{content:"";position:absolute;right:-9%;bottom:0;width:22%;height:100%;background:#3f9ee9;border-top-right-radius:10px;transform:skewX(32deg);transform-origin:bottom left}
 .pp{bottom:20%;width:38%;height:46%;z-index:1}
 .pp--img{left:4%;z-index:4}.pp--d{left:22%;z-index:3}.pp--g1{left:40%;z-index:2}.pp--g2{left:58%;z-index:1}
-.fld__front{height:60%;z-index:6;border-radius:8px 8px 14px 14px;background:linear-gradient(180deg,#86cbff 0%,#6bbcfb 18%,#4ea9f2 100%);box-shadow:0 1px 0 rgba(255,255,255,.55) inset,0 10px 20px -12px rgba(20,70,120,.4)}
+.fld__front{height:60%;z-index:6;border-radius:8px 8px 14px 14px;background:linear-gradient(180deg,#86cbff 0%,#6bbcfb 18%,#4ea9f2 100%);box-shadow:0 1px 0 rgba(255,255,255,.55) inset,0 6px 14px -8px rgba(20,70,120,.28)}
 .fld__front::before{height:10%;border-radius:8px 8px 0 0;background:linear-gradient(180deg,rgba(255,255,255,.45),rgba(255,255,255,0))}
 .fanwrap:hover .pp--img,.fanwrap:focus-within .pp--img,.fanwrap.is-open .pp--img{transform:translateY(-62%) rotate(-12deg)}
 .fanwrap:hover .pp--d,.fanwrap:focus-within .pp--d,.fanwrap.is-open .pp--d{transform:translateY(-78%) rotate(-3deg)}
