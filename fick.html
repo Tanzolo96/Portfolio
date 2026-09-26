@@ -379,6 +379,13 @@
 .prose b,.prose strong,.lead b,.lead strong,.loop__step b,.takeaway b,.bar__l,.feat__item b,.cmp--us,.cmp--us em{font-weight:500}
 .cmp th{font-weight:400}
 .bar.is-key .bar__l{font-weight:500}
+
+/* phone: 3-up image grids become a swipe row instead of 2 + 1 */
+@media (max-width:600px){
+  .grid--3{display:flex;overflow-x:auto;gap:10px;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none;margin-right:calc(-1 * clamp(20px,3vw,44px));padding-right:clamp(20px,3vw,44px)}
+  .grid--3::-webkit-scrollbar{display:none}
+  .grid--3 > *{flex:0 0 72%;scroll-snap-align:start}
+}
 </style>
 
 
