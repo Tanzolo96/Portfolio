@@ -623,6 +623,20 @@ mark.hl{box-shadow:none}
 .fanwrap:hover .pp--g1,.fanwrap:focus-within .pp--g1,.fanwrap.is-open .pp--g1{transform:translateY(-72%) rotate(4deg)}
 .fanwrap:hover .pp--g2,.fanwrap:focus-within .pp--g2,.fanwrap.is-open .pp--g2{transform:translateY(-58%) rotate(12deg)}
 .fanwrap .pp:hover{z-index:5;transform:translateY(-104%) rotate(0deg) scale(1.14) !important;box-shadow:0 18px 30px -12px rgba(0,0,0,.4)}
+
+/* ---- "Let's build something" footer (shared with home/About) ---- */
+.site-foot{border-top:1px solid var(--ink);margin-top:clamp(60px,8vw,104px);padding:clamp(40px,6vw,68px) 0 30px;scroll-margin-top:58px}
+.site-foot__in{max-width:1360px;margin:0 auto;padding:0 clamp(20px,3vw,44px)}
+.site-foot .contact{display:flex;justify-content:flex-start;align-items:flex-end;gap:32px;flex-wrap:wrap}
+.site-foot .contact__lead{margin:0;font-family:var(--display);font-size:clamp(28px,4.2vw,50px);font-weight:700;letter-spacing:-0.03em;line-height:1.0;color:var(--ink);text-wrap:balance}
+.site-foot .contact__media{align-self:center;flex:0 0 auto;margin-left:auto;width:clamp(120px,13vw,150px);aspect-ratio:1/1;border-radius:12px;overflow:hidden;background:var(--panel)}
+.site-foot .contact__media video{width:100%;height:100%;object-fit:cover;display:block}
+.site-foot .contact__links{display:flex;flex-direction:column;text-align:right;font-family:var(--mono);font-size:13.5px}
+.site-foot .contact__links a{padding:5px 0;color:var(--ink);text-decoration:none;border-bottom:1px solid transparent;transition:border-color .2s ease}
+.site-foot .contact__links a:hover{border-color:var(--ink)}
+.site-foot .contact__links a .ar{color:var(--sub);padding-left:8px}
+.site-foot .colophon{margin-top:clamp(38px,5vw,60px);padding-top:18px;border-top:1px solid var(--line);display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;font-family:var(--mono);font-size:11px;letter-spacing:0.05em;text-transform:uppercase;color:var(--sub)}
+@media (max-width:640px){.site-foot .contact{align-items:flex-start}.site-foot .contact__links{text-align:left}}
 </style>
 <link rel="stylesheet" href="cursors.css">
 
@@ -639,7 +653,7 @@ mark.hl{box-shadow:none}
       <a href="portfolio.html#work" target="_top">Work</a><span class="dot" aria-hidden="true">·</span>
       <a href="portfolio.html#capabilities" target="_top">Capabilities</a><span class="dot" aria-hidden="true">·</span>
       <a href="portfolio.html#about" target="_top">About</a><span class="dot" aria-hidden="true">·</span>
-      <a href="portfolio.html#contact" target="_top">Contact</a>
+      <a href="#contact" target="_top">Contact</a>
     </nav>
   </div>
 </header>
@@ -895,6 +909,69 @@ mark.hl{box-shadow:none}
   </div>
 </div>
 
+<footer id="contact" class="site-foot">
+  <div class="site-foot__in">
+    <div class="contact">
+      <p class="contact__lead">Let's build<br>something.</p>
+      <div class="contact__media" aria-hidden="true"><video src="footer.mp4" autoplay muted loop playsinline preload="metadata"></video></div>
+      <nav class="contact__links" aria-label="Contact">
+        <a href="mailto:maheshwary.tanish@gmail.com" data-email>Email<span class="ar">↗</span></a>
+        <a href="https://www.linkedin.com/in/tanishmaheshwari/" target="_blank" rel="noopener">LinkedIn<span class="ar">↗</span></a>
+        <a href="https://wasabie.in/" target="_blank" rel="noopener">Wasabie Studio<span class="ar">↗</span></a>
+        <a href="https://www.instagram.com/tanish_maheshwary/" target="_blank" rel="noopener">Instagram<span class="ar">↗</span></a>
+      </nav>
+    </div>
+    <div class="colophon">
+      <span>Tanish Maheshwari · Digital product designer</span>
+      <span>© 2026 · Built &amp; maintained by hand</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+/* Contact → this page's footer. Images below load lazily and grow the page mid-scroll,
+   so keep re-aiming until the footer is actually reached. */
+(function(){
+  var foot=document.getElementById('contact'); if(!foot) return;
+  var smooth=!(window.matchMedia&&window.matchMedia('(prefers-reduced-motion:reduce)').matches);
+  document.querySelectorAll('a[href="#contact"]').forEach(function(a){
+    a.addEventListener('click',function(ev){
+      ev.preventDefault();
+      if(history.replaceState) history.replaceState(null,'','#contact');
+      var tries=0,last=-1,still=0;
+      function aim(){ foot.scrollIntoView({behavior:smooth?'smooth':'auto',block:'start'}); }
+      aim();
+      var t=setInterval(function(){
+        var y=window.scrollY;
+        if(Math.abs(y-last)<1){ still++; } else { still=0; last=y; }
+        if(still<2) return;                       // wait until scrolling has settled
+        var atBottom=window.innerHeight+y>=document.documentElement.scrollHeight-2;
+        if(foot.getBoundingClientRect().top<=80||atBottom||++tries>6){ clearInterval(t); return; }
+        still=0; aim();
+      },150);
+    });
+  });
+})();
+</script>
+<script>
+/* Email: Gmail compose on desktop/laptop, default mail app on phones/tablets */
+if(window.matchMedia('(hover: hover) and (pointer: fine)').matches){
+  document.querySelectorAll('[data-email]').forEach(function(a){
+    var to = a.getAttribute('href').replace(/^mailto:/,'');
+    a.href = 'https://mail.google.com/mail/?view=cm&fs=1&to='+encodeURIComponent(to);
+    a.target = '_blank';
+    a.rel = 'noopener';
+    // Open compose in a compact window, like Gmail's compose widget; fall back to a new tab if blocked.
+    a.addEventListener('click', function(ev){
+      var w = 620, h = 640;
+      var left = window.screenX + Math.max(0, window.outerWidth - w - 40);
+      var top = window.screenY + Math.max(0, window.outerHeight - h - 40);
+      var win = window.open(a.href, 'gmail-compose', 'popup,width='+w+',height='+h+',left='+left+',top='+top);
+      if(win){ ev.preventDefault(); try{ win.opener = null; }catch(e){} }
+    });
+  });
+}
+</script>
 <script>
 (function(){
   var navlinks=[].slice.call(document.querySelectorAll('#sideNav a'));
