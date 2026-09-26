@@ -123,7 +123,7 @@
     display:grid;place-items:center;
     transition:box-shadow .3s ease, border-color .3s ease, transform .3s cubic-bezier(.2,.8,.2,1)}
   .pcard__img .ph{font-family:var(--mono);font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--faint)}
-  .foodroll{position:relative;overflow:hidden;background:#000}
+  .foodroll{position:relative;overflow:hidden;background:var(--panel)}
   .foodroll .foodroll__img,.foodroll .foodroll__vid{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0}
   .foodroll .is-on{opacity:1}
   .pcard:hover .pcard__img{transform:translateY(-3px);box-shadow:0 16px 32px -24px rgba(0,0,0,.28)}
@@ -247,35 +247,59 @@
 
 <script>
 (function(){
+  // Each card cycles through clips/photos. Two video + two image layers per card:
+  // the next item loads in a hidden layer and only swaps in once it is actually
+  // showing, so there is never a black frame between items (notably on iOS).
   function initRoll(id, list){
     var el=document.getElementById(id); if(!el) return;
-    var img=el.querySelector('.foodroll__img');
-    var vid=el.querySelector('.foodroll__vid'); if(!vid) return;
-    var i=-1, started=false, timer=null;
+    var v0=el.querySelector('.foodroll__vid'); if(!v0) return;
+    var i0=el.querySelector('.foodroll__img');
+    var v1=v0.cloneNode(false); el.appendChild(v1);
+    var i1=null; if(i0){ i1=i0.cloneNode(false); el.appendChild(i1); }
+    var vids=[v0,v1], imgs=i0?[i0,i1]:[];
+    [v0,v1].forEach(function(v){ v.muted=true; v.playsInline=true; v.setAttribute('playsinline',''); });
+    var norm=function(m){ return typeof m==='string'?{t:'v',s:m}:m; };
+    var i=-1, started=false, timer=null, cur=null, z=1, token=0;
+    function show(layer){
+      layer.style.zIndex=String(++z); layer.classList.add('is-on');
+      var prev=cur; cur=layer;
+      if(prev && prev!==layer){ setTimeout(function(){ if(cur!==prev){ prev.classList.remove('is-on'); if(prev.tagName==='VIDEO'){ try{prev.pause();}catch(e){} } } },250); }
+      preloadNext();
+    }
+    function idle(arr){ return arr[0]===cur?arr[1]:arr[0]; }
+    function preloadNext(){
+      var m=norm(list[(i+1)%list.length]);
+      if(m.t==='p'){ if(imgs.length){ var im=idle(imgs); if(im.getAttribute('src')!==m.s) im.src=m.s; } }
+      else { var v=idle(vids); if(v.getAttribute('src')!==m.s){ v.preload='auto'; v.src=m.s; try{v.load();}catch(e){} } }
+    }
     function next(){
-      clearTimeout(timer);
-      i=(i+1)%list.length; var m=list[i]; if(typeof m==='string') m={t:'v',s:m};
-      if(m.t==='p' && img){
-        vid.classList.remove('is-on'); try{vid.pause();}catch(e){}
-        var dur=m.d||500;
-        var show=function(){ img.classList.add('is-on'); timer=setTimeout(next, dur); };
-        if(img.getAttribute('src')===m.s && img.complete){ show(); }
-        else { img.onload=show; img.onerror=function(){ timer=setTimeout(next,300); }; img.src=m.s; }
+      clearTimeout(timer); var t=++token;
+      i=(i+1)%list.length; var m=norm(list[i]);
+      if(m.t==='p' && imgs.length){
+        var im=idle(imgs);
+        var go=function(){ if(t!==token) return; show(im); timer=setTimeout(next, m.d||500); };
+        if(im.getAttribute('src')===m.s && im.complete && im.naturalWidth){ go(); }
+        else { im.onload=go; im.onerror=function(){ if(t===token) timer=setTimeout(next,300); }; im.src=m.s; }
       } else {
-        vid.src=m.s; vid.classList.add('is-on'); if(img) img.classList.remove('is-on');
-        try{vid.currentTime=0;}catch(e){}
-        var p=vid.play(); if(p&&p.catch){ p.catch(function(){ timer=setTimeout(next,1200); }); }
+        var v=idle(vids);
+        if(v.getAttribute('src')!==m.s){ v.src=m.s; }
+        try{ v.currentTime=0; }catch(e){}
+        var onPlay=function(){ v.removeEventListener('playing',onPlay); if(t!==token) return; show(v); };
+        v.addEventListener('playing',onPlay);
+        var p=v.play(); if(p&&p.catch){ p.catch(function(){ if(t===token) timer=setTimeout(next,1200); }); }
+        timer=setTimeout(function(){ if(t===token && cur!==v) next(); },6000);
       }
     }
-    vid.addEventListener('ended', next);
-    vid.addEventListener('error', function(){ timer=setTimeout(next,300); });
+    vids.forEach(function(v){
+      v.addEventListener('ended', function(){ if(v===cur) next(); });
+      v.addEventListener('error', function(){ if(v===cur || !cur) timer=setTimeout(next,300); });
+    });
     var io=new IntersectionObserver(function(es){
       es.forEach(function(e){
-        var m=list[i]; if(typeof m==='string') m={t:'v',s:m};
         if(e.isIntersecting){
           if(!started){ started=true; next(); }
-          else if(m && m.t!=='p' && vid.paused){ vid.play().catch(function(){}); }
-        } else if(m && m.t!=='p'){ try{vid.pause();}catch(_){} }
+          else if(cur && cur.tagName==='VIDEO' && cur.paused){ cur.play().catch(function(){}); }
+        } else if(cur && cur.tagName==='VIDEO'){ try{cur.pause();}catch(_){} }
       });
     }, {threshold:0.2});
     io.observe(el);
