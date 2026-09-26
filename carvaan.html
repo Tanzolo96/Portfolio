@@ -403,7 +403,7 @@ body.cv-noside .side{opacity:0;pointer-events:none}
 .cv-hunt__txt .prose{margin-top:0}
 
 /* reviews scattered around me at the laptop */
-.cv-rev{aspect-ratio:1140/520;margin-top:8px}
+.cv-rev{aspect-ratio:1140/520;margin-top:clamp(40px,6vw,72px)}
 .cv-rev .r-me{left:21%;top:13.8%;width:58%}
 .cv-rev .r1{left:2%;top:14%;width:20%;transform:rotate(-5deg)}
 .cv-rev .r2{left:13.8%;top:32%;width:22.5%;transform:rotate(6deg)}
@@ -460,17 +460,6 @@ body.cv-noside .side{opacity:0;pointer-events:none}
 .cv-hmw li::before{content:"0" counter(h);position:absolute;left:0;top:3px;font-family:var(--mono);font-size:12px;font-weight:400;color:var(--accent)}
 
 /* looking back: devices on a line + familiarity */
-.cv-old{aspect-ratio:1440/330;margin-top:16px}
-.cv-old .o-cas{left:19%;top:5%;width:27%}
-.cv-old .o-radio{left:60.5%;top:0;width:20.5%}
-.cv-old .n{opacity:.9}
-.cv-old .n1{left:46%;top:2%;width:6%;transform:rotate(-8deg)}
-.cv-old .n2{left:84%;top:4%;width:5.5%;transform:rotate(10deg)}
-.cv-old .n3{left:11%;top:12%;width:4%}
-.cv-fam{margin-top:8px;text-align:center}
-.cv-fam__w{font-family:var(--display);font-size:clamp(44px,7vw,92px);font-weight:500;letter-spacing:-0.035em;line-height:1;color:var(--faint)}
-.cv-fam img{display:block;width:min(560px,86%);height:auto;margin:10px auto 0}
-.cv-fam p{max-width:46ch;margin:6px auto 0}
 
 /* ideation */
 .cv-dials{margin-top:18px;display:grid;grid-template-columns:1fr 1fr;gap:clamp(16px,2.4vw,28px)}
@@ -566,6 +555,31 @@ body.cv-noside .side{opacity:0;pointer-events:none}
 .cv-hmw__list li{counter-increment:h;padding-top:12px;border-top:2px solid var(--ink);font-family:var(--display);font-size:clamp(17px,1.7vw,19px);font-weight:600;letter-spacing:-0.01em;line-height:1.35;color:var(--ink)}
 .cv-hmw__list li::before{content:"0" counter(h);display:block;margin-bottom:8px;font-family:var(--mono);font-size:12px;font-weight:400;color:var(--accent)}
 @media (max-width:840px){.cv-hmw__list{grid-template-columns:1fr}}
+
+/* Familiarity: cassette pinned while scrolling, then swapped for the word */
+.cv-fam{position:relative;height:170vh;margin-top:8px}
+.cv-fam__stick{position:sticky;top:max(70px,calc(50vh - 260px));text-align:center}
+.cv-fam__stage{position:relative;width:min(560px,86%);margin:0 auto;aspect-ratio:1600/1040}
+.cv-fam__cas{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;will-change:opacity,transform}
+.cv-fam__w{position:absolute;inset:0;display:grid;place-items:center;font-family:var(--display);font-size:clamp(48px,8vw,104px);font-weight:500;letter-spacing:-0.035em;line-height:1;color:var(--ink);opacity:0;will-change:opacity,transform}
+.cv-fam__cap{max-width:46ch;margin:14px auto 0;opacity:0;transition:opacity .3s ease}
+@media (prefers-reduced-motion:reduce){
+  .cv-fam{height:auto}
+  .cv-fam__stick{position:static}
+  .cv-fam__stage{aspect-ratio:auto}
+  .cv-fam__cas{position:static;height:auto}
+  .cv-fam__w{position:static;opacity:1;color:var(--faint);margin-bottom:10px;order:-1}
+  .cv-fam__stage{display:flex;flex-direction:column}
+  .cv-fam__cap{opacity:1}
+}
+
+/* looking back: two devices on one baseline */
+.cv-old{margin-top:22px;display:grid;grid-template-columns:1.3fr 1fr;gap:clamp(24px,5vw,72px);align-items:end;max-width:760px;margin-left:auto;margin-right:auto}
+.cv-old figure{margin:0}
+.cv-old img{display:block;width:100%;height:auto}
+.cv-old figcaption{margin-top:12px;padding-top:10px;border-top:1px solid var(--line);font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--sub)}
+.cv-old figcaption b{display:block;margin-bottom:3px;font-weight:500;color:var(--ink)}
+@media (max-width:600px){.cv-old{grid-template-columns:1fr 1fr;gap:16px}.cv-old figcaption{font-size:10px;letter-spacing:.04em}}
 </style>
 
 
@@ -764,17 +778,18 @@ body.cv-noside .side{opacity:0;pointer-events:none}
         <h2 class="sec__h">“Old systems were more intuitive than we think.”</h2>
         <p class="prose">People identified songs through movies, not titles. They checked cassette covers, flipped them, read track numbers, and estimated time while fast-forwarding.</p>
         <p class="prose">Older AM transistors made navigation intuitive with <mark class="hl">two dials</mark>: one for tuning between 1–10 and another for refining 10–100. Both systems were predictable, physical, and rooted in muscle memory — familiar rituals that made searching feel effortless.</p>
-        <div class="cv-comp cv-old" role="img" aria-label="A cassette player and an AM transistor radio on a line">
-          <img class="n n3" src="carvaan/note-3.webp" alt="">
-          <img class="o-cas" src="carvaan/old-cassette-player.webp" alt="" loading="lazy">
-          <img class="n n1" src="carvaan/note-1.webp" alt="">
-          <img class="o-radio" src="carvaan/old-transistor.webp" alt="" loading="lazy">
-          <img class="n n2" src="carvaan/note-2.webp" alt="">
+        <div class="cv-old">
+          <figure><img src="carvaan/old-cassette-player.webp" alt="Portable cassette player with tapes" loading="lazy"><figcaption><b>Cassettes</b>Flip, read, fast-forward</figcaption></figure>
+          <figure><img src="carvaan/old-transistor.webp" alt="AM transistor radio" loading="lazy"><figcaption><b>AM transistor</b>Tune, then refine</figcaption></figure>
         </div>
-        <div class="cv-fam">
-          <div class="cv-fam__w">Familiarity</div>
-          <img src="carvaan/old-cassette.webp" alt="TDK cassette tape" loading="lazy">
-          <p class="prose">The redesign borrows the rituals people already know, instead of teaching new ones.</p>
+        <div class="cv-fam" id="fam">
+          <div class="cv-fam__stick">
+            <div class="cv-fam__stage">
+              <img class="cv-fam__cas" src="carvaan/old-cassette.webp" alt="TDK cassette tape" loading="lazy">
+              <div class="cv-fam__w">Familiarity</div>
+            </div>
+            <p class="prose cv-fam__cap">The redesign borrows the rituals people already know, instead of teaching new ones.</p>
+          </div>
         </div>
       </section>
 
@@ -890,6 +905,28 @@ body.cv-noside .side{opacity:0;pointer-events:none}
   zoom.addEventListener('click',function(){ zoom.classList.remove('is-on'); });
   document.addEventListener('keydown',function(e){ if(e.key==='Escape') zoom.classList.remove('is-on'); });
   // people row: show each person's quote on hover / tap (not on me)
+    // familiarity: as you scroll, the cassette fades out and the word takes its place
+  var fam=document.getElementById('fam');
+  if(fam && !(window.matchMedia && window.matchMedia('(prefers-reduced-motion:reduce)').matches)){
+    var cas=fam.querySelector('.cv-fam__cas'), word=fam.querySelector('.cv-fam__w'), cap=fam.querySelector('.cv-fam__cap');
+    var clamp=function(v){ return v<0?0:v>1?1:v; };
+    var tick=false;
+    function famUpd(){
+      tick=false;
+      // d = pixels scrolled since the cassette pinned; hold it, crossfade, then hold the word
+      var r=fam.getBoundingClientRect(), pin=parseFloat(getComputedStyle(fam.firstElementChild).top)||0;
+      var d=pin-r.top;
+      var out=clamp((d-220)/340), inn=clamp((d-380)/340);
+      cas.style.opacity=String(1-out);
+      cas.style.transform='scale('+(1-out*0.08)+')';
+      word.style.opacity=String(inn);
+      word.style.transform='translateY('+((1-inn)*24)+'px)';
+      cap.style.opacity=inn>0.9?'1':'0';
+    }
+    window.addEventListener('scroll',function(){ if(!tick){ tick=true; requestAnimationFrame(famUpd); } },{passive:true});
+    window.addEventListener('resize',famUpd); famUpd();
+  }
+
   var pw=document.getElementById('ppl');
   if(pw){
     var hots=[].slice.call(pw.querySelectorAll('.cv-hot'));
