@@ -598,6 +598,20 @@ body.cv-noside .side{opacity:0;pointer-events:none}
 .cv-why .sub__h{margin-top:0;font-size:clamp(20px,2.2vw,24px);line-height:1.2}
 .cv-why .sub__h .dim{color:var(--faint)}
 .cv-why .sub__h + .prose{margin-top:14px}
+
+/* problem / solution tabs */
+.cv-tabs{margin-top:clamp(32px,4.5vw,52px)}
+.cv-tabs__bar{position:sticky;top:58px;z-index:5;display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(8px,1.4vw,14px);padding:12px 0;background:var(--ground)}
+.cv-tab{appearance:none;margin:0;text-align:left;cursor:pointer;border:0;border-top:2px solid var(--line);background:none;padding:10px 0 4px;font-family:var(--display);font-size:clamp(15px,1.5vw,17px);font-weight:500;letter-spacing:-0.01em;line-height:1.25;color:var(--sub);transition:color .2s ease,border-color .2s ease}
+.cv-tab span{display:block;margin-bottom:5px;font-family:var(--mono);font-size:11px;font-weight:400;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);transition:color .2s ease}
+.cv-tab:hover{color:var(--ink)}
+.cv-tab[aria-selected="true"]{color:var(--ink);border-top-color:var(--accent)}
+.cv-tab[aria-selected="true"] span{color:var(--accent)}
+.cv-tab:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.cv-tabs .cv-sol{margin-top:clamp(14px,2vw,22px);animation:cvfade .3s ease}
+@keyframes cvfade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@media (max-width:600px){.cv-tab{font-size:13.5px}.cv-tab span{font-size:10px;letter-spacing:.06em}}
+@media (prefers-reduced-motion:reduce){.cv-tabs .cv-sol{animation:none}}
 </style>
 
 
@@ -821,29 +835,34 @@ body.cv-noside .side{opacity:0;pointer-events:none}
           <div class="cv-dial"><span class="cv-knob cv-knob--b" aria-hidden="true"></span><div><b>Dial B</b><p>Songs inside that folder</p></div></div>
         </div>
 
-        <div class="cv-sol">
+        <div class="cv-tabs" id="solTabs">
+          <div class="cv-tabs__bar" role="tablist" aria-label="Problems and solutions">
+            <button type="button" role="tab" class="cv-tab" id="sol-tab-01" aria-controls="sol-01" aria-selected="true" tabindex="0"><span>Problem 01</span>Blind skipping</button>
+            <button type="button" role="tab" class="cv-tab" id="sol-tab-02" aria-controls="sol-02" aria-selected="false" tabindex="-1"><span>Problem 02</span>No favourites</button>
+            <button type="button" role="tab" class="cv-tab" id="sol-tab-03" aria-controls="sol-03" aria-selected="false" tabindex="-1"><span>Problem 03</span>Retro look, not feel</button>
+          </div>
+          <div class="cv-sol" role="tabpanel" id="sol-01" aria-labelledby="sol-tab-01">
           <div class="cv-sol__ps">
             <div class="cv-sol__p"><span class="cv-sol__k">Problem 01</span>Finding one song meant skipping blindly through 5,000 tracks.</div>
             <div class="cv-sol__s"><span class="cv-sol__k">Solution 01</span>Two rotary dials: the left dial selects the folder (Movie / Artist / Mood / Songs), the right dial selects the exact song — no guessing, no gambling.</div>
           </div>
           <figure class="cv-wire"><img src="carvaan/wire-navigate.webp" alt="Wireframe — how to navigate with the two dials" loading="lazy"><figcaption>How to navigate</figcaption></figure>
           <figure class="cv-wire"><img src="carvaan/wire-sections.webp" alt="Wireframe — folder and song sections on screen" loading="lazy"><figcaption>See the folder &amp; the song at once</figcaption></figure>
-        </div>
-
-        <div class="cv-sol">
+          </div>
+          <div class="cv-sol" role="tabpanel" id="sol-02" aria-labelledby="sol-tab-02" hidden>
           <div class="cv-sol__ps">
             <div class="cv-sol__p"><span class="cv-sol__k">Problem 02</span>Carvaan had no playlist or favourites — users couldn’t save what they loved.</div>
             <div class="cv-sol__s"><span class="cv-sol__k">Solution 02</span>Double-tap to “Like.” The song is instantly added to a Liked Songs playlist and moves higher inside its category.<em>Just like making your own mixtape — but without the tape.</em></div>
           </div>
           <figure class="cv-wire"><img src="carvaan/wire-favourites.webp" alt="Wireframe — how to see your favourite albums or songs" loading="lazy"><figcaption>How to see your favourite albums or songs</figcaption></figure>
-        </div>
-
-        <div class="cv-sol">
+          </div>
+          <div class="cv-sol" role="tabpanel" id="sol-03" aria-labelledby="sol-tab-03" hidden>
           <div class="cv-sol__ps">
             <div class="cv-sol__p"><span class="cv-sol__k">Problem 03</span>The experience felt nostalgic in look, but not in feel.</div>
             <div class="cv-sol__s"><span class="cv-sol__k">Solution 03</span>Retro cues built with purpose: pixel portraits, a cassette-loading animation, subtle mechanical ticks.<em>Not decoration — emotional memory triggers.</em></div>
           </div>
           <figure class="cv-wire"><img src="carvaan/wire-like.webp" alt="Wireframe — liking a song and the retro feedback" loading="lazy"><figcaption>Like → feedback → Liked Songs</figcaption></figure>
+          </div>
         </div>
 
         <h3 class="sub__h">Why this works</h3>
@@ -943,6 +962,25 @@ body.cv-noside .side{opacity:0;pointer-events:none}
     }
     window.addEventListener('scroll',function(){ if(!tick){ tick=true; requestAnimationFrame(famUpd); } },{passive:true});
     window.addEventListener('resize',famUpd); famUpd();
+  }
+
+    // problem / solution tabs
+  var st=document.getElementById('solTabs');
+  if(st){
+    var tbs=[].slice.call(st.querySelectorAll('.cv-tab'));
+    function pick(t,focus){
+      tbs.forEach(function(x){ var on=x===t; x.setAttribute('aria-selected',String(on)); x.tabIndex=on?0:-1; document.getElementById(x.getAttribute('aria-controls')).hidden=!on; });
+      if(focus) t.focus();
+      var bar=st.querySelector('.cv-tabs__bar'), top=st.getBoundingClientRect().top;
+      if(top<0) window.scrollTo({top:window.scrollY+top-70,behavior:'smooth'});
+    }
+    tbs.forEach(function(t,i){
+      t.addEventListener('click',function(){ pick(t); });
+      t.addEventListener('keydown',function(e){
+        var d=e.key==='ArrowRight'?1:e.key==='ArrowLeft'?-1:0; if(!d) return;
+        e.preventDefault(); pick(tbs[(i+d+tbs.length)%tbs.length],true);
+      });
+    });
   }
 
   var pw=document.getElementById('ppl');
