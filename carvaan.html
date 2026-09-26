@@ -360,156 +360,173 @@
 .shot--store{aspect-ratio:2940/1363}
 /* ---------- Carvaan / Press & Cry ---------- */
 @font-face{font-family:"Special Elite";src:url(carvaan/special-elite.ttf) format("truetype");font-display:swap}
-.cover--cv{background:#fff;border:1px solid var(--line);display:grid;grid-template-columns:1fr 1fr;align-items:center;padding:0 clamp(20px,5vw,72px);gap:clamp(12px,3vw,40px)}
+@media (min-width:841px){.layout{grid-template-columns:260px minmax(0,1fr);gap:64px}}
+.side{transition:opacity .3s ease}
+body.cv-noside .side{opacity:0;pointer-events:none}
+.content img{mix-blend-mode:multiply}
+.sec{margin-top:clamp(40px,6vw,72px)}
+
+.cover--cv{background:transparent;border:0;border-radius:0;display:grid;grid-template-columns:1fr 1fr;align-items:center;padding:0 clamp(12px,4vw,60px);gap:clamp(12px,3vw,40px);aspect-ratio:5/2}
 .cover--cv .cv-mark{font-family:"Special Elite","Courier New",monospace;font-size:clamp(44px,8.4vw,120px);line-height:.92;letter-spacing:.02em;color:#1b1b1b;text-align:right}
 .cover--cv .cv-mark b{font-weight:400;color:#F2553D}
-.cover--cv img{width:100%;height:92%;object-fit:contain;align-self:end}
-.cv-q{margin-top:26px;font-family:var(--display);font-size:clamp(24px,3.1vw,36px);font-weight:700;font-style:italic;letter-spacing:-0.025em;line-height:1.12;color:var(--ink);text-wrap:balance}
+.cover--cv img{width:100%;height:92%;object-fit:contain;align-self:end;mix-blend-mode:multiply}
+
+.cv-q{margin-top:22px;font-family:var(--display);font-size:clamp(24px,3.1vw,36px);font-weight:700;font-style:italic;letter-spacing:-0.025em;line-height:1.12;color:var(--ink);text-wrap:balance}
 .cv-q .dim{color:var(--faint)}
-.cv-duo{margin-top:22px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,.9fr);gap:clamp(22px,4vw,48px);align-items:center}
-.cv-duo--flip{grid-template-columns:minmax(0,.9fr) minmax(0,1fr)}
+.cv-duo{margin-top:18px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,.9fr);gap:clamp(22px,4vw,48px);align-items:center}
 .cv-art{margin:0;display:block}
 .cv-art img{display:block;width:100%;height:auto}
-.cv-art--center{max-width:620px;margin:30px auto 0}
-.cv-list{margin-top:14px;padding:0;list-style:none;display:grid;gap:9px}
+.cv-list{margin-top:12px;padding:0;list-style:none;display:grid;gap:8px}
 .cv-list li{position:relative;padding-left:22px;font-size:16px;line-height:1.55;color:var(--body)}
 .cv-list li::before{content:"";position:absolute;left:2px;top:.62em;width:8px;height:8px;border-radius:50%;background:var(--accent);opacity:.8}
 .cv-list--x li::before{content:"✕";background:none;width:auto;height:auto;top:0;left:0;font-family:var(--mono);font-size:13px;color:#F2553D;opacity:1}
 .cv-list--ok li::before{content:"✓";background:none;width:auto;height:auto;top:0;left:0;font-family:var(--mono);font-size:14px;color:var(--accent);opacity:1}
+.cv-list--cols{grid-template-columns:1fr 1fr;column-gap:28px}
 
-/* the device hunt */
-.cv-devices{margin-top:24px;display:grid;grid-template-columns:repeat(3,1fr);gap:13px}
-.cv-device{margin:0;border:1px solid var(--line);border-radius:6px;background:#fff;padding:18px 18px 12px;display:flex;flex-direction:column;align-items:center;gap:10px;position:relative}
-.cv-device img{width:100%;aspect-ratio:1/1;object-fit:contain}
-.cv-device figcaption{font-family:var(--mono);font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--sub)}
-.cv-device::after{content:"✕";position:absolute;top:10px;right:12px;font-family:var(--mono);font-size:12px;color:#F2553D}
-.cv-device--pick{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
-.cv-device--pick::after{content:"✓ picked";color:var(--accent);font-size:11px;letter-spacing:.06em;text-transform:uppercase}
+/* absolute-positioned compositions (coords taken from the original layout) */
+.cv-comp{position:relative;margin-top:22px}
+.cv-comp > img,.cv-comp > .cv-pin{position:absolute;display:block;height:auto}
+.cv-wave{position:absolute;left:0;width:100%;height:100%;top:0;overflow:visible}
+.cv-wave path{fill:none;stroke:#3a3a38;stroke-linecap:butt}
 
-/* review board */
-.cv-board{margin-top:26px;position:relative;border:1px solid var(--line);border-radius:8px;background:var(--panel);padding:clamp(22px,4vw,44px) clamp(14px,3vw,34px);display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:clamp(14px,2.4vw,26px) clamp(10px,2vw,22px)}
-.cv-board img{display:block;height:auto;background:#fff;border:1px solid #cfcfca;border-radius:3px;box-shadow:0 6px 18px -10px rgba(0,0,0,.35);max-width:100%}
-.cv-board img:nth-child(1){width:min(260px,70%);transform:rotate(-3deg)}
-.cv-board img:nth-child(2){width:min(300px,80%);transform:rotate(2.5deg)}
-.cv-board img:nth-child(3){width:min(270px,72%);transform:rotate(-1.5deg)}
-.cv-board img:nth-child(4){width:min(300px,80%);transform:rotate(3deg)}
-.cv-board img:nth-child(5){width:min(250px,68%);transform:rotate(-2.5deg)}
-.cv-board__tag{position:absolute;top:10px;left:14px;font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--sub)}
+/* the device hunt: devices riding a line, me in the middle */
+.cv-hunt{aspect-ratio:2000/794;margin-top:10px}
+.cv-hunt .cv-wave path{stroke-width:44}
+.cv-hunt .d-drum{left:5.8%;top:50%;width:14.4%}
+.cv-hunt .d-me{left:34%;top:29.5%;width:36%}
+.cv-hunt .d-upi{left:65.5%;top:18.5%;width:11.8%}
+.cv-hunt .d-label{left:82.3%;top:43%;width:11.6%}
+.cv-hunt__txt{display:grid;grid-template-columns:auto 1fr;gap:clamp(20px,4vw,56px);align-items:start;margin-top:6px}
+.cv-hunt__txt .sec__h{margin-top:0}
+.cv-hunt__txt .prose{margin-top:0}
+
+/* reviews scattered around me at the laptop */
+.cv-rev{aspect-ratio:1140/520;margin-top:8px}
+.cv-rev .r-me{left:21%;top:13.8%;width:58%}
+.cv-rev .r1{left:2%;top:14%;width:20%;transform:rotate(-5deg)}
+.cv-rev .r2{left:13.8%;top:32%;width:22.5%;transform:rotate(6deg)}
+.cv-rev .r3{left:39%;top:2%;width:20%;transform:rotate(-8deg)}
+.cv-rev .r4{left:67.5%;top:34%;width:16.5%;transform:rotate(8deg)}
+.cv-rev .r5{left:73%;top:11%;width:23%;transform:rotate(-4deg)}
+.cv-rev .cv-r{box-shadow:0 8px 18px -12px rgba(0,0,0,.45);mix-blend-mode:normal;border-radius:2px}
 
 /* verbatims */
-.cv-says{margin-top:20px;display:grid;grid-template-columns:repeat(3,1fr);gap:13px}
-.cv-say{margin:0;border:1px solid var(--line);border-radius:6px;background:#fff;padding:16px 16px 14px;font-size:15px;line-height:1.5;color:var(--ink)}
-.cv-say::before{content:"“";display:block;font-family:var(--display);font-size:34px;line-height:.7;color:var(--accent);margin-bottom:6px}
+.cv-says{margin-top:16px;display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(16px,2.4vw,28px)}
+.cv-say{margin:0;padding-top:10px;border-top:2px solid var(--ink);font-family:var(--display);font-size:clamp(17px,1.7vw,20px);font-weight:600;letter-spacing:-0.012em;line-height:1.3;color:var(--ink)}
+.cv-say::before{content:"“";color:var(--accent)}
+.cv-say::after{content:"”";color:var(--accent)}
 
-/* personas */
-.cv-people{margin-top:24px;display:grid;grid-template-columns:repeat(4,1fr);gap:13px}
-.cv-person{margin:0;border:1px solid var(--line);border-radius:6px;overflow:hidden;background:#fff}
-.cv-person img{display:block;width:100%;aspect-ratio:4/5;object-fit:cover;object-position:top center;filter:grayscale(1)}
-.cv-person figcaption{padding:10px 12px;font-family:var(--mono);font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink);border-top:1px solid var(--line);display:flex;justify-content:space-between;gap:8px}
-.cv-person figcaption span{color:var(--sub)}
+/* people row — overlapping cut-outs, bottom aligned */
+.cv-ppl{aspect-ratio:979/287;margin-top:26px;overflow:hidden}
+.cv-ppl .p-sheetal{left:0;top:5.6%;width:27.6%}
+.cv-ppl .p-dada{left:21%;top:5.2%;width:27.8%}
+.cv-ppl .p-me{left:37.3%;top:5.2%;width:33%}
+.cv-ppl .p-nana{left:56.1%;top:0;width:43.9%}
+.cv-ppl__names{display:grid;grid-template-columns:21% 16.3% 18.8% 43.9%;margin-top:10px;font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--sub)}
+.cv-ppl__names span{padding-left:6%}
+
+/* faculty trio */
+.cv-fac{aspect-ratio:984/340;margin-top:22px}
+.cv-fac .f1{left:0;top:22.1%;width:47%}
+.cv-fac .f2{left:29.7%;top:0;width:47.3%}
+.cv-fac .f3{left:60.1%;top:22.6%;width:39.9%}
 
 /* callout */
-.cv-callout{margin-top:24px;border-left:3px solid var(--accent);padding:4px 0 4px 18px;font-family:var(--display);font-size:clamp(19px,2.1vw,23px);font-weight:600;letter-spacing:-0.015em;line-height:1.3;color:var(--ink)}
+.cv-callout{margin-top:20px;border-left:3px solid var(--accent);padding:4px 0 4px 18px;font-family:var(--display);font-size:clamp(19px,2.1vw,23px);font-weight:600;letter-spacing:-0.015em;line-height:1.3;color:var(--ink)}
 .cv-callout small{display:block;margin-bottom:6px;font-family:var(--mono);font-size:11px;font-weight:400;letter-spacing:.12em;text-transform:uppercase;color:var(--sub)}
 
-.cv-trio{margin-top:26px;display:grid;grid-template-columns:repeat(3,1fr);gap:13px;align-items:end}
-.cv-trio img{display:block;width:100%;aspect-ratio:1/1;object-fit:cover;object-position:bottom center;border-radius:6px;background:#fff;border:1px solid var(--line)}
-
 /* data -> finding -> insight */
-.cv-dfi{margin-top:24px;display:grid;grid-template-columns:repeat(3,1fr);gap:13px;counter-reset:dfi}
-.cv-dfi__c{border:1px solid var(--line);border-radius:6px;background:#fff;padding:18px;position:relative}
-.cv-dfi__c:not(:last-child)::after{content:"→";position:absolute;right:-12px;top:18px;z-index:1;width:22px;height:22px;border-radius:50%;background:var(--ground);border:1px solid var(--line);display:grid;place-items:center;font-size:12px;color:var(--sub)}
+.cv-dfi{margin-top:20px;display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(16px,2.4vw,28px)}
+.cv-dfi__c{padding-top:12px;border-top:2px solid var(--line)}
 .cv-dfi__k{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--sub)}
-.cv-dfi__c p{margin-top:10px;font-size:15px;line-height:1.55;color:var(--body)}
-.cv-dfi__c--key{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 5%,#fff)}
+.cv-dfi__c p{margin-top:8px;font-size:15px;line-height:1.55;color:var(--body)}
+.cv-dfi__c--key{border-color:var(--accent)}
 .cv-dfi__c--key .cv-dfi__k{color:var(--accent)}
-.cv-dfi__c--key p{color:var(--ink);font-weight:500}
+.cv-dfi__c--key p{color:var(--ink);font-weight:600}
 
-.cv-goal{margin-top:18px;display:inline-flex;gap:10px;align-items:baseline;border:1px solid var(--line);border-radius:999px;background:#fff;padding:8px 16px;font-size:14.5px;color:var(--ink)}
+.cv-goal{margin-top:16px;display:inline-flex;gap:10px;align-items:baseline;border:1px solid var(--line);border-radius:999px;padding:8px 16px;font-size:14.5px;color:var(--ink)}
 .cv-goal b{font-family:var(--mono);font-size:11px;font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:var(--accent)}
-.cv-sheet{margin-top:22px;border:1px solid var(--line);border-radius:6px;background:#fff;padding:clamp(8px,1.6vw,18px)}
-.cv-sheet img{display:block;width:100%;height:auto}
+.cv-img{margin:18px 0 0;display:block}
+.cv-img img{display:block;width:100%;height:auto}
+.cv-img--mid{max-width:720px;margin-inline:auto}
 
 /* HMW */
-.cv-hmw{margin-top:22px;display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1fr);gap:clamp(20px,3.5vw,40px);align-items:center}
-.cv-hmw__img{margin:0;border:1px solid var(--line);border-radius:6px;background:#fff;overflow:hidden}
-.cv-hmw__img img{display:block;width:100%;aspect-ratio:4/3;object-fit:cover}
-.cv-hmw ol{list-style:none;margin:0;padding:0;display:grid;gap:10px;counter-reset:h}
-.cv-hmw li{counter-increment:h;border:1px solid var(--line);border-radius:6px;background:#fff;padding:14px 16px 14px 52px;position:relative;font-size:15.5px;line-height:1.45;color:var(--ink)}
-.cv-hmw li::before{content:"0" counter(h);position:absolute;left:16px;top:14px;font-family:var(--mono);font-size:12px;color:var(--accent)}
+.cv-hmw{margin-top:14px;display:grid;grid-template-columns:minmax(0,.85fr) minmax(0,1fr);gap:clamp(20px,3.5vw,40px);align-items:center}
+.cv-hmw img{display:block;width:100%;height:auto}
+.cv-hmw ol{list-style:none;margin:0;padding:0;display:grid;gap:14px;counter-reset:h}
+.cv-hmw li{counter-increment:h;padding:0 0 12px 40px;border-bottom:1px solid var(--line);position:relative;font-family:var(--display);font-size:clamp(17px,1.7vw,19px);font-weight:600;letter-spacing:-0.01em;line-height:1.35;color:var(--ink)}
+.cv-hmw li::before{content:"0" counter(h);position:absolute;left:0;top:3px;font-family:var(--mono);font-size:12px;font-weight:400;color:var(--accent)}
 
-/* looking back */
-.cv-past{margin-top:26px;display:grid;grid-template-columns:1.1fr 1fr 1fr;gap:13px;align-items:stretch}
-.cv-past figure{margin:0;border:1px solid var(--line);border-radius:6px;background:#fff;padding:14px;display:flex;flex-direction:column;gap:10px}
-.cv-past img{width:100%;flex:1;min-height:0;aspect-ratio:1/1;object-fit:contain}
-.cv-past figcaption{font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--sub)}
-.cv-fam{margin-top:13px;position:relative;border:1px solid var(--line);border-radius:6px;background:#fff;overflow:hidden;display:grid;grid-template-columns:1fr 1.3fr;align-items:center;gap:clamp(12px,3vw,40px);padding:clamp(18px,3vw,34px)}
-.cv-fam__w{font-family:"Special Elite","Courier New",monospace;font-size:clamp(34px,5.4vw,66px);line-height:1;color:var(--ink);position:relative}
-.cv-fam__w small{display:block;margin-top:12px;font-family:var(--sans);font-size:14.5px;line-height:1.5;color:var(--body)}
-.cv-fam img.cv-cas{display:block;width:100%;height:auto}
-.cv-note{position:absolute;opacity:.9;pointer-events:none}
-.cv-note--1{width:46px;top:14px;right:16px;transform:rotate(12deg)}
-.cv-note--2{width:40px;bottom:14px;left:44%;transform:rotate(-10deg)}
-.cv-note--3{width:28px;top:22px;left:40%}
+/* looking back: devices on a line + familiarity */
+.cv-old{aspect-ratio:1440/400;margin-top:16px}
+.cv-old .cv-wave path{stroke-width:22}
+.cv-old .o-cas{left:19%;top:5%;width:27%}
+.cv-old .o-radio{left:60.5%;top:0;width:20.5%}
+.cv-old .n{opacity:.9}
+.cv-old .n1{left:46%;top:2%;width:6%;transform:rotate(-8deg)}
+.cv-old .n2{left:84%;top:4%;width:5.5%;transform:rotate(10deg)}
+.cv-old .n3{left:11%;top:12%;width:4%}
+.cv-fam{margin-top:8px;text-align:center}
+.cv-fam__w{font-family:var(--display);font-size:clamp(44px,7vw,92px);font-weight:500;letter-spacing:-0.035em;line-height:1;color:var(--faint)}
+.cv-fam img{display:block;width:min(560px,86%);height:auto;margin:10px auto 0}
+.cv-fam p{max-width:46ch;margin:6px auto 0}
 
 /* ideation */
-.cv-dials{margin-top:22px;display:grid;grid-template-columns:1fr 1fr;gap:13px}
-.cv-dial{border:1px solid var(--line);border-radius:6px;background:#fff;padding:18px;display:grid;grid-template-columns:64px 1fr;gap:16px;align-items:center}
-.cv-knob{width:64px;height:64px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff 0 18%,#e9e8e3 19% 60%,#cfcec8 61%);border:2px solid var(--ink);position:relative;animation:cvspin 6s ease-in-out infinite}
-.cv-knob::after{content:"";position:absolute;left:50%;top:6px;width:3px;height:16px;margin-left:-1.5px;border-radius:2px;background:var(--ink)}
+.cv-dials{margin-top:18px;display:grid;grid-template-columns:1fr 1fr;gap:clamp(16px,2.4vw,28px)}
+.cv-dial{display:grid;grid-template-columns:60px 1fr;gap:16px;align-items:center}
+.cv-knob{width:60px;height:60px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff 0 18%,#e9e8e3 19% 60%,#cfcec8 61%);border:2px solid var(--ink);position:relative;animation:cvspin 6s ease-in-out infinite}
+.cv-knob::after{content:"";position:absolute;left:50%;top:6px;width:3px;height:15px;margin-left:-1.5px;border-radius:2px;background:var(--ink)}
 .cv-dial:nth-child(2) .cv-knob{animation-delay:-3s}
 .cv-knob--b::after{background:var(--accent)}
 @keyframes cvspin{0%,100%{transform:rotate(-40deg)}50%{transform:rotate(60deg)}}
 .cv-dial b{display:block;font-family:var(--mono);font-size:11.5px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--accent)}
-.cv-dial p{margin-top:6px;font-size:15px;line-height:1.45;color:var(--ink)}
+.cv-dial p{margin-top:4px;font-size:15.5px;line-height:1.45;color:var(--ink)}
 
-.cv-sol{margin-top:34px;padding-top:26px;border-top:1px dashed var(--line)}
-.cv-sol__ps{display:grid;grid-template-columns:1fr 1fr;gap:13px}
-.cv-sol__p,.cv-sol__s{border-radius:6px;padding:16px 18px;font-size:15px;line-height:1.5}
-.cv-sol__p{background:var(--panel);color:var(--body)}
-.cv-sol__s{background:color-mix(in srgb,var(--accent) 6%,#fff);border:1px solid color-mix(in srgb,var(--accent) 30%,var(--line));color:var(--ink)}
+.cv-sol{margin-top:clamp(36px,5vw,56px)}
+.cv-sol__ps{display:grid;grid-template-columns:1fr 1fr;gap:clamp(16px,2.4vw,28px)}
+.cv-sol__p,.cv-sol__s{padding-top:12px;font-size:15.5px;line-height:1.5}
+.cv-sol__p{border-top:2px solid var(--line);color:var(--body)}
+.cv-sol__s{border-top:2px solid var(--accent);color:var(--ink)}
 .cv-sol__k{display:block;margin-bottom:6px;font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--sub)}
 .cv-sol__s .cv-sol__k{color:var(--accent)}
 .cv-sol__s em{display:block;margin-top:8px;font-style:italic;color:var(--sub)}
-.cv-wire{margin-top:14px;display:grid;gap:13px}
-.cv-wire--2{grid-template-columns:1fr 1fr}
-.cv-wire figure{margin:0;border:1px solid var(--line);border-radius:6px;background:#fff;overflow:hidden}
-.cv-wire img{display:block;width:100%;height:auto}
-.cv-wire:not(.cv-wire--2) img{max-height:460px;object-fit:contain;padding:12px 0}
-.cv-wire figcaption{padding:9px 12px;border-top:1px solid var(--line);font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--sub)}
 
-.cv-formula{margin-top:14px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-family:var(--mono);font-size:12.5px;letter-spacing:.08em;text-transform:uppercase}
-.cv-formula span{border:1px solid var(--ink);border-radius:999px;padding:6px 13px;color:var(--ink);background:#fff}
+/* wireframes: break out to the full page width so the annotations are readable */
+.cv-wire{margin:18px 0 0;display:block}
+.cv-wire img{display:block;width:100%;height:auto;cursor:zoom-in}
+.cv-wire figcaption{margin-top:8px;font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--sub)}
+@media (min-width:841px){.cv-wire{margin-left:-324px}}
+.cv-zoom{position:fixed;inset:0;z-index:100;background:rgba(251,251,250,.97);display:none;overflow:auto;cursor:zoom-out}
+.cv-zoom.is-on{display:block}
+.cv-zoom img{display:block;width:max(1600px,100%);max-width:none;height:auto;margin:0 auto}
+
+.cv-formula{margin-top:12px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-family:var(--mono);font-size:12.5px;letter-spacing:.08em;text-transform:uppercase}
+.cv-formula span{border:1px solid var(--ink);border-radius:999px;padding:6px 13px;color:var(--ink)}
 .cv-formula i{font-style:normal;color:var(--sub)}
 .cv-formula span:last-child{background:var(--ink);color:#fff}
-.cv-me{margin:0;border-radius:8px;overflow:hidden;background:#fff;border:1px solid var(--line)}
-.cv-me img{display:block;width:100%;height:auto}
 
-.cv-close{display:grid;grid-template-columns:minmax(0,1fr) minmax(160px,240px);gap:clamp(24px,4vw,56px);align-items:center;margin-top:8px}
+.cv-close{display:grid;grid-template-columns:minmax(0,1fr) minmax(160px,230px);gap:clamp(24px,4vw,56px);align-items:end;margin-top:6px}
 .cv-close figure{margin:0}
-.cv-close img{display:block;width:100%;height:auto;border-radius:8px;background:#fff;border:1px solid var(--line)}
-.cv-end{margin-top:40px;font-family:"Special Elite","Courier New",monospace;font-size:clamp(28px,4vw,46px);line-height:1.05;color:var(--ink)}
+.cv-close img{display:block;width:100%;height:auto}
+.cv-end{margin-top:28px;font-family:"Special Elite","Courier New",monospace;font-size:clamp(28px,4vw,46px);line-height:1.05;color:var(--ink)}
 .cv-end b{font-weight:400;color:#F2553D}
 
-@media (max-width:820px){
-  .cv-people{grid-template-columns:repeat(2,1fr)}
+@media (max-width:840px){
   .cv-says,.cv-dfi{grid-template-columns:1fr}
-  .cv-dfi__c:not(:last-child)::after{content:"↓";right:auto;left:18px;top:auto;bottom:-12px}
-  .cv-duo,.cv-duo--flip,.cv-hmw,.cv-fam,.cv-close{grid-template-columns:1fr}
-  .cv-past{grid-template-columns:1fr 1fr}
-  .cv-past figure:first-child{grid-column:1/-1}
+  .cv-duo,.cv-hmw,.cv-close{grid-template-columns:1fr}
+  .cv-hunt__txt{grid-template-columns:1fr;gap:8px}
 }
 @media (max-width:600px){
-  .cover--cv{aspect-ratio:auto;grid-template-columns:1fr;padding:28px 20px 0;justify-items:center}
+  .cover--cv{aspect-ratio:auto;grid-template-columns:1fr;padding:24px 0 0;justify-items:center}
   .cover--cv .cv-mark{text-align:center}
   .cover--cv img{height:auto;max-width:280px}
-  .cv-devices{gap:8px}
-  .cv-device{padding:12px 8px 8px}
-  .cv-device figcaption{font-size:10px}
-  .cv-note{display:none}
-  .cv-close figure{max-width:240px}
-  .cv-dials,.cv-sol__ps,.cv-wire--2,.cv-trio{grid-template-columns:1fr}
-  .cv-trio img{aspect-ratio:4/3}
+  .cv-dials,.cv-sol__ps,.cv-list--cols{grid-template-columns:1fr}
+  .cv-ppl__names{font-size:9px;letter-spacing:.04em}
+  .cv-rev{aspect-ratio:auto;display:flex;flex-wrap:wrap;justify-content:center;gap:22px 8px}
+  .cv-rev > img{position:static}
+  .cv-rev > img.cv-r{width:82%;transform:rotate(-1.5deg)}
+  .cv-rev > img.cv-r:nth-of-type(odd){transform:rotate(1.5deg)}
+  .cv-rev .r-me{order:9;width:92%;margin-top:8px}
 }
 @media (prefers-reduced-motion:reduce){.cv-knob{animation:none}}
 </style>
@@ -586,19 +603,17 @@
       <!-- 02 — DEVICE -->
       <section id="device" class="sec">
         <div class="eyebrow">02 · Picking the device</div>
-        <div class="cv-duo cv-duo--flip">
-          <figure class="cv-art"><img src="carvaan/me-thinking.webp" alt="Scratching my head over which device to pick" loading="lazy"></figure>
-          <div>
-            <h2 class="sec__h">Finding that wasn’t easy</h2>
-            <p class="prose">I tried the UPI box.<br>Then a label maker.<br>Even a drum machine.</p>
-          </div>
+        <div class="cv-comp cv-hunt" role="img" aria-label="Me, stuck between a drum machine, a UPI box and a label maker">
+          <svg class="cv-wave" viewBox="0 0 2000 794" preserveAspectRatio="none" aria-hidden="true"><path d="M-30 470 C 250 480 400 700 620 690 S 1050 330 1300 300 S 1560 420 1700 520 S 1900 565 2030 540"/></svg>
+          <img class="d-drum" src="carvaan/device-drum.webp" alt="">
+          <img class="d-me" src="carvaan/me-thinking.webp" alt="">
+          <img class="d-upi" src="carvaan/device-upi.webp" alt="">
+          <img class="d-label" src="carvaan/device-labelmaker.webp" alt="">
         </div>
-        <div class="cv-devices">
-          <figure class="cv-device"><img src="carvaan/device-upi.webp" alt="Paytm UPI soundbox" loading="lazy"><figcaption>UPI box</figcaption></figure>
-          <figure class="cv-device"><img src="carvaan/device-labelmaker.webp" alt="DYMO label maker" loading="lazy"><figcaption>Label maker</figcaption></figure>
-          <figure class="cv-device"><img src="carvaan/device-drum.webp" alt="Alesis drum machine" loading="lazy"><figcaption>Drum machine</figcaption></figure>
+        <div class="cv-hunt__txt">
+          <h2 class="sec__h">Finding that wasn’t easy</h2>
+          <p class="prose">I tried the UPI box. Then a label maker. Even a drum machine.</p>
         </div>
-        <figcaption class="cap">Three devices with a display and a flow — none of them felt like mine.</figcaption>
 
         <h3 class="sub__h">Why Carvaan? Because it felt like me.</h3>
         <div class="cv-duo">
@@ -615,26 +630,21 @@
       <section id="problems" class="sec">
         <div class="eyebrow">03 · The initial problems</div>
         <h2 class="sec__h">Beautiful looks. Complicated operation.</h2>
-        <div class="cv-duo">
-          <div>
-            <p class="prose"><strong>Key pain points:</strong></p>
-            <ul class="cv-list cv-list--x">
-              <li>No preview of the next song</li>
-              <li>Inconsistent display vs playback</li>
-              <li>100+ clicks to reach one song</li>
-              <li>No sense of “where am I in this list?”</li>
-            </ul>
-          </div>
-          <figure class="cv-art"><img src="carvaan/me-laptop.webp" alt="Reading through Carvaan reviews on a laptop" loading="lazy"></figure>
+        <p class="prose"><strong>Key pain points:</strong></p>
+        <ul class="cv-list cv-list--x cv-list--cols">
+          <li>No preview of the next song</li>
+          <li>Inconsistent display vs playback</li>
+          <li>100+ clicks to reach one song</li>
+          <li>No sense of “where am I in this list?”</li>
+        </ul>
+        <div class="cv-comp cv-rev" role="group" aria-label="Reading customer reviews of the Carvaan">
+          <img class="r-me" src="carvaan/me-laptop.webp" alt="Reading through Carvaan reviews on a laptop" loading="lazy">
+          <img class="cv-r r1" src="carvaan/review-1.webp" alt="1 star — Product not useful and too much overpriced" loading="lazy">
+          <img class="cv-r r2" src="carvaan/review-2.webp" alt="3 stars — Beautiful looks. Complicated operation" loading="lazy">
+          <img class="cv-r r3" src="carvaan/review-3.webp" alt="1 star — Great concept but very poor manufacture quality" loading="lazy">
+          <img class="cv-r r4" src="carvaan/review-4.webp" alt="1 star — Worst experience and faulty product" loading="lazy">
+          <img class="cv-r r5" src="carvaan/review-5.webp" alt="1 star — Bad service. Beware. Faulty wifi genre playing" loading="lazy">
         </div>
-        <div class="cv-board" role="group" aria-label="Customer reviews of the Carvaan">
-          <img src="carvaan/review-1.webp" alt="1 star — Product not useful and too much overpriced" loading="lazy">
-          <img src="carvaan/review-2.webp" alt="3 stars — Beautiful looks. Complicated operation" loading="lazy">
-          <img src="carvaan/review-3.webp" alt="1 star — Great concept but very poor manufacture quality" loading="lazy">
-          <img src="carvaan/review-4.webp" alt="1 star — Worst experience and faulty product" loading="lazy">
-          <img src="carvaan/review-5.webp" alt="1 star — Bad service. Beware. Faulty wifi genre playing" loading="lazy">
-        </div>
-        <figcaption class="cap">What buyers were already saying in public reviews.</figcaption>
       </section>
 
       <!-- 04 — USERS -->
@@ -646,16 +656,17 @@
           <blockquote class="cv-say">It’s awkward to play a particular song when guests are around.</blockquote>
           <blockquote class="cv-say">When someone requests a song, I just use my phone and open YouTube.</blockquote>
         </div>
-        <div class="cv-people">
-          <figure class="cv-person"><img src="carvaan/user-sheetal.webp" alt="Sheetal aunty" loading="lazy"><figcaption>Sheetal aunty</figcaption></figure>
-          <figure class="cv-person"><img src="carvaan/user-dadaji.webp" alt="Dada Ji" loading="lazy"><figcaption>Dada Ji</figcaption></figure>
-          <figure class="cv-person"><img src="carvaan/user-nanaji.webp" alt="Nana Ji" loading="lazy"><figcaption>Nana Ji</figcaption></figure>
-          <figure class="cv-person"><img src="carvaan/user-me.webp" alt="Me, trying the Carvaan" loading="lazy"><figcaption>Me</figcaption></figure>
+        <div class="cv-comp cv-ppl" role="group" aria-label="The people I spoke to">
+          <img class="p-sheetal" src="carvaan/user-sheetal.webp" alt="Sheetal aunty" loading="lazy">
+          <img class="p-dada" src="carvaan/user-dadaji.webp" alt="Dada Ji" loading="lazy">
+          <img class="p-me" src="carvaan/user-me.webp" alt="Me, trying the Carvaan" loading="lazy">
+          <img class="p-nana" src="carvaan/user-nanaji.webp" alt="Nana Ji" loading="lazy">
         </div>
+        <div class="cv-ppl__names" aria-hidden="true"><span>Sheetal aunty</span><span>Dada Ji</span><span>Me</span><span>Nana Ji</span></div>
         <p class="prose" style="margin-top:22px">The issue wasn’t usability alone — it was the <mark class="hl">disconnect between emotion and control</mark>.</p>
 
         <h3 class="sub__h">Empathy map</h3>
-        <figure class="cv-sheet"><img src="carvaan/empathy-map.webp" alt="Empathy map — Says, Thinks, Does, Feel" loading="lazy"></figure>
+        <figure class="cv-img cv-img--mid"><img src="carvaan/empathy-map.webp" alt="Empathy map — Says, Thinks, Does, Feel" loading="lazy"></figure>
         <p class="cv-callout"><small>Outcome</small>Users don’t just want music — they want to relive memories effortlessly.</p>
       </section>
 
@@ -669,10 +680,10 @@
           <li>They redirected me from “fixing UI” to “understanding emotions, memories, and context.”</li>
         </ul>
         <p class="prose">This moment <mark class="hl">shifted the entire project</mark>.</p>
-        <div class="cv-trio">
-          <img src="carvaan/faculty-2.webp" alt="" loading="lazy">
-          <img src="carvaan/faculty-1.webp" alt="" loading="lazy">
-          <img src="carvaan/faculty-3.webp" alt="" loading="lazy">
+        <div class="cv-comp cv-fac" role="img" aria-label="Rethinking the project">
+          <img class="f1" src="carvaan/faculty-2.webp" alt="" loading="lazy">
+          <img class="f2" src="carvaan/faculty-3.webp" alt="" loading="lazy">
+          <img class="f3" src="carvaan/faculty-1.webp" alt="" loading="lazy">
         </div>
       </section>
 
@@ -694,8 +705,7 @@
         <p class="prose">To see where the experience was failing, I broke the journey into a task analysis. A simple goal of playing <em>“Lag Jaa Gale”</em> turned into endless skipping with no sense of progress.</p>
         <p class="prose">It became clear that finding one song <mark class="hl">wasn’t slow… it was uncertain</mark>.</p>
         <span class="cv-goal"><b>Goal</b>Play a specific song quickly and easily on the Saregama Carvaan.</span>
-        <figure class="cv-sheet"><img src="carvaan/task-analysis.webp" alt="Task analysis — switch on device, select artist, change song, play specific song" loading="lazy"></figure>
-        <figcaption class="cap">Switch on → select artist → change song → finally play the right one. Every step in bold is where people got lost.</figcaption>
+        <figure class="cv-wire"><img src="carvaan/task-analysis.webp" alt="Task analysis — switch on device, select artist, change song, play specific song" loading="lazy"><figcaption>Switch on → select artist → change song → finally play the right one. Every step in bold is where people got lost.</figcaption></figure>
       </section>
 
       <!-- 08 — HMW -->
@@ -704,7 +714,7 @@
         <h2 class="sec__h">How might we?</h2>
         <p class="prose">The task analysis revealed the real pain: <mark class="hl">blind navigation, endless skipping, no sense of progress</mark>. The next step was to reframe that frustration into design opportunities.</p>
         <div class="cv-hmw">
-          <figure class="cv-hmw__img"><img src="carvaan/hmw.webp" alt="“How might we?” handwritten" loading="lazy"></figure>
+          <img src="carvaan/hmw.webp" alt="“How might we?” handwritten" loading="lazy">
           <ol>
             <li>How might we give users a clear sense of “where they are” while browsing?</li>
             <li>How might we find 1 song in a list of 5,000?</li>
@@ -719,16 +729,18 @@
         <h2 class="sec__h">“Old systems were more intuitive than we think.”</h2>
         <p class="prose">People identified songs through movies, not titles. They checked cassette covers, flipped them, read track numbers, and estimated time while fast-forwarding.</p>
         <p class="prose">Older AM transistors made navigation intuitive with <mark class="hl">two dials</mark>: one for tuning between 1–10 and another for refining 10–100. Both systems were predictable, physical, and rooted in muscle memory — familiar rituals that made searching feel effortless.</p>
-        <div class="cv-past">
-          <figure><img src="carvaan/old-cassette-player.webp" alt="Portable cassette player with tapes" loading="lazy"><figcaption>Cassettes · flip, read, fast-forward</figcaption></figure>
-          <figure><img src="carvaan/old-transistor.webp" alt="AM transistor radio" loading="lazy"><figcaption>AM transistor · two dials</figcaption></figure>
-          <figure><img src="carvaan/note-2.webp" alt="" loading="lazy" style="padding:14%"><figcaption>Muscle memory</figcaption></figure>
+        <div class="cv-comp cv-old" role="img" aria-label="A cassette player and an AM transistor radio on a line">
+          <svg class="cv-wave" viewBox="0 0 1440 400" preserveAspectRatio="none" aria-hidden="true"><path d="M-20 190 C 120 190 200 228 330 216 S 560 180 700 178 S 900 170 1050 200 S 1300 185 1460 110"/></svg>
+          <img class="n n3" src="carvaan/note-3.webp" alt="">
+          <img class="o-cas" src="carvaan/old-cassette-player.webp" alt="" loading="lazy">
+          <img class="n n1" src="carvaan/note-1.webp" alt="">
+          <img class="o-radio" src="carvaan/old-transistor.webp" alt="" loading="lazy">
+          <img class="n n2" src="carvaan/note-2.webp" alt="">
         </div>
         <div class="cv-fam">
-          <img class="cv-note cv-note--1" src="carvaan/note-1.webp" alt="">
-          <img class="cv-note cv-note--3" src="carvaan/note-3.webp" alt="">
-          <div class="cv-fam__w">Familiarity<small>The redesign borrows the rituals people already know, instead of teaching new ones.</small></div>
-          <img class="cv-cas" src="carvaan/old-cassette.webp" alt="TDK cassette tape" loading="lazy">
+          <div class="cv-fam__w">Familiarity</div>
+          <img src="carvaan/old-cassette.webp" alt="TDK cassette tape" loading="lazy">
+          <p class="prose">The redesign borrows the rituals people already know, instead of teaching new ones.</p>
         </div>
       </section>
 
@@ -747,10 +759,8 @@
             <div class="cv-sol__p"><span class="cv-sol__k">Problem 01</span>Finding one song meant skipping blindly through 5,000 tracks.</div>
             <div class="cv-sol__s"><span class="cv-sol__k">Solution 01</span>Two rotary dials: the left dial selects the folder (Movie / Artist / Mood / Songs), the right dial selects the exact song — no guessing, no gambling.</div>
           </div>
-          <div class="cv-wire cv-wire--2">
-            <figure><img src="carvaan/wire-navigate.webp" alt="Wireframe — how to navigate with the two dials" loading="lazy"><figcaption>How to navigate</figcaption></figure>
-            <figure><img src="carvaan/wire-sections.webp" alt="Wireframe — folder and song sections on screen" loading="lazy"><figcaption>See the folder &amp; the song at once</figcaption></figure>
-          </div>
+          <figure class="cv-wire"><img src="carvaan/wire-navigate.webp" alt="Wireframe — how to navigate with the two dials" loading="lazy"><figcaption>How to navigate</figcaption></figure>
+          <figure class="cv-wire"><img src="carvaan/wire-sections.webp" alt="Wireframe — folder and song sections on screen" loading="lazy"><figcaption>See the folder &amp; the song at once</figcaption></figure>
         </div>
 
         <div class="cv-sol">
@@ -758,9 +768,7 @@
             <div class="cv-sol__p"><span class="cv-sol__k">Problem 02</span>Carvaan had no playlist or favourites — users couldn’t save what they loved.</div>
             <div class="cv-sol__s"><span class="cv-sol__k">Solution 02</span>Double-tap to “Like.” The song is instantly added to a Liked Songs playlist and moves higher inside its category.<em>Just like making your own mixtape — but without the tape.</em></div>
           </div>
-          <div class="cv-wire">
-            <figure><img src="carvaan/wire-favourites.webp" alt="Wireframe — how to see your favourite albums or songs" loading="lazy"><figcaption>How to see your favourite albums or songs</figcaption></figure>
-          </div>
+          <figure class="cv-wire"><img src="carvaan/wire-favourites.webp" alt="Wireframe — how to see your favourite albums or songs" loading="lazy"><figcaption>How to see your favourite albums or songs</figcaption></figure>
         </div>
 
         <div class="cv-sol">
@@ -768,9 +776,7 @@
             <div class="cv-sol__p"><span class="cv-sol__k">Problem 03</span>The experience felt nostalgic in look, but not in feel.</div>
             <div class="cv-sol__s"><span class="cv-sol__k">Solution 03</span>Retro cues built with purpose: pixel portraits, a cassette-loading animation, subtle mechanical ticks.<em>Not decoration — emotional memory triggers.</em></div>
           </div>
-          <div class="cv-wire">
-            <figure><img src="carvaan/wire-like.webp" alt="Wireframe — liking a song and the retro feedback" loading="lazy"><figcaption>Like → feedback → Liked Songs</figcaption></figure>
-          </div>
+          <figure class="cv-wire"><img src="carvaan/wire-like.webp" alt="Wireframe — liking a song and the retro feedback" loading="lazy"><figcaption>Like → feedback → Liked Songs</figcaption></figure>
         </div>
 
         <h3 class="sub__h">Why this works</h3>
@@ -784,7 +790,7 @@
               <li>Emotional continuity preserved</li>
             </ul>
           </div>
-          <figure class="cv-me"><img src="carvaan/me-carvaan.webp" alt="Holding the Carvaan" loading="lazy"></figure>
+          <figure class="cv-art"><img src="carvaan/me-carvaan.webp" alt="Holding the Carvaan" loading="lazy"></figure>
         </div>
       </section>
 
@@ -832,6 +838,23 @@
     },{rootMargin:'0px 0px -18% 0px', threshold:0.9});
     hls.forEach(function(h){ ho.observe(h); });
   } else { hls.forEach(function(h){ h.classList.add('is-lit'); }); }
+
+  // full-width figures: fade the side nav out while one is on screen
+  var wides=[].slice.call(document.querySelectorAll('.cv-wire')), on=new Set();
+  if('IntersectionObserver' in window && wides.length){
+    var wo=new IntersectionObserver(function(es){
+      es.forEach(function(e){ if(e.isIntersecting) on.add(e.target); else on.delete(e.target); });
+      document.body.classList.toggle('cv-noside', on.size>0);
+    },{rootMargin:'-10% 0px -10% 0px'});
+    wides.forEach(function(w){ wo.observe(w); });
+  }
+
+  // click a wireframe to see it at full size
+  var zoom=document.createElement('div'); zoom.className='cv-zoom'; zoom.setAttribute('role','dialog'); zoom.setAttribute('aria-label','Enlarged image, click to close');
+  var zimg=document.createElement('img'); zoom.appendChild(zimg); document.body.appendChild(zoom);
+  wides.forEach(function(w){ var im=w.querySelector('img'); im.addEventListener('click',function(){ zimg.src=im.src; zimg.alt=im.alt; zoom.classList.add('is-on'); zoom.scrollTop=0; }); });
+  zoom.addEventListener('click',function(){ zoom.classList.remove('is-on'); });
+  document.addEventListener('keydown',function(e){ if(e.key==='Escape') zoom.classList.remove('is-on'); });
 })();
 </script>
 </html>
