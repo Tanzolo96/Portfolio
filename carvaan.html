@@ -558,7 +558,7 @@ body.cv-noside .side{opacity:0;pointer-events:none}
 @media (max-width:840px){.cv-hmw__list{grid-template-columns:1fr}}
 
 /* Familiarity: cassette pinned while scrolling, then swapped for the word */
-.cv-fam{position:relative;height:170vh;margin-top:8px}
+.cv-fam{position:relative;height:170vh;margin-top:clamp(64px,9vw,120px)}
 .cv-fam__stick{position:sticky;top:max(70px,calc(50vh - 260px));text-align:center}
 .cv-fam__stage{position:relative;width:min(560px,86%);margin:0 auto;aspect-ratio:1600/1040}
 .cv-fam__cas{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;will-change:opacity,transform}
@@ -575,9 +575,9 @@ body.cv-noside .side{opacity:0;pointer-events:none}
 }
 
 /* looking back: two devices on one baseline */
-.cv-old{margin-top:22px;display:grid;grid-template-columns:1.3fr 1fr;gap:clamp(24px,5vw,72px);align-items:end;max-width:760px;margin-left:auto;margin-right:auto}
+.cv-old{margin-top:28px;display:grid;grid-template-columns:1fr 1fr;gap:clamp(24px,5vw,64px);align-items:end;max-width:600px;margin-left:auto;margin-right:auto}
 .cv-old figure{margin:0}
-.cv-old img{display:block;width:100%;height:auto}
+.cv-old img{display:block;width:100%;height:clamp(110px,14vw,190px);object-fit:contain;object-position:center bottom}
 .cv-old figcaption{margin-top:12px;padding-top:10px;border-top:1px solid var(--line);font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--sub)}
 .cv-old figcaption b{display:block;margin-bottom:3px;font-weight:500;color:var(--ink)}
 @media (max-width:600px){.cv-old{grid-template-columns:1fr 1fr;gap:16px}.cv-old figcaption{font-size:10px;letter-spacing:.04em}}
