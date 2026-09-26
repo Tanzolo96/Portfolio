@@ -783,6 +783,14 @@ if(window.matchMedia('(hover: hover) and (pointer: fine)').matches){
     a.href = 'https://mail.google.com/mail/?view=cm&fs=1&to='+encodeURIComponent(to);
     a.target = '_blank';
     a.rel = 'noopener';
+    // Open compose in a compact window, like Gmail's compose widget; fall back to a new tab if blocked.
+    a.addEventListener('click', function(ev){
+      var w = 620, h = 640;
+      var left = window.screenX + Math.max(0, window.outerWidth - w - 40);
+      var top = window.screenY + Math.max(0, window.outerHeight - h - 40);
+      var win = window.open(a.href, 'gmail-compose', 'popup,width='+w+',height='+h+',left='+left+',top='+top);
+      if(win){ ev.preventDefault(); try{ win.opener = null; }catch(e){} }
+    });
   });
 }
 </script>
