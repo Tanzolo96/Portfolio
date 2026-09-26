@@ -391,11 +391,13 @@ body.cv-noside .side{opacity:0;pointer-events:none}
 
 /* the device hunt: devices riding a line, me in the middle */
 .cv-hunt{aspect-ratio:2000/794;margin-top:10px}
+.cv-hunt .cv-wave{z-index:0}
 .cv-hunt .cv-wave path{stroke-width:44}
-.cv-hunt .d-drum{left:5.8%;top:50%;width:14.4%}
-.cv-hunt .d-me{left:34%;top:29.5%;width:36%}
-.cv-hunt .d-upi{left:65.5%;top:18.5%;width:11.8%}
-.cv-hunt .d-label{left:82.3%;top:43%;width:11.6%}
+.cv-hunt > img{z-index:1;mix-blend-mode:normal}
+.cv-hunt .d-drum{left:2.5%;top:38%;width:20%}
+.cv-hunt .d-me{left:32%;top:29.5%;width:36%}
+.cv-hunt .d-upi{left:63.5%;top:6%;width:16%}
+.cv-hunt .d-label{left:81.5%;top:36%;width:16%}
 .cv-hunt__txt{display:grid;grid-template-columns:auto 1fr;gap:clamp(20px,4vw,56px);align-items:start;margin-top:6px}
 .cv-hunt__txt .sec__h{margin-top:0}
 .cv-hunt__txt .prose{margin-top:0}
@@ -458,8 +460,7 @@ body.cv-noside .side{opacity:0;pointer-events:none}
 .cv-hmw li::before{content:"0" counter(h);position:absolute;left:0;top:3px;font-family:var(--mono);font-size:12px;font-weight:400;color:var(--accent)}
 
 /* looking back: devices on a line + familiarity */
-.cv-old{aspect-ratio:1440/400;margin-top:16px}
-.cv-old .cv-wave path{stroke-width:22}
+.cv-old{aspect-ratio:1440/330;margin-top:16px}
 .cv-old .o-cas{left:19%;top:5%;width:27%}
 .cv-old .o-radio{left:60.5%;top:0;width:20.5%}
 .cv-old .n{opacity:.9}
@@ -730,7 +731,6 @@ body.cv-noside .side{opacity:0;pointer-events:none}
         <p class="prose">People identified songs through movies, not titles. They checked cassette covers, flipped them, read track numbers, and estimated time while fast-forwarding.</p>
         <p class="prose">Older AM transistors made navigation intuitive with <mark class="hl">two dials</mark>: one for tuning between 1–10 and another for refining 10–100. Both systems were predictable, physical, and rooted in muscle memory — familiar rituals that made searching feel effortless.</p>
         <div class="cv-comp cv-old" role="img" aria-label="A cassette player and an AM transistor radio on a line">
-          <svg class="cv-wave" viewBox="0 0 1440 400" preserveAspectRatio="none" aria-hidden="true"><path d="M-20 190 C 120 190 200 228 330 216 S 560 180 700 178 S 900 170 1050 200 S 1300 185 1460 110"/></svg>
           <img class="n n3" src="carvaan/note-3.webp" alt="">
           <img class="o-cas" src="carvaan/old-cassette-player.webp" alt="" loading="lazy">
           <img class="n n1" src="carvaan/note-1.webp" alt="">
