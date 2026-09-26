@@ -496,7 +496,8 @@ body.cv-noside .side{opacity:0;pointer-events:none}
 .cv-wire{margin:18px 0 0;display:block}
 .cv-wire img{display:block;width:100%;height:auto;cursor:zoom-in}
 .cv-wire figcaption{margin-top:8px;font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--sub)}
-@media (min-width:841px){.cv-wire{margin-left:-324px}}
+@media (min-width:841px){.cv-wire:not(.cv-wire--in){margin-left:-324px}}
+.cv-wire--in{max-width:760px;margin-left:auto;margin-right:auto}
 .cv-zoom{position:fixed;inset:0;z-index:100;background:rgba(251,251,250,.97);display:none;overflow:auto;cursor:zoom-out}
 .cv-zoom.is-on{display:block}
 .cv-zoom img{display:block;width:max(1600px,100%);max-width:none;height:auto;margin:0 auto}
@@ -530,6 +531,41 @@ body.cv-noside .side{opacity:0;pointer-events:none}
   .cv-rev .r-me{order:9;width:92%;margin-top:8px}
 }
 @media (prefers-reduced-motion:reduce){.cv-knob{animation:none}}
+
+/* hover testimonials on the people row */
+.cv-pplwrap{position:relative;margin-top:clamp(70px,9vw,110px)}
+.cv-pplwrap .cv-ppl{margin-top:0}
+.cv-ppl img{transition:opacity .25s ease}
+.cv-pplwrap[data-active] .cv-ppl img{opacity:.22}
+.cv-pplwrap[data-active="sheetal"] .cv-ppl img.p-sheetal,.cv-pplwrap[data-active="dada"] .cv-ppl img.p-dada,.cv-pplwrap[data-active="nana"] .cv-ppl img.p-nana{opacity:1}
+.cv-hot{position:absolute;top:0;bottom:0;margin:0;padding:0;border:0;background:none;cursor:pointer;z-index:2;-webkit-tap-highlight-color:transparent}
+.cv-hot:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.h-sheetal{left:0;width:21%}
+.h-dada{left:21%;width:21%}
+.h-nana{left:62%;width:38%}
+.cv-bub{position:absolute;left:50%;bottom:calc(100% - 12px);width:max-content;max-width:min(300px,70vw);transform:translate(-50%,8px);opacity:0;pointer-events:none;
+  background:var(--ink);color:#fff;border-radius:14px;padding:11px 15px;font-family:var(--display);font-size:clamp(14px,1.4vw,16.5px);font-weight:600;letter-spacing:-0.01em;line-height:1.3;text-align:left;
+  transition:opacity .22s ease,transform .22s ease;box-shadow:0 10px 24px -14px rgba(0,0,0,.5)}
+.cv-bub::before{content:"“";color:#8fa8ff}
+.cv-bub::after{content:"”";color:#8fa8ff}
+.cv-bub i{display:none}
+.cv-bub{--tail:0}
+.cv-hot::after{content:"";position:absolute;left:50%;bottom:calc(100% - 13px);width:12px;height:12px;background:var(--ink);transform:translate(-50%,8px) rotate(45deg);opacity:0;transition:opacity .22s ease,transform .22s ease;pointer-events:none}
+.cv-hot.is-on .cv-bub{opacity:1;transform:translate(-50%,-6px)}
+.cv-hot.is-on::after{opacity:1;transform:translate(-50%,0) rotate(45deg)}
+.h-sheetal .cv-bub{left:0;transform:translate(0,8px)}
+.h-sheetal.is-on .cv-bub{transform:translate(0,-6px)}
+.h-nana .cv-bub{left:auto;right:0;transform:translate(0,8px)}
+.h-nana.is-on .cv-bub{transform:translate(0,-6px)}
+.cv-ppl__hint{margin-top:6px}
+
+/* HMW: handwritten image as the heading, questions below */
+.cv-hmw__title{margin:14px 0 6px;font-size:0}
+.cv-hmw__title img{display:block;width:min(560px,90%);height:auto;margin:0 auto}
+.cv-hmw__list{list-style:none;margin:22px 0 0;padding:0;display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(16px,2.4vw,28px);counter-reset:h}
+.cv-hmw__list li{counter-increment:h;padding-top:12px;border-top:2px solid var(--ink);font-family:var(--display);font-size:clamp(17px,1.7vw,19px);font-weight:600;letter-spacing:-0.01em;line-height:1.35;color:var(--ink)}
+.cv-hmw__list li::before{content:"0" counter(h);display:block;margin-bottom:8px;font-family:var(--mono);font-size:12px;font-weight:400;color:var(--accent)}
+@media (max-width:840px){.cv-hmw__list{grid-template-columns:1fr}}
 </style>
 
 
@@ -652,18 +688,19 @@ body.cv-noside .side{opacity:0;pointer-events:none}
       <section id="users" class="sec">
         <div class="eyebrow">04 · Talking to real users</div>
         <h2 class="sec__h">Everyone loved the nostalgia but struggled with control</h2>
-        <div class="cv-says">
-          <blockquote class="cv-say">Too many clicks.</blockquote>
-          <blockquote class="cv-say">It’s awkward to play a particular song when guests are around.</blockquote>
-          <blockquote class="cv-say">When someone requests a song, I just use my phone and open YouTube.</blockquote>
+        <div class="cv-pplwrap" id="ppl">
+          <div class="cv-comp cv-ppl">
+            <img class="p-sheetal" src="carvaan/user-sheetal.webp" alt="Sheetal aunty" loading="lazy">
+            <img class="p-dada" src="carvaan/user-dadaji.webp" alt="Dada Ji" loading="lazy">
+            <img class="p-me" src="carvaan/user-me.webp" alt="Me, trying the Carvaan" loading="lazy">
+            <img class="p-nana" src="carvaan/user-nanaji.webp" alt="Nana Ji" loading="lazy">
+          </div>
+          <button type="button" class="cv-hot h-sheetal" data-who="sheetal" aria-label="Sheetal aunty says"><span class="cv-bub">Too many clicks.</span></button>
+          <button type="button" class="cv-hot h-dada" data-who="dada" aria-label="Dada Ji says"><span class="cv-bub">It’s awkward to play a particular song when guests are around.</span></button>
+          <button type="button" class="cv-hot h-nana" data-who="nana" aria-label="Nana Ji says"><span class="cv-bub">When someone requests a song, I just use my phone and open YouTube.</span></button>
         </div>
-        <div class="cv-comp cv-ppl" role="group" aria-label="The people I spoke to">
-          <img class="p-sheetal" src="carvaan/user-sheetal.webp" alt="Sheetal aunty" loading="lazy">
-          <img class="p-dada" src="carvaan/user-dadaji.webp" alt="Dada Ji" loading="lazy">
-          <img class="p-me" src="carvaan/user-me.webp" alt="Me, trying the Carvaan" loading="lazy">
-          <img class="p-nana" src="carvaan/user-nanaji.webp" alt="Nana Ji" loading="lazy">
-        </div>
-        <div class="cv-ppl__names" aria-hidden="true"><span>Sheetal aunty</span><span>Dada Ji</span><span>Me</span><span>Nana Ji</span></div>
+        <div class="cv-ppl__names"><span>Sheetal aunty</span><span>Dada Ji</span><span>Me</span><span>Nana Ji</span></div>
+        <p class="cap cv-ppl__hint">Hover or tap each person to hear what they said</p>
         <p class="prose" style="margin-top:22px">The issue wasn’t usability alone — it was the <mark class="hl">disconnect between emotion and control</mark>.</p>
 
         <h3 class="sub__h">Empathy map</h3>
@@ -706,22 +743,19 @@ body.cv-noside .side{opacity:0;pointer-events:none}
         <p class="prose">To see where the experience was failing, I broke the journey into a task analysis. A simple goal of playing <em>“Lag Jaa Gale”</em> turned into endless skipping with no sense of progress.</p>
         <p class="prose">It became clear that finding one song <mark class="hl">wasn’t slow… it was uncertain</mark>.</p>
         <span class="cv-goal"><b>Goal</b>Play a specific song quickly and easily on the Saregama Carvaan.</span>
-        <figure class="cv-wire"><img src="carvaan/task-analysis.webp" alt="Task analysis — switch on device, select artist, change song, play specific song" loading="lazy"><figcaption>Switch on → select artist → change song → finally play the right one. Every step in bold is where people got lost.</figcaption></figure>
+        <figure class="cv-wire cv-wire--in"><img src="carvaan/task-analysis.webp" alt="Task analysis — switch on device, select artist, change song, play specific song" loading="lazy"><figcaption>Switch on → select artist → change song → finally play the right one. Every step in bold is where people got lost.</figcaption></figure>
       </section>
 
       <!-- 08 — HMW -->
       <section id="hmw" class="sec">
         <div class="eyebrow">08 · Reframing</div>
-        <h2 class="sec__h">How might we?</h2>
+        <h2 class="cv-hmw__title"><img src="carvaan/hmw.webp" alt="How might we?" loading="lazy"></h2>
         <p class="prose">The task analysis revealed the real pain: <mark class="hl">blind navigation, endless skipping, no sense of progress</mark>. The next step was to reframe that frustration into design opportunities.</p>
-        <div class="cv-hmw">
-          <img src="carvaan/hmw.webp" alt="“How might we?” handwritten" loading="lazy">
-          <ol>
-            <li>How might we give users a clear sense of “where they are” while browsing?</li>
-            <li>How might we find 1 song in a list of 5,000?</li>
-            <li>How might we give elderly users more control without adding complexity?</li>
-          </ol>
-        </div>
+        <ol class="cv-hmw__list">
+          <li>How might we give users a clear sense of “where they are” while browsing?</li>
+          <li>How might we find 1 song in a list of 5,000?</li>
+          <li>How might we give elderly users more control without adding complexity?</li>
+        </ol>
       </section>
 
       <!-- 09 — LOOKING BACK -->
@@ -846,7 +880,7 @@ body.cv-noside .side{opacity:0;pointer-events:none}
       es.forEach(function(e){ if(e.isIntersecting) on.add(e.target); else on.delete(e.target); });
       document.body.classList.toggle('cv-noside', on.size>0);
     },{rootMargin:'-10% 0px -10% 0px'});
-    wides.forEach(function(w){ wo.observe(w); });
+    wides.forEach(function(w){ if(!w.classList.contains('cv-wire--in')) wo.observe(w); });
   }
 
   // click a wireframe to see it at full size
@@ -855,6 +889,19 @@ body.cv-noside .side{opacity:0;pointer-events:none}
   wides.forEach(function(w){ var im=w.querySelector('img'); im.addEventListener('click',function(){ zimg.src=im.src; zimg.alt=im.alt; zoom.classList.add('is-on'); zoom.scrollTop=0; }); });
   zoom.addEventListener('click',function(){ zoom.classList.remove('is-on'); });
   document.addEventListener('keydown',function(e){ if(e.key==='Escape') zoom.classList.remove('is-on'); });
+  // people row: show each person's quote on hover / tap (not on me)
+  var pw=document.getElementById('ppl');
+  if(pw){
+    var hots=[].slice.call(pw.querySelectorAll('.cv-hot'));
+    function act(h){ hots.forEach(function(x){ x.classList.toggle('is-on', x===h); }); if(h) pw.setAttribute('data-active',h.dataset.who); else pw.removeAttribute('data-active'); }
+    hots.forEach(function(h){
+      h.addEventListener('mouseenter',function(){ act(h); });
+      h.addEventListener('mouseleave',function(){ act(null); });
+      h.addEventListener('focus',function(){ act(h); h._t=Date.now(); });
+      h.addEventListener('blur',function(){ act(null); });
+      h.addEventListener('click',function(e){ e.preventDefault(); if(Date.now()-(h._t||0)<500) return; act(h.classList.contains('is-on') ? null : h); });
+    });
+  }
 })();
 </script>
 </html>
