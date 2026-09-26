@@ -386,6 +386,8 @@
   .grid--3::-webkit-scrollbar{display:none}
   .grid--3 > *{flex:0 0 72%;scroll-snap-align:start}
 }
+
+@media (max-width:840px){.feat__preview{margin-top:0;position:static}.feat__preview .pshot{max-width:260px}}
 </style>
 
 
@@ -588,7 +590,7 @@
       <section id="features" class="sec">
         <div class="eyebrow">What shipped</div>
         <h2 class="sec__h">Features</h2>
-        <p class="prose">Pick a screen — it shows up on the right.</p>
+        <p class="prose">Pick a screen to preview it.</p>
         <div class="feat">
           <div class="feat__list" id="featList">
             <button class="feat__item" data-feat="rnd" aria-current="true"><b>Outfit Randomizer</b><span>One-tap full looks — auto-shuffling.</span></button>

@@ -146,6 +146,20 @@
     html{scroll-behavior:auto}
     *,.sw,.pcard,.pcard__img,.ar{transition:none!important}
   }
+
+/* ---- phone ---- */
+@media (max-width:600px){
+  .nav{gap:12px}
+  .nav__mark{font-size:11px;letter-spacing:.08em;white-space:nowrap}
+  .nav__links{font-size:10.5px;letter-spacing:.06em;gap:10px}
+  .nav__links a[href$="#capabilities"]{display:none}
+}
+@media (max-width:560px){
+  .ab-scatter{justify-items:center;gap:36px}
+  .ab-scatter .pcard{width:min(276px,82%)}
+  .ab-scatter .pcard:nth-child(odd){transform:rotate(-2.5deg)}
+  .ab-scatter .pcard:nth-child(even){transform:rotate(2.5deg)}
+}
 </style>
 
 <header>
