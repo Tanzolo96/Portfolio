@@ -396,7 +396,7 @@ body.cv-noside .side{opacity:0;pointer-events:none}
 .cv-hunt > img{z-index:1;mix-blend-mode:normal}
 .cv-hunt .d-drum{left:2.5%;top:38%;width:20%}
 .cv-hunt .d-me{left:32%;top:29.5%;width:36%}
-.cv-hunt .d-upi{left:63.5%;top:6%;width:16%}
+.cv-hunt .d-upi{left:63.5%;top:13%;width:16%}
 .cv-hunt .d-label{left:81.5%;top:36%;width:16%}
 .cv-hunt__txt{display:grid;grid-template-columns:auto 1fr;gap:clamp(20px,4vw,56px);align-items:start;margin-top:6px}
 .cv-hunt__txt .sec__h{margin-top:0}
@@ -581,6 +581,23 @@ body.cv-noside .side{opacity:0;pointer-events:none}
 .cv-old figcaption{margin-top:12px;padding-top:10px;border-top:1px solid var(--line);font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--sub)}
 .cv-old figcaption b{display:block;margin-bottom:3px;font-weight:500;color:var(--ink)}
 @media (max-width:600px){.cv-old{grid-template-columns:1fr 1fr;gap:16px}.cv-old figcaption{font-size:10px;letter-spacing:.04em}}
+
+/* ---- type weights: 700 headings · 500 emphasis · 400 everything else ---- */
+.side__title,.hook__h,.sec__h,.sub__h,.stat,.cv-q{font-weight:700}
+.cv-callout,.cv-bub,.cv-hmw__list li,.cv-fam__w,.cv-say{font-weight:500}
+.content strong,.content b,.content .prose em strong,.content .prose strong em{font-weight:500;color:var(--ink)}
+.cv-dfi__c--key p{font-weight:400;color:var(--ink)}
+.cv-goal b,.cv-dial b,.cv-old figcaption b,.cv-sol__k,.cv-dfi__k,.cv-callout small,.cv-hmw__list li::before{font-weight:400}
+.cv-old figcaption b{color:var(--ink)}
+.cover--cv .cv-mark b,.cv-end b{font-weight:400}
+.content h3,.content h2{font-weight:700}
+
+/* device section: heading stacked over its line; "Why Carvaan" as its own block */
+.cv-hunt__h{margin-top:clamp(18px,2.5vw,28px)}
+.cv-why{margin-top:clamp(44px,6vw,72px);padding-top:clamp(24px,3vw,36px);border-top:1px solid var(--line)}
+.cv-why .sub__h{margin-top:0;font-size:clamp(20px,2.2vw,24px);line-height:1.2}
+.cv-why .sub__h .dim{color:var(--faint)}
+.cv-why .sub__h + .prose{margin-top:14px}
 </style>
 
 
@@ -662,19 +679,19 @@ body.cv-noside .side{opacity:0;pointer-events:none}
           <img class="d-upi" src="carvaan/device-upi.webp" alt="">
           <img class="d-label" src="carvaan/device-labelmaker.webp" alt="">
         </div>
-        <div class="cv-hunt__txt">
-          <h2 class="sec__h">Finding that wasn’t easy</h2>
-          <p class="prose">I tried the UPI box. Then a label maker. Even a drum machine.</p>
-        </div>
+        <h2 class="sec__h cv-hunt__h">Finding that wasn’t easy</h2>
+        <p class="prose">I tried the UPI box. Then a label maker. Even a drum machine.</p>
 
-        <h3 class="sub__h">Why Carvaan? Because it felt like me.</h3>
+        <div class="cv-why">
         <div class="cv-duo">
           <div>
+            <h3 class="sub__h">Why Carvaan? <span class="dim">Because it felt like me.</span></h3>
             <p class="prose">I didn’t pick Carvaan for convenience; I liked it because it represented who I am: <mark class="hl">someone who loves simplicity, old memories, and meaningful design</mark>.</p>
             <p class="prose">But once I looked deeper, I realised something important:</p>
             <p class="cv-callout">Loving a product gives you blind spots. You stop seeing its flaws.</p>
           </div>
           <figure class="cv-art"><img src="carvaan/carvaan.webp" alt="Saregama Carvaan playing Lata Mangeshkar, crossed with a blue scribble" loading="lazy"></figure>
+        </div>
         </div>
       </section>
 
