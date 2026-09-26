@@ -204,7 +204,7 @@
       <p class="contact__lead">Let's build<br>something.</p>
       <div class="contact__media" aria-hidden="true"><video src="footer.mp4" autoplay muted loop playsinline preload="metadata"></video></div>
       <nav class="contact__links" aria-label="Contact">
-        <a href="mailto:maheshwary.tanish@gmail.com">maheshwary.tanish@gmail.com<span class="ar">↗</span></a>
+        <a href="mailto:maheshwary.tanish@gmail.com" data-email>Email<span class="ar">↗</span></a>
         <a href="https://www.linkedin.com/in/tanishmaheshwari/" target="_blank" rel="noopener">LinkedIn<span class="ar">↗</span></a>
         <a href="https://wasabie.in/" target="_blank" rel="noopener">Wasabie Studio<span class="ar">↗</span></a>
         <a href="https://www.instagram.com/tanish_maheshwary/" target="_blank" rel="noopener">Instagram<span class="ar">↗</span></a>
@@ -262,5 +262,16 @@
   initRoll('creatorroll',['wv01.mp4','wv02.mp4','wv03.mp4','wv04.mp4','wv05.mp4','wv06.mp4']);
   initRoll('nightroll',['nv01.mp4','nv02.mp4','nv03.mp4']);
 })();
+</script>
+<script>
+/* Email: Gmail compose on desktop/laptop, default mail app on phones/tablets */
+document.querySelectorAll('[data-email]').forEach(function(a){
+  a.addEventListener('click', function(ev){
+    if(!window.matchMedia('(hover: hover) and (pointer: fine)').matches) return;
+    ev.preventDefault();
+    var to = a.getAttribute('href').replace(/^mailto:/,'');
+    window.open('https://mail.google.com/mail/?view=cm&fs=1&to='+encodeURIComponent(to), '_blank', 'noopener');
+  });
+});
 </script>
 </html>
