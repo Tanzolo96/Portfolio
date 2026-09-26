@@ -366,10 +366,10 @@ body.cv-noside .side{opacity:0;pointer-events:none}
 .content img{mix-blend-mode:multiply}
 .sec{margin-top:clamp(40px,6vw,72px)}
 
-.cover--cv{background:transparent;border:0;border-radius:0;display:grid;grid-template-columns:1fr 1fr;align-items:center;padding:0 clamp(12px,4vw,60px);gap:clamp(12px,3vw,40px);aspect-ratio:5/2}
-.cover--cv .cv-mark{font-family:"Special Elite","Courier New",monospace;font-size:clamp(44px,8.4vw,120px);line-height:.92;letter-spacing:.02em;color:#1b1b1b;text-align:right}
+.cover--cv{background:transparent;border:0;border-radius:0;display:grid;grid-template-columns:1.25fr 1fr;grid-template-rows:100%;align-items:center;padding:0 clamp(12px,6vw,110px);gap:clamp(12px,3vw,40px);aspect-ratio:5/2}
+.cover--cv .cv-mark{font-family:"Special Elite","Courier New",monospace;font-size:clamp(44px,8.4vw,128px);line-height:.92;letter-spacing:.02em;color:#1b1b1b;text-align:left;justify-self:start}
 .cover--cv .cv-mark b{font-weight:400;color:#F2553D}
-.cover--cv img{width:100%;height:92%;object-fit:contain;align-self:end;mix-blend-mode:multiply}
+.cover--cv img{height:88%;width:auto;max-width:100%;object-fit:contain;justify-self:end;align-self:center;margin-right:6%;mix-blend-mode:multiply}
 
 .cv-q{margin-top:22px;font-family:var(--display);font-size:clamp(24px,3.1vw,36px);font-weight:700;font-style:italic;letter-spacing:-0.025em;line-height:1.12;color:var(--ink);text-wrap:balance}
 .cv-q .dim{color:var(--faint)}
@@ -508,9 +508,10 @@ body.cv-noside .side{opacity:0;pointer-events:none}
   .cv-hunt__txt{grid-template-columns:1fr;gap:8px}
 }
 @media (max-width:600px){
-  .cover--cv{aspect-ratio:auto;grid-template-columns:1fr;padding:24px 0 0;justify-items:center}
+  .cover--cv{aspect-ratio:auto;grid-template-columns:1fr;grid-template-rows:auto;padding:24px 0 0;justify-items:center}
   .cover--cv .cv-mark{text-align:center}
-  .cover--cv img{height:auto;max-width:280px}
+  .cover--cv img{height:auto;width:62%;max-width:240px;justify-self:center;margin:12px 0 0}
+  .cover--cv .cv-mark{justify-self:center}
   .cv-dials,.cv-sol__ps,.cv-list--cols{grid-template-columns:1fr}
   .cv-ppl__names{font-size:9px;letter-spacing:.04em}
   .cv-rev{aspect-ratio:auto;display:flex;flex-wrap:wrap;justify-content:center;gap:22px 8px}
