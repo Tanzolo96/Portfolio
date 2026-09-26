@@ -496,7 +496,7 @@ body.cv-noside .side{opacity:0;pointer-events:none}
 .cv-formula i{font-style:normal;color:var(--sub)}
 .cv-formula span:last-child{background:var(--ink);color:#fff}
 
-.cv-close{display:grid;grid-template-columns:minmax(0,1fr) minmax(160px,230px);gap:clamp(24px,4vw,56px);align-items:end;margin-top:6px}
+.cv-close{display:grid;grid-template-columns:minmax(0,1fr) minmax(160px,230px);gap:clamp(24px,4vw,56px);align-items:center;margin-top:0}
 .cv-close figure{margin:0}
 .cv-close img{display:block;width:100%;height:auto}
 .cv-end{margin-top:28px;font-family:"Special Elite","Courier New",monospace;font-size:clamp(28px,4vw,46px);line-height:1.05;color:var(--ink)}
@@ -589,7 +589,7 @@ body.cv-noside .side{opacity:0;pointer-events:none}
 .cv-dfi__c--key p{font-weight:400;color:var(--ink)}
 .cv-goal b,.cv-dial b,.cv-old figcaption b,.cv-sol__k,.cv-dfi__k,.cv-callout small,.cv-hmw__list li::before{font-weight:400}
 .cv-old figcaption b{color:var(--ink)}
-.cover--cv .cv-mark b,.cv-end b{font-weight:400}
+.cover--cv .cv-mark b,.cv-end b{font-weight:400;color:#F2553D}
 .content h3,.content h2{font-weight:700}
 
 /* device section: heading stacked over its line; "Why Carvaan" as its own block */
@@ -612,6 +612,18 @@ body.cv-noside .side{opacity:0;pointer-events:none}
 @keyframes cvfade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 @media (max-width:600px){.cv-tab{font-size:13.5px}.cv-tab span{font-size:10px;letter-spacing:.06em}}
 @media (prefers-reduced-motion:reduce){.cv-tabs .cv-sol{animation:none}}
+
+.cv-works{margin-top:clamp(40px,5.5vw,64px)}
+.cv-works .sub__h{margin-top:0}
+.cv-works .cv-formula{margin-top:16px}
+
+/* text + portrait pairs share one layout and one image size */
+.cv-pair{grid-template-columns:minmax(0,1fr) minmax(0,300px);align-items:center;gap:clamp(24px,5vw,72px)}
+.cv-pair .cv-art{justify-self:end;width:100%}
+.cv-pair .cv-art img{display:block;height:clamp(220px,24vw,300px);width:auto;max-width:100%;margin-left:auto;object-fit:contain}
+.cv-pair .sec__h,.cv-pair .sub__h{margin-top:10px}
+.cv-pair .eyebrow + .sec__h{margin-top:12px}
+@media (max-width:840px){.cv-pair{grid-template-columns:1fr}.cv-pair .cv-art{justify-self:center;width:auto}.cv-pair .cv-art img{margin:0 auto;height:240px}}
 </style>
 
 
@@ -865,9 +877,9 @@ body.cv-noside .side{opacity:0;pointer-events:none}
           </div>
         </div>
 
-        <h3 class="sub__h">Why this works</h3>
-        <div class="cv-duo">
+        <div class="cv-duo cv-pair cv-works">
           <div>
+            <h3 class="sub__h">Why this works</h3>
             <div class="cv-formula"><span>Clarity</span><i>+</i><span>Nostalgia</span><i>+</i><span>Control</span></div>
             <ul class="cv-list cv-list--ok" style="margin-top:18px">
               <li>No more blind clicking</li>
@@ -882,10 +894,10 @@ body.cv-noside .side{opacity:0;pointer-events:none}
 
       <!-- 11 — CLOSE -->
       <section id="reflection" class="sec sec--close">
-        <div class="eyebrow">Looking back</div>
-        <h2 class="sec__h">What this project taught me</h2>
-        <div class="cv-close">
+        <div class="cv-duo cv-pair">
           <div>
+            <div class="eyebrow">Looking back</div>
+            <h2 class="sec__h">What this project taught me</h2>
             <p class="prose">UX is not just problem-solving — it’s <mark class="hl">perspective-shifting</mark>.</p>
             <ul class="cv-list" style="margin-top:18px">
               <li>Every design decision must connect to people’s emotions.</li>
@@ -894,7 +906,7 @@ body.cv-noside .side{opacity:0;pointer-events:none}
               <li>Design is not linear — doubt and frustration are part of synthesis.</li>
             </ul>
           </div>
-          <figure><img src="carvaan/me-closing.webp" alt="Tanish, thinking" loading="lazy"></figure>
+          <figure class="cv-art"><img src="carvaan/me-closing.webp" alt="Tanish, thinking" loading="lazy"></figure>
         </div>
         <p class="cv-end">The beginning, <b>not the end.</b></p>
         <p class="prose">This project opened up new possibilities for reimagining vintage music devices. In Studio II, I’ll continue refining the interface, exploring motion behaviour, and prototyping the dual-dial interactions.</p>
