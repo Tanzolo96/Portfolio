@@ -1,6 +1,6 @@
-# Tanish Maheshwari — Portfolio
+# Tanish Maheshwari - Portfolio
 
-Static site. No build step — open `index.html` or serve the folder.
+Static site. No build step - open `index.html` or serve the folder.
 
 | Path | Page |
 |---|---|
