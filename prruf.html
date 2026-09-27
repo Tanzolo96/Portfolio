@@ -637,6 +637,14 @@ mark.hl{box-shadow:none}
 .site-foot .contact__links a .ar{color:var(--sub);padding-left:8px}
 .site-foot .colophon{margin-top:clamp(38px,5vw,60px);padding-top:18px;border-top:1px solid var(--line);display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;font-family:var(--mono);font-size:11px;letter-spacing:0.05em;text-transform:uppercase;color:var(--sub)}
 @media (max-width:640px){.site-foot .contact{align-items:flex-start}.site-foot .contact__links{text-align:left}}
+
+/* tour card on phones: dots on their own line so Back/Next keep their padding */
+@media (max-width:600px){
+  .coach{width:min(270px,86%);padding:16px 18px 18px}
+  .coach__foot{flex-wrap:wrap;row-gap:14px}
+  .coach__dots{width:100%}
+  .coach__btns{margin-left:auto}
+}
 </style>
 <link rel="stylesheet" href="cursors.css">
 
