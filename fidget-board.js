@@ -102,12 +102,18 @@
     input.value = getName();
     setTimeout(function(){ try{ input.focus({preventScroll:true}); input.select(); }catch(e){} }, 60);
   }
+  var confirmed = false;                                      // name is confirmed once per visit (prefilled from last time)
+  try{ confirmed = sessionStorage.getItem('fidget_ok')==='1'; }catch(e){}
   function closeName(){ naming = false; ovName.hidden = true; ovStart.hidden = false; try{ $('game').focus({preventScroll:true}); }catch(e){} }
   function confirmName(){
     var n = clean(input.value);
     if(!n){ input.focus(); return; }
     if(n!==getName()) setMyBest(0);
-    setName(n); updateWho(); render(); closeName();
+    setName(n); updateWho(); render();
+    confirmed = true; try{ sessionStorage.setItem('fidget_ok','1'); }catch(e){}
+    naming = false; ovName.hidden = true;
+    try{ $('game').focus({preventScroll:true}); }catch(e){}
+    if(window.fidgetStart) window.fidgetStart();              // PLAY goes straight into the game
   }
   input.addEventListener('input', function(){ var c = clean(input.value); if(c!==input.value.toUpperCase().trim()) input.value = c; });
   input.addEventListener('keydown', function(e){
@@ -117,6 +123,7 @@
   });
   goBtn.addEventListener('click', confirmName);
   changeBtn.addEventListener('click', function(e){ e.stopPropagation(); askName(); });
+  goBtn.addEventListener('mousedown', function(e){ e.stopPropagation(); });
   ['mousedown','touchstart'].forEach(function(ev){
     ovName.addEventListener(ev, function(e){ e.stopPropagation(); }, {passive:true});
     changeBtn.addEventListener(ev, function(e){ e.stopPropagation(); }, {passive:true});
@@ -124,7 +131,7 @@
 
   // ---- hooks used by the game ----
   window.fidgetBoard = {
-    ready: function(){ return !!getName(); },
+    ready: function(){ return confirmed && !!getName(); },
     busy: function(){ return naming; },
     askName: askName,
     gameOver: function(score){

@@ -686,12 +686,15 @@ window.FIDGET_SPRITES=["data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAJsAAADcCA
 
   function flap(){
     if(window.fidgetBoard && fidgetBoard.busy()) return;
-    if(state==='start'){ if(window.fidgetBoard && !fidgetBoard.ready()){ fidgetBoard.askName(); return; } state='play'; reset(); ovStart.hidden=true; bird.v=FLAP; nextSprite(); beep(560,0.09); }
+    if(state==='start'){ if(window.fidgetBoard && !fidgetBoard.ready()){ fidgetBoard.askName(); return; } startRound(); }
     else if(state==='play'){ bird.v=FLAP; nextSprite(); beep(560,0.09); }
-    else if(state==='over'){ state='start'; ovOver.hidden=true; ovStart.hidden=false; }
+    else if(state==='over'){ if(Date.now()-overAt<450) return; startRound(); }   // straight into a new round (short guard so a late tap doesn't skip the scoreboard)
   }
+  function startRound(){ state='play'; reset(); ovStart.hidden=true; ovOver.hidden=true; bird.v=FLAP; nextSprite(); beep(560,0.09); }
+  window.fidgetStart=function(){ if(state!=='play') startRound(); };
+  var overAt=0;
   function die(){
-    state='over'; beep(150,0.25,'sawtooth');
+    state='over'; overAt=Date.now(); beep(150,0.25,'sawtooth');
     if(score>best){ best=score; try{localStorage.setItem('fidget_best',String(best));}catch(e){} }
     document.getElementById('final').textContent=score;
     document.getElementById('best-over').textContent=best;
@@ -895,4 +898,4 @@ if(window.matchMedia('(hover: hover) and (pointer: fine)').matches){
   });
 }
 </script>
-<script src="fidget-board.js?v=4" defer></script>
+<script src="fidget-board.js?v=5" defer></script>
