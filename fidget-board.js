@@ -4,8 +4,8 @@
 (function(){
   // ---- Supabase settings (public "anon" key is safe to ship: the table only allows read + insert) ----
   var FIDGET_DB = {
-    url: '',   // e.g. https://abcdefgh.supabase.co
-    key: ''    // Project Settings > API Keys > publishable key (or legacy anon key)
+    url: 'https://txohigzxsieqwgycektl.supabase.co',   // e.g. https://abcdefgh.supabase.co
+    key: 'sb_publishable_P4PAITc5FyR7ulPbnqJ2uA_4ju0fiDz'    // Project Settings > API Keys > publishable key (or legacy anon key)
   };
   var TABLE = 'fidget_scores', TOP = 3, MAX_NAME = 10;
   var online = !!(FIDGET_DB.url && FIDGET_DB.key);
