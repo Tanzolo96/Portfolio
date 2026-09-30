@@ -262,6 +262,32 @@
 
 /* contact links keep the normal pointer so the cat never covers the text */
 #contact .contact__links a,#contact .contact__links a *{cursor:pointer}
+
+/* ---- Fidget scoreboard ---- */
+.hs-board{background:#1d2150;border:3px solid #0b1030;box-shadow:4px 4px 0 rgba(11,16,48,.22);padding:14px 16px 13px;font-family:var(--pixel);color:#fff}
+.hs-title{font-size:10px;color:#7ff0ff;letter-spacing:.08em;margin-bottom:12px;text-align:center}
+.hs-list{list-style:none;margin:0;padding:0;display:grid;gap:9px}
+.hs-row{display:grid;grid-template-columns:22px 14px minmax(0,1fr) auto;align-items:center;gap:10px;font-size:10px;line-height:1}
+.hs-trophy{width:22px;height:22px;display:block}
+.hs-rank{color:#8e93c8}
+.hs-who{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hs-row--1 .hs-who{color:#FFD23F}.hs-row--2 .hs-who{color:#D7DEE6}.hs-row--3 .hs-who{color:#E59A5B}
+.hs-pts{color:#fff;text-align:right}
+.hs-row--empty{opacity:.4}
+@keyframes hsbob{0%,100%{transform:translateY(0)}50%{transform:translateY(-2px)}}
+.hs-row--1:not(.hs-row--empty) .hs-trophy{animation:hsbob 1s steps(2,end) infinite}
+.hs-entry{display:flex;flex-direction:column;align-items:center;gap:8px}
+.hs-entry[hidden],#hs-note[hidden]{display:none}
+.hs-input{font-family:var(--pixel);font-size:10px;text-transform:uppercase;width:14ch;padding:7px 8px;border:3px solid #0b1030;border-radius:0;background:#fff;color:#0b1030;text-align:center;outline:none;box-shadow:3px 3px 0 rgba(0,0,0,.3)}
+.hs-input::placeholder{color:#9aa0c0}
+.hs-btns{display:flex;gap:8px}
+.hs-btn{font-family:var(--pixel);font-size:8px;padding:7px 10px;border:3px solid #0b1030;border-radius:0;background:#FFD23F;color:#0b1030;cursor:pointer;box-shadow:3px 3px 0 rgba(0,0,0,.3)}
+.hs-btn--ghost{background:#fff}
+.hs-btn:active{transform:translate(2px,2px);box-shadow:1px 1px 0 rgba(0,0,0,.3)}
+#hs-entry:not([hidden]) ~ .blink{display:none}
+#ov-over:has(#hs-entry:not([hidden])){gap:7px}
+#ov-over:has(#hs-entry:not([hidden])) .score:has(#best-over){display:none}
+@media (prefers-reduced-motion:reduce){.hs-trophy{animation:none!important}}
 </style>
 
 
@@ -474,8 +500,18 @@
             <div class="big">GAME OVER</div>
             <div class="score">SCORE <span id="final">0</span></div>
             <div class="score">BEST <span id="best-over">0</span></div>
+            <div class="hs-entry" id="hs-entry" hidden>
+              <div class="med">NEW TOP 3!</div>
+              <input id="hs-name" class="hs-input" placeholder="YOUR NAME" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="Your name for the scoreboard">
+              <div class="hs-btns"><button type="button" id="hs-save" class="hs-btn">SAVE</button><button type="button" id="hs-skip" class="hs-btn hs-btn--ghost">SKIP</button></div>
+            </div>
+            <div class="sm" id="hs-note" hidden></div>
             <div class="med blink">SPACE / TAP TO RETRY</div>
           </div>
+        </div>
+        <div class="hs-board" id="hs-board" aria-label="Fidget high scores">
+          <div class="hs-title">HIGH SCORES</div>
+          <ol class="hs-list" id="hs-list"></ol>
         </div>
         <p class="about__cap">A fidget toy. Space or tap to fly, see how far you get.</p>
       </div>
@@ -622,7 +658,7 @@ window.FIDGET_SPRITES=["data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAJsAAADcCA
   function flap(){
     if(state==='start'){ state='play'; reset(); ovStart.hidden=true; bird.v=FLAP; nextSprite(); beep(560,0.09); }
     else if(state==='play'){ bird.v=FLAP; nextSprite(); beep(560,0.09); }
-    else if(state==='over'){ state='start'; ovOver.hidden=true; ovStart.hidden=false; }
+    else if(state==='over'){ if(window.fidgetBoard && fidgetBoard.busy()) return; state='start'; ovOver.hidden=true; ovStart.hidden=false; }
   }
   function die(){
     state='over'; beep(150,0.25,'sawtooth');
@@ -631,6 +667,7 @@ window.FIDGET_SPRITES=["data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAJsAAADcCA
     document.getElementById('best-over').textContent=best;
     document.getElementById('best-start').textContent='BEST: '+best;
     ovOver.hidden=false;
+    if(window.fidgetBoard) fidgetBoard.gameOver(score);
   }
 
   // Only capture Space/Up when the game is on screen, so it never hijacks page scrolling elsewhere.
@@ -828,3 +865,4 @@ if(window.matchMedia('(hover: hover) and (pointer: fine)').matches){
   });
 }
 </script>
+<script src="fidget-board.js?v=1" defer></script>
