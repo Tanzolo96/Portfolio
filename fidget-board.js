@@ -1,40 +1,32 @@
-/* Fidget scoreboard: top 3 players with pixel trophies.
-   Scores live in Supabase once FIDGET_DB is filled in below; until then each
-   visitor gets a local top 3 on their own device so the board still works. */
+/* Fidget scoreboard: players give their name once, scores save automatically,
+   and the top 3 (one place per player) shows on the game-over screen with pixel trophies.
+   Scores live in Supabase; if it can't be reached, a local top 3 on this device is used. */
 (function(){
-  // ---- Supabase settings (public "anon" key is safe to ship: the table only allows read + insert) ----
+  // ---- Supabase settings (public publishable key is safe to ship: the table only allows read + insert) ----
   var FIDGET_DB = {
-    url: 'https://txohigzxsieqwgycektl.supabase.co',   // e.g. https://abcdefgh.supabase.co
-    key: 'sb_publishable_P4PAITc5FyR7ulPbnqJ2uA_4ju0fiDz'    // Project Settings > API Keys > publishable key (or legacy anon key)
+    url: 'https://txohigzxsieqwgycektl.supabase.co',
+    key: 'sb_publishable_P4PAITc5FyR7ulPbnqJ2uA_4ju0fiDz'
   };
   var TABLE = 'fidget_scores', TOP = 3, MAX_NAME = 10;
   var online = !!(FIDGET_DB.url && FIDGET_DB.key);
 
-  var board = document.getElementById('hs-board');
-  var list = document.getElementById('hs-list');
-  var entry = document.getElementById('hs-entry');
-  var input = document.getElementById('hs-name');
-  var saveBtn = document.getElementById('hs-save');
-  var skipBtn = document.getElementById('hs-skip');
-  var note = document.getElementById('hs-note');
-  if(!board || !list || !entry) return;
+  var $ = function(id){ return document.getElementById(id); };
+  var list = $('hs-list'), title = $('hs-title');
+  var ovStart = $('ov-start'), ovName = $('ov-name');
+  var input = $('hs-name'), goBtn = $('hs-go');
+  var who = $('hs-who'), whoName = $('hs-who-name'), changeBtn = $('hs-change');
+  if(!list || !ovName || !input) return;
 
-  var top = [], pending = null;
+  var top = [], naming = false;
+  function getName(){ try{ return localStorage.getItem('fidget_name')||''; }catch(e){ return ''; } }
+  function setName(n){ try{ localStorage.setItem('fidget_name', n); }catch(e){} }
+  function myBest(){ try{ return parseInt(localStorage.getItem('fidget_sent')||'0',10)||0; }catch(e){ return 0; } }
+  function setMyBest(n){ try{ localStorage.setItem('fidget_sent', String(n)); }catch(e){} }
 
   // ---- pixel trophy (12x12 grid, crisp edges) ----
   var TROPHY = [
-    '..HHHHHHHH..',
-    'MMHCCCCCCCMM',
-    'M.HCCCCCCC.M',
-    'M.HCCCCCCC.M',
-    '.MHCCCCCCCM.',
-    '..HCCCCCCD..',
-    '...CCCCCD...',
-    '.....CD.....',
-    '.....CD.....',
-    '....BBBB....',
-    '...BBBBBB...',
-    '...BBBBBB...'
+    '..HHHHHHHH..','MMHCCCCCCCMM','M.HCCCCCCC.M','M.HCCCCCCC.M','.MHCCCCCCCM.','..HCCCCCCD..',
+    '...CCCCCD...','.....CD.....','.....CD.....','....BBBB....','...BBBBBB...','...BBBBBB...'
   ];
   var TONES = {
     1: {C:'#FFD23F', D:'#D9A400', H:'#FFF3B0', M:'#E8B800', B:'#8A5A12'},
@@ -53,10 +45,11 @@
   function clean(n){ return String(n||'').toUpperCase().replace(/[^A-Z0-9 ._-]/g,'').replace(/\s+/g,' ').trim().slice(0,MAX_NAME); }
 
   function render(){
+    var me = getName();
     list.innerHTML = '';
     for(var i=0;i<TOP;i++){
       var row = document.createElement('li'), p = top[i];
-      row.className = 'hs-row hs-row--'+(i+1)+(p?'':' hs-row--empty');
+      row.className = 'hs-row hs-row--'+(i+1)+(p?'':' hs-row--empty')+(p && me && p.name===me ? ' hs-row--me':'');
       row.innerHTML = trophy(i+1)+'<span class="hs-rank">'+(i+1)+'</span><span class="hs-who"></span><span class="hs-pts"></span>';
       row.querySelector('.hs-who').textContent = p ? p.name : '---';
       row.querySelector('.hs-pts').textContent = p ? String(p.score) : '0';
@@ -64,71 +57,87 @@
     }
   }
 
+  // one place per player: keep each name's best score only
+  function uniqueTop(rows){
+    var seen = {}, out = [];
+    rows = rows.slice().sort(function(a,b){ return b.score-a.score || (a.t||0)-(b.t||0); });
+    for(var i=0;i<rows.length && out.length<TOP;i++){ if(seen[rows[i].name]) continue; seen[rows[i].name]=1; out.push(rows[i]); }
+    return out;
+  }
+
   // ---- storage ----
   function localLoad(){ try{ return JSON.parse(localStorage.getItem('fidget_top')||'[]'); }catch(e){ return []; } }
-  function localSave(arr){ try{ localStorage.setItem('fidget_top', JSON.stringify(arr)); }catch(e){} }
-  function sortTop(arr){ return arr.sort(function(a,b){ return b.score-a.score || (a.t||0)-(b.t||0); }).slice(0,TOP); }
-
+  function localAdd(name, score){ var a = localLoad(); a.push({name:name,score:score,t:Date.now()}); try{ localStorage.setItem('fidget_top', JSON.stringify(uniqueTop(a))); }catch(e){} }
   function headers(extra){
     var h = {'apikey':FIDGET_DB.key,'Content-Type':'application/json'};
-    if(/^eyJ/.test(FIDGET_DB.key)) h['Authorization'] = 'Bearer '+FIDGET_DB.key;   // legacy anon JWT; new sb_publishable_ keys go in apikey only
+    if(/^eyJ/.test(FIDGET_DB.key)) h['Authorization'] = 'Bearer '+FIDGET_DB.key;   // legacy anon JWT; sb_publishable_ keys go in apikey only
     for(var k in extra) h[k]=extra[k];
     return h;
   }
   function load(){
-    if(!online){ top = sortTop(localLoad()); render(); return Promise.resolve(); }
-    return fetch(FIDGET_DB.url+'/rest/v1/'+TABLE+'?select=name,score&order=score.desc,created_at.asc&limit='+TOP,{headers:headers({})})
+    if(!online){ top = uniqueTop(localLoad()); render(); return Promise.resolve(); }
+    return fetch(FIDGET_DB.url+'/rest/v1/'+TABLE+'?select=name,score,created_at&order=score.desc,created_at.asc&limit=30',{headers:headers({})})
       .then(function(r){ if(!r.ok) throw new Error(r.status); return r.json(); })
-      .then(function(rows){ top = rows; render(); })
-      .catch(function(){ render(); });
+      .then(function(rows){ rows.forEach(function(r){ r.t = Date.parse(r.created_at)||0; }); top = uniqueTop(rows); render(); })
+      .catch(function(){ top = uniqueTop(localLoad()); render(); });
   }
   function save(name, score){
-    if(!online){ var a = localLoad(); a.push({name:name,score:score,t:Date.now()}); localSave(sortTop(a)); return load(); }
+    localAdd(name, score);
+    if(!online) return load();
     return fetch(FIDGET_DB.url+'/rest/v1/'+TABLE,{method:'POST',headers:headers({'Prefer':'return=minimal'}),body:JSON.stringify({name:name,score:score})})
-      .then(function(r){ if(!r.ok) throw new Error(r.status); })
-      .then(load);
+      .then(function(r){ if(!r.ok) throw new Error(r.status); }).then(load, load);
+  }
+  function qualifies(score){
+    if(score<=0) return false;
+    var me = getName(), mine = null;
+    for(var i=0;i<top.length;i++) if(top[i].name===me) mine = top[i];
+    if(mine) return score > mine.score;                       // already on the board: only a better score moves you
+    return top.length<TOP || score>top[TOP-1].score;
   }
 
-  function qualifies(score){ return score>0 && (top.length<TOP || score>top[TOP-1].score); }
-
-  function closeEntry(msg){
-    pending = null; entry.hidden = true;
-    note.textContent = msg||''; note.hidden = !msg;
-    try{ document.getElementById('game').focus({preventScroll:true}); }catch(e){}
+  // ---- name prompt (asked once, before the first game) ----
+  function updateWho(){ var n = getName(); whoName.textContent = n; who.hidden = !n; }
+  function askName(){
+    naming = true; ovStart.hidden = true; ovName.hidden = false;
+    input.value = getName();
+    setTimeout(function(){ try{ input.focus({preventScroll:true}); input.select(); }catch(e){} }, 60);
   }
-  function submit(){
-    if(pending==null) return;
-    var name = clean(input.value);
-    if(!name){ input.focus(); return; }
-    try{ localStorage.setItem('fidget_name', name); }catch(e){}
-    var s = pending; saveBtn.disabled = true; saveBtn.textContent = '...';
-    save(name, s).then(function(){ closeEntry('SAVED!'); }, function(){ closeEntry('COULD NOT SAVE'); })
-      .then(function(){ saveBtn.disabled = false; saveBtn.textContent = 'SAVE'; });
+  function closeName(){ naming = false; ovName.hidden = true; ovStart.hidden = false; try{ $('game').focus({preventScroll:true}); }catch(e){} }
+  function confirmName(){
+    var n = clean(input.value);
+    if(!n){ input.focus(); return; }
+    if(n!==getName()) setMyBest(0);
+    setName(n); updateWho(); render(); closeName();
   }
-
-  input.setAttribute('maxlength', MAX_NAME);
   input.addEventListener('input', function(){ var c = clean(input.value); if(c!==input.value.toUpperCase().trim()) input.value = c; });
   input.addEventListener('keydown', function(e){
-    e.stopPropagation();                                  // typing never flaps/restarts the game
-    if(e.key==='Enter'){ e.preventDefault(); submit(); }
-    else if(e.key==='Escape'){ e.preventDefault(); closeEntry(''); }
+    e.stopPropagation();                                      // typing never flaps the bird
+    if(e.key==='Enter'){ e.preventDefault(); confirmName(); }
+    else if(e.key==='Escape' && getName()){ e.preventDefault(); closeName(); }
   });
-  saveBtn.addEventListener('click', submit);
-  skipBtn.addEventListener('click', function(){ closeEntry(''); });
-  ['mousedown','touchstart'].forEach(function(ev){ entry.addEventListener(ev, function(e){ e.stopPropagation(); }, {passive:true}); });
+  goBtn.addEventListener('click', confirmName);
+  changeBtn.addEventListener('click', function(e){ e.stopPropagation(); askName(); });
+  ['mousedown','touchstart'].forEach(function(ev){
+    ovName.addEventListener(ev, function(e){ e.stopPropagation(); }, {passive:true});
+    changeBtn.addEventListener(ev, function(e){ e.stopPropagation(); }, {passive:true});
+  });
 
   // ---- hooks used by the game ----
   window.fidgetBoard = {
-    busy: function(){ return pending!=null; },          // game ignores flaps while a name is being entered
+    ready: function(){ return !!getName(); },
+    busy: function(){ return naming; },
+    askName: askName,
     gameOver: function(score){
-      note.hidden = true;
-      if(!qualifies(score)) return;
-      pending = score;
-      try{ input.value = localStorage.getItem('fidget_name')||''; }catch(e){ input.value=''; }
-      entry.hidden = false;
-      setTimeout(function(){ try{ input.focus({preventScroll:true}); input.select(); }catch(e){} }, 60);
+      title.textContent = 'TOP 3';
+      if(qualifies(score) && score > myBest()){
+        setMyBest(score);
+        title.textContent = 'NEW TOP 3!';
+        var me = getName(), rows = top.filter(function(r){ return r.name!==me; });   // show it straight away,
+        rows.push({name:me, score:score, t:Date.now()}); top = uniqueTop(rows); render();
+        save(me, score);                                                              // then confirm with the server
+      } else { render(); load(); }
     }
   };
 
-  render(); load();
+  updateWho(); render(); load();
 })();

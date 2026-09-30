@@ -288,6 +288,35 @@
 #ov-over:has(#hs-entry:not([hidden])){gap:7px}
 #ov-over:has(#hs-entry:not([hidden])) .score:has(#best-over){display:none}
 @media (prefers-reduced-motion:reduce){.hs-trophy{animation:none!important}}
+
+/* ---- Fidget scoreboard v2: name asked once, board on game-over screen ---- */
+.ov .hs-board{background:rgba(14,18,56,.86);border:3px solid #0b1030;box-shadow:3px 3px 0 rgba(0,0,0,.3);padding:8px 12px 9px;width:min(270px,88%);text-shadow:none}
+.ov .hs-title{font-size:8px;margin-bottom:7px;color:#7ff0ff}
+.ov .hs-list{gap:5px}
+.ov .hs-row{grid-template-columns:16px 10px minmax(0,1fr) auto;gap:8px;font-size:8px;text-align:left}
+.ov .hs-trophy{width:16px;height:16px}
+.hs-row--me .hs-who{animation:hsblink 1s steps(2,start) infinite}
+@keyframes hsblink{50%{opacity:.35}}
+.hs-sep{color:#cfefff;padding:0 4px}
+.hs-playing{display:flex;gap:4px;align-items:center;justify-content:center;flex-wrap:wrap}
+.hs-playing[hidden]{display:none}
+.hs-link{font:inherit;color:#fff;background:none;border:0;border-bottom:2px solid #fff;padding:0 0 1px;cursor:pointer;text-shadow:inherit}
+#ov-over{gap:8px}
+@media (max-width:600px){#ov-over{gap:5px;padding:8px}.ov .hs-board{padding:6px 10px 7px}.ov .hs-row{font-size:7px}.ov .hs-trophy{width:13px;height:13px}.ov .big{font-size:13px}}
+@media (prefers-reduced-motion:reduce){.hs-row--me .hs-who{animation:none}}
+
+.ov .hs-row .hs-who{text-align:left}
+@media (max-width:600px){
+  #ov-over{gap:4px;padding:6px;justify-content:center}
+  #ov-over .big{font-size:11px}
+  #ov-over .score{font-size:8px}
+  #ov-over .med{font-size:7px}
+  .ov .hs-board{padding:5px 8px 6px;border-width:2px}
+  .ov .hs-title{font-size:7px;margin-bottom:4px}
+  .ov .hs-list{gap:3px}
+  .ov .hs-row{grid-template-columns:12px 8px minmax(0,1fr) auto;gap:6px;font-size:7px}
+  .ov .hs-trophy{width:12px;height:12px}
+}
 </style>
 
 
@@ -495,23 +524,23 @@
             <div class="sm">FLAP THROUGH THE GAP</div>
             <div class="med blink">PRESS SPACE / TAP</div>
             <div class="sm" id="best-start">BEST: 0</div>
+            <div class="sm hs-playing" id="hs-who" hidden>PLAYING AS <span id="hs-who-name"></span> · <button type="button" class="hs-link" id="hs-change">CHANGE</button></div>
+          </div>
+          <div class="ov" id="ov-name" hidden>
+            <div class="med">WHO'S PLAYING?</div>
+            <input id="hs-name" class="hs-input" placeholder="YOUR NAME" maxlength="10" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="Your name for the scoreboard">
+            <div class="hs-btns"><button type="button" id="hs-go" class="hs-btn">PLAY</button></div>
+            <div class="sm">SHOWN ON THE TOP 3 BOARD</div>
           </div>
           <div class="ov" id="ov-over" hidden>
             <div class="big">GAME OVER</div>
-            <div class="score">SCORE <span id="final">0</span></div>
-            <div class="score">BEST <span id="best-over">0</span></div>
-            <div class="hs-entry" id="hs-entry" hidden>
-              <div class="med">NEW TOP 3!</div>
-              <input id="hs-name" class="hs-input" placeholder="YOUR NAME" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="Your name for the scoreboard">
-              <div class="hs-btns"><button type="button" id="hs-save" class="hs-btn">SAVE</button><button type="button" id="hs-skip" class="hs-btn hs-btn--ghost">SKIP</button></div>
+            <div class="score">SCORE <span id="final">0</span> <span class="hs-sep">·</span> BEST <span id="best-over">0</span></div>
+            <div class="hs-board" id="hs-board" aria-label="Fidget top 3">
+              <div class="hs-title" id="hs-title">TOP 3</div>
+              <ol class="hs-list" id="hs-list"></ol>
             </div>
-            <div class="sm" id="hs-note" hidden></div>
             <div class="med blink">SPACE / TAP TO RETRY</div>
           </div>
-        </div>
-        <div class="hs-board" id="hs-board" aria-label="Fidget high scores">
-          <div class="hs-title">HIGH SCORES</div>
-          <ol class="hs-list" id="hs-list"></ol>
         </div>
         <p class="about__cap">A fidget toy. Space or tap to fly, see how far you get.</p>
       </div>
@@ -656,9 +685,10 @@ window.FIDGET_SPRITES=["data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAJsAAADcCA
   document.getElementById('best-start').textContent='BEST: '+best;
 
   function flap(){
-    if(state==='start'){ state='play'; reset(); ovStart.hidden=true; bird.v=FLAP; nextSprite(); beep(560,0.09); }
+    if(window.fidgetBoard && fidgetBoard.busy()) return;
+    if(state==='start'){ if(window.fidgetBoard && !fidgetBoard.ready()){ fidgetBoard.askName(); return; } state='play'; reset(); ovStart.hidden=true; bird.v=FLAP; nextSprite(); beep(560,0.09); }
     else if(state==='play'){ bird.v=FLAP; nextSprite(); beep(560,0.09); }
-    else if(state==='over'){ if(window.fidgetBoard && fidgetBoard.busy()) return; state='start'; ovOver.hidden=true; ovStart.hidden=false; }
+    else if(state==='over'){ state='start'; ovOver.hidden=true; ovStart.hidden=false; }
   }
   function die(){
     state='over'; beep(150,0.25,'sawtooth');
@@ -865,4 +895,4 @@ if(window.matchMedia('(hover: hover) and (pointer: fine)').matches){
   });
 }
 </script>
-<script src="fidget-board.js?v=2" defer></script>
+<script src="fidget-board.js?v=4" defer></script>
