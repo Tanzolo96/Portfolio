@@ -691,6 +691,34 @@
 .cv-play__time{display:flex;justify-content:space-between;margin-top:6px;font-family:var(--mono);font-size:10px;letter-spacing:.06em;color:var(--sub)}
 .cv-play:not(.is-playing) .cv-play__eq i{animation-play-state:paused}
 @media (prefers-reduced-motion:reduce){.cv-play__dot,.cv-play__eq i,.cv-play__card{animation:none}.cv-play__btn{transition:none}}
+
+/* ideation: calmer layout */
+.cv-dials{margin-top:clamp(22px,3vw,30px);padding:clamp(16px,2vw,20px) clamp(18px,2.4vw,26px);background:var(--panel);border-radius:14px}
+.cv-dial{grid-template-columns:44px 1fr;gap:14px}
+.cv-knob{width:44px;height:44px;border-width:1.5px}
+.cv-knob::after{top:4px;width:2px;height:11px;margin-left:-1px}
+.cv-dial b{color:var(--sub);font-size:10.5px}
+.cv-dial p{margin-top:2px;font-size:15px}
+.cv-tabs{margin-top:clamp(32px,4vw,44px)}
+.cv-tabs__bar{gap:4px;padding:4px;background:var(--panel);border-radius:12px}
+.cv-tab{border:0;border-radius:9px;padding:11px 14px;font-size:clamp(14px,1.3vw,15.5px);display:flex;align-items:baseline;gap:10px;transition:color .2s ease,background-color .2s ease,box-shadow .2s ease}
+.cv-tab span{display:inline;margin:0;font-size:10.5px;letter-spacing:.08em}
+.cv-tab[aria-selected="true"]{background:#fff;box-shadow:0 0 0 1px var(--line),0 1px 3px rgba(43,42,40,.06)}
+.cv-tabs .cv-sol{margin-top:clamp(24px,3vw,34px)}
+.cv-sol__ps{gap:0}
+.cv-sol__p,.cv-sol__s{border-top:0;padding-top:0}
+.cv-sol__p{padding-right:clamp(20px,3vw,40px);color:var(--sub)}
+.cv-sol__s{padding-left:clamp(20px,3vw,40px);border-left:1px solid var(--line)}
+.cv-sol__k,.cv-sol__s .cv-sol__k{color:var(--faint);font-size:10.5px}
+.cv-tabs .cv-wire{margin-top:clamp(24px,3vw,34px)}
+@media (max-width:840px){
+  .cv-sol__p{padding-right:0}
+  .cv-sol__s{padding-left:0;border-left:0;margin-top:18px;padding-top:18px;border-top:1px solid var(--line)}
+}
+@media (max-width:600px){
+  .cv-tab{flex-direction:column;gap:3px;padding:9px 10px;font-size:13px;line-height:1.25}
+  .cv-dials{gap:14px}
+}
 </style>
 <link rel="stylesheet" href="cursors.css">
 
@@ -927,29 +955,29 @@
 
         <div class="cv-tabs" id="solTabs">
           <div class="cv-tabs__bar" role="tablist" aria-label="Problems and solutions">
-            <button type="button" role="tab" class="cv-tab" id="sol-tab-01" aria-controls="sol-01" aria-selected="true" tabindex="0"><span>Problem 01</span>Blind skipping</button>
-            <button type="button" role="tab" class="cv-tab" id="sol-tab-02" aria-controls="sol-02" aria-selected="false" tabindex="-1"><span>Problem 02</span>No favourites</button>
-            <button type="button" role="tab" class="cv-tab" id="sol-tab-03" aria-controls="sol-03" aria-selected="false" tabindex="-1"><span>Problem 03</span>Retro look, not feel</button>
+            <button type="button" role="tab" class="cv-tab" id="sol-tab-01" aria-controls="sol-01" aria-selected="true" tabindex="0"><span>01</span>Blind skipping</button>
+            <button type="button" role="tab" class="cv-tab" id="sol-tab-02" aria-controls="sol-02" aria-selected="false" tabindex="-1"><span>02</span>No favourites</button>
+            <button type="button" role="tab" class="cv-tab" id="sol-tab-03" aria-controls="sol-03" aria-selected="false" tabindex="-1"><span>03</span>Retro look, not feel</button>
           </div>
           <div class="cv-sol" role="tabpanel" id="sol-01" aria-labelledby="sol-tab-01">
           <div class="cv-sol__ps">
-            <div class="cv-sol__p"><span class="cv-sol__k">Problem 01</span>Finding one song meant skipping blindly through 5,000 tracks.</div>
-            <div class="cv-sol__s"><span class="cv-sol__k">Solution 01</span>Two rotary dials: the left dial selects the folder (Movie / Artist / Mood / Songs), the right dial selects the exact song. No guessing, no gambling.</div>
+            <div class="cv-sol__p"><span class="cv-sol__k">The problem</span>Finding one song meant skipping blindly through 5,000 tracks.</div>
+            <div class="cv-sol__s"><span class="cv-sol__k">The fix</span>Two rotary dials: the left dial selects the folder (Movie / Artist / Mood / Songs), the right dial selects the exact song. No guessing, no gambling.</div>
           </div>
           <figure class="cv-wire"><img src="carvaan/wire-navigate.webp" alt="Wireframe: how to navigate with the two dials" loading="lazy"><figcaption>How to navigate</figcaption></figure>
           <figure class="cv-wire"><img src="carvaan/wire-sections.webp" alt="Wireframe: folder and song sections on screen" loading="lazy"></figure>
           </div>
           <div class="cv-sol" role="tabpanel" id="sol-02" aria-labelledby="sol-tab-02" hidden>
           <div class="cv-sol__ps">
-            <div class="cv-sol__p"><span class="cv-sol__k">Problem 02</span>Carvaan had no playlist or favourites, so users couldn’t save what they loved.</div>
-            <div class="cv-sol__s"><span class="cv-sol__k">Solution 02</span>Double-tap to “Like.” The song is instantly added to a Liked Songs playlist and moves higher inside its category.<em>Just like making your own mixtape, but without the tape.</em></div>
+            <div class="cv-sol__p"><span class="cv-sol__k">The problem</span>Carvaan had no playlist or favourites, so users couldn’t save what they loved.</div>
+            <div class="cv-sol__s"><span class="cv-sol__k">The fix</span>Double-tap to “Like.” The song is instantly added to a Liked Songs playlist and moves higher inside its category.<em>Just like making your own mixtape, but without the tape.</em></div>
           </div>
           <figure class="cv-wire"><img src="carvaan/wire-favourites.webp" alt="Wireframe: how to see your favourite albums or songs" loading="lazy"><figcaption>How to see your favourite albums or songs</figcaption></figure>
           </div>
           <div class="cv-sol" role="tabpanel" id="sol-03" aria-labelledby="sol-tab-03" hidden>
           <div class="cv-sol__ps">
-            <div class="cv-sol__p"><span class="cv-sol__k">Problem 03</span>The experience felt nostalgic in look, but not in feel.</div>
-            <div class="cv-sol__s"><span class="cv-sol__k">Solution 03</span>Retro cues built with purpose: pixel portraits, a cassette-loading animation, subtle mechanical ticks.<em>Not decoration. Emotional memory triggers.</em></div>
+            <div class="cv-sol__p"><span class="cv-sol__k">The problem</span>The experience felt nostalgic in look, but not in feel.</div>
+            <div class="cv-sol__s"><span class="cv-sol__k">The fix</span>Retro cues built with purpose: pixel portraits, a cassette-loading animation, subtle mechanical ticks.<em>Not decoration. Emotional memory triggers.</em></div>
           </div>
           <figure class="cv-wire"><img src="carvaan/wire-like.webp" alt="Wireframe: liking a song and the retro feedback" loading="lazy"><figcaption>Like → feedback → Liked Songs</figcaption></figure>
           </div>
