@@ -675,10 +675,10 @@
 .cv-play__dot{width:7px;height:7px;border-radius:50%;background:var(--accent);animation:cvPulse 1.6s ease-in-out infinite}
 @keyframes cvPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(.7)}}
 .cv-play.is-on .cv-play__hint{display:none}
-.cv-play__card{container-type:inline-size;max-width:100%;box-sizing:border-box;margin-top:12px;border:1px solid var(--line);border-radius:12px;background:var(--panel);padding:10px;animation:cvIn .3s ease}
+.cv-play__card{max-width:100%;box-sizing:border-box;margin-top:12px;border:1px solid var(--line);border-radius:12px;background:var(--panel);padding:12px 14px;animation:cvIn .3s ease}
 .cv-play__card[hidden]{display:none}
 @keyframes cvIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
-.cv-play__head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 2px 8px;font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink)}
+.cv-play__head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 12px;font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink)}
 .cv-play__now{display:flex;align-items:center;gap:8px;min-width:0}
 .cv-play__eq{display:inline-flex;align-items:flex-end;gap:2px;height:11px;flex:none}
 .cv-play__eq i{width:2px;height:100%;background:var(--accent);transform-origin:bottom;animation:cvEq .9s ease-in-out infinite}
@@ -686,8 +686,10 @@
 @keyframes cvEq{0%,100%{transform:scaleY(.3)}50%{transform:scaleY(1)}}
 .cv-play__x{flex:none;font:inherit;letter-spacing:inherit;text-transform:inherit;color:var(--accent);background:none;border:1px solid currentColor;border-radius:999px;padding:4px 10px;cursor:pointer}
 .cv-play__x:hover{background:var(--accent);color:#fff}
-.cv-play__frame{position:relative;width:100%;height:max(200px,calc((100cqw) * 9 / 16));border-radius:8px;overflow:hidden;background:#000}
-.cv-play__frame iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+.cv-play__bar{position:relative;height:4px;border-radius:4px;background:var(--line);overflow:hidden;cursor:pointer}
+.cv-play__fill{position:absolute;inset:0 auto 0 0;width:0;background:var(--accent);border-radius:inherit}
+.cv-play__time{display:flex;justify-content:space-between;margin-top:6px;font-family:var(--mono);font-size:10px;letter-spacing:.06em;color:var(--sub)}
+.cv-play:not(.is-playing) .cv-play__eq i{animation-play-state:paused}
 @media (prefers-reduced-motion:reduce){.cv-play__dot,.cv-play__eq i,.cv-play__card{animation:none}.cv-play__btn{transition:none}}
 </style>
 <link rel="stylesheet" href="cursors.css">
@@ -788,7 +790,9 @@
             <figcaption class="cv-play__hint"><span class="cv-play__dot" aria-hidden="true"></span>Tap the Carvaan to play Lag Jaa Gale</figcaption>
             <div class="cv-play__card" hidden>
               <div class="cv-play__head"><span class="cv-play__now"><span class="cv-play__eq" aria-hidden="true"><i></i><i></i><i></i></span>Lag Jaa Gale · Lata Mangeshkar</span><button type="button" class="cv-play__x">Stop</button></div>
-              <div class="cv-play__frame"></div>
+              <div class="cv-play__bar"><span class="cv-play__fill"></span></div>
+              <div class="cv-play__time"><span class="cv-play__cur">0:00</span><span>2:00</span></div>
+              <audio class="cv-play__audio" src="carvaan/lag-jaa-gale.mp3" preload="none"></audio>
             </div>
           </figure>
         </div>
@@ -1140,19 +1144,18 @@ if(window.matchMedia('(hover: hover) and (pointer: fine)').matches){
 (function(){
   var f=document.getElementById('cvPlay'); if(!f) return;
   var btn=f.querySelector('.cv-play__btn'), card=f.querySelector('.cv-play__card'),
-      frame=f.querySelector('.cv-play__frame'), x=f.querySelector('.cv-play__x');
-  function stop(){ frame.innerHTML=''; card.hidden=true; f.classList.remove('is-on'); btn.setAttribute('aria-label','Play Lag Jaa Gale by Lata Mangeshkar'); }
-  function play(){
-    var ifr=document.createElement('iframe');
-    ifr.src='https://www.youtube-nocookie.com/embed/fj4MnkljFXc?autoplay=1&playsinline=1&rel=0';
-    ifr.title='Lag Jaa Gale by Lata Mangeshkar (Saregama Music)';
-    ifr.allow='autoplay; encrypted-media; picture-in-picture';
-    ifr.allowFullscreen=true;
-    frame.appendChild(ifr); card.hidden=false; f.classList.add('is-on');
-    btn.setAttribute('aria-label','Stop Lag Jaa Gale');
-  }
+      a=f.querySelector('.cv-play__audio'), x=f.querySelector('.cv-play__x'),
+      bar=f.querySelector('.cv-play__bar'), fill=f.querySelector('.cv-play__fill'), cur=f.querySelector('.cv-play__cur');
+  function fmt(t){t=Math.floor(t||0);return Math.floor(t/60)+':'+('0'+t%60).slice(-2);}
+  function stop(){ a.pause(); a.currentTime=0; card.hidden=true; f.classList.remove('is-on','is-playing'); btn.setAttribute('aria-label','Play Lag Jaa Gale by Lata Mangeshkar'); }
+  function play(){ card.hidden=false; f.classList.add('is-on'); btn.setAttribute('aria-label','Stop Lag Jaa Gale'); var pr=a.play(); if(pr&&pr.catch) pr.catch(function(){}); }
   btn.addEventListener('click',function(){ f.classList.contains('is-on')?stop():play(); });
   x.addEventListener('click',stop);
+  a.addEventListener('play',function(){f.classList.add('is-playing');});
+  a.addEventListener('pause',function(){f.classList.remove('is-playing');});
+  a.addEventListener('ended',stop);
+  a.addEventListener('timeupdate',function(){ var d=a.duration||120; fill.style.width=(a.currentTime/d*100)+'%'; cur.textContent=fmt(a.currentTime); });
+  bar.addEventListener('click',function(e){ var r=bar.getBoundingClientRect(), d=a.duration||120; a.currentTime=Math.max(0,Math.min(1,(e.clientX-r.left)/r.width))*d; });
 })();
 </script>
 </body>
