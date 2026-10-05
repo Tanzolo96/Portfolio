@@ -57,11 +57,14 @@
     }
   }
 
+  // names kept off the board
+  var HIDDEN = {'ISH HATER':1};
+
   // one place per player: keep each name's best score only
   function uniqueTop(rows){
     var seen = {}, out = [];
     rows = rows.slice().sort(function(a,b){ return b.score-a.score || (a.t||0)-(b.t||0); });
-    for(var i=0;i<rows.length && out.length<TOP;i++){ if(seen[rows[i].name]) continue; seen[rows[i].name]=1; out.push(rows[i]); }
+    for(var i=0;i<rows.length && out.length<TOP;i++){ if(seen[rows[i].name] || HIDDEN[rows[i].name]) continue; seen[rows[i].name]=1; out.push(rows[i]); }
     return out;
   }
 
