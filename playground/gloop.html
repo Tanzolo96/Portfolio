@@ -1,0 +1,771 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="robots" content="noindex"></head><body>
+<title>Gloop the Jelly</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bagel+Fat+One&display=swap">
+<style>
+  /* Layout: full-bleed toy stage; name top-left, patience gauge top-right, controls along the bottom.
+     Deliberately single-theme: a warm apricot studio backdrop so the gummy blue reads in any host theme. */
+  :root {
+    --sky: #f7cfae;
+    --sky-low: #ee9f86;
+    --ink: #3a1f2b;
+    --ink-soft: #74505c;
+    --paper: #fff7ef;
+    --line: rgba(58, 31, 43, 0.18);
+    --display: "Bagel Fat One", "Arial Rounded MT Bold", "Trebuchet MS", system-ui, sans-serif;
+    --body: "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", sans-serif;
+    color-scheme: light;
+  }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    overflow: hidden;
+    background-color: var(--sky);
+    background-image: radial-gradient(120% 95% at 50% 18%, var(--sky) 0%, var(--sky) 35%, var(--sky-low) 100%);
+    color: var(--ink);
+    font-family: var(--body);
+    font-size: 15px;
+    -webkit-tap-highlight-color: transparent;
+  }
+  #c { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+
+  .top, .bottom {
+    position: fixed; left: 0; right: 0;
+    display: flex; justify-content: space-between; align-items: flex-start;
+    flex-wrap: wrap; gap: 12px 24px;
+    padding-inline: 20px;
+    pointer-events: none;
+  }
+  .top { top: 0; padding-top: calc(env(safe-area-inset-top, 0px) + 18px); }
+  .bottom { bottom: 0; align-items: flex-end; padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 18px); }
+
+  h1 {
+    margin: 0;
+    font-family: var(--display);
+    font-weight: 400;
+    font-size: clamp(34px, 6vw, 52px);
+    line-height: 0.9;
+    letter-spacing: 0.01em;
+  }
+  .tag { margin: 6px 0 0; color: var(--ink-soft); font-size: 14px; }
+
+  .gauge { min-width: 0; width: 190px; display: grid; gap: 6px; }
+  .gauge-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .label { font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-soft); }
+  .mood { font-weight: 700; font-size: 14px; white-space: nowrap; }
+  .bar { height: 10px; border-radius: 99px; background: var(--line); overflow: hidden; }
+  .fill { height: 100%; width: 100%; border-radius: inherit; background: #49b36b; transition: width 0.15s linear; }
+
+  .hint { margin: 0; max-width: 34ch; line-height: 1.45; font-size: 14px; }
+  .hint b { font-weight: 700; }
+  .right { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; justify-content: flex-end; }
+  .stats { font-variant-numeric: tabular-nums; color: var(--ink-soft); font-size: 13px; white-space: nowrap; }
+  .stats strong { color: var(--ink); }
+  button {
+    pointer-events: auto;
+    font: 700 13px var(--body);
+    color: var(--ink);
+    background: var(--paper);
+    border: 2px solid var(--ink);
+    border-radius: 99px;
+    padding: 7px 14px;
+    cursor: pointer;
+    box-shadow: 0 3px 0 var(--ink);
+    transition: transform 0.08s, box-shadow 0.08s;
+  }
+  button:active { transform: translateY(3px); box-shadow: 0 0 0 var(--ink); }
+  button:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
+
+  .bubble {
+    position: fixed; left: 50%; top: 22%;
+    transform: translate(-50%, -100%) scale(0.6);
+    max-width: 220px;
+    padding: 10px 16px 12px;
+    background: var(--paper);
+    border: 3px solid var(--ink);
+    border-radius: 20px;
+    font-family: var(--display);
+    font-size: 20px;
+    line-height: 1.1;
+    text-align: center;
+    text-wrap: balance;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.18s, transform 0.18s;
+  }
+  .bubble::after {
+    content: ""; position: absolute; left: 50%; bottom: -12px;
+    width: 18px; height: 18px; margin-left: -9px;
+    background: var(--paper);
+    border-right: 3px solid var(--ink); border-bottom: 3px solid var(--ink);
+    transform: rotate(45deg);
+    border-bottom-right-radius: 4px;
+  }
+  .bubble.show { opacity: 1; transform: translate(-50%, -100%) scale(1); }
+  .bubble.pop { animation: pop 0.28s cubic-bezier(.3,1.8,.5,1); }
+  @keyframes pop { from { transform: translate(-50%, -100%) scale(0.7); } to { transform: translate(-50%, -100%) scale(1); } }
+
+  @media (max-width: 520px) {
+    .gauge { width: 150px; }
+    .hint { font-size: 13px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .bubble, .bubble.pop { animation: none; transition: opacity 0.1s; }
+  }
+</style>
+
+<canvas id="c" aria-label="Gloop, a jelly blob you can poke, stretch and slap"></canvas>
+
+<header class="top">
+  <div>
+    <h1>Gloop</h1>
+    <p class="tag">A jelly with opinions.</p>
+  </div>
+  <div class="gauge" aria-live="polite">
+    <div class="gauge-head">
+      <span class="label">Patience</span>
+      <span class="mood" id="mood">Content</span>
+    </div>
+    <div class="bar"><div class="fill" id="fill"></div></div>
+  </div>
+</header>
+
+<div class="bubble show" id="bubble">hi! I'm Gloop.</div>
+
+<footer class="bottom">
+  <p class="hint"><b>Click</b> to poke. <b>Drag</b> to stretch. <b>Swipe fast</b> across it to slap.</p>
+  <div class="right">
+    <span class="stats">Pokes <strong id="sPoke">0</strong> · Slaps <strong id="sSlap">0</strong> · Stretches <strong id="sStretch">0</strong></span>
+    <button id="sound" type="button" aria-pressed="true">Sound on</button>
+  </div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(() => {
+  const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const lin = (hex) => new THREE.Color(hex).convertSRGBToLinear();
+
+  // ---------- renderer / scene ----------
+  const canvas = document.getElementById('c');
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.outputEncoding = THREE.sRGBEncoding;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.05;
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(32, 1, 0.1, 50);
+
+  // soft studio environment for the glossy jelly
+  const pmrem = new THREE.PMREMGenerator(renderer);
+  const envScene = new THREE.Scene();
+  envScene.add(new THREE.Mesh(new THREE.SphereGeometry(10, 32, 16),
+    new THREE.MeshBasicMaterial({ color: lin('#f1b195'), side: THREE.BackSide })));
+  const softbox = (w, h, x, y, z, c) => {
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ color: c, side: THREE.DoubleSide }));
+    m.position.set(x, y, z); m.lookAt(0, 0, 0); envScene.add(m);
+  };
+  softbox(6, 4, -4, 5, 4, new THREE.Color(5, 5, 5));
+  softbox(3, 6, 6, 1, -2, new THREE.Color(2.2, 2.4, 2.8));
+  softbox(9, 2, 0, -6, 1, lin('#ff8f6b'));
+  scene.environment = pmrem.fromScene(envScene, 0.03).texture;
+
+  scene.add(new THREE.HemisphereLight(lin('#fff1e4'), lin('#e0806a'), 0.55));
+  const key = new THREE.DirectionalLight(0xffffff, 1.5);
+  key.position.set(-2.5, 6, 4);
+  key.castShadow = true;
+  key.shadow.mapSize.set(1024, 1024);
+  Object.assign(key.shadow.camera, { left: -3, right: 3, top: 3, bottom: -3, near: 1, far: 15 });
+  key.shadow.radius = 6;
+  key.shadow.bias = -0.0005;
+  scene.add(key);
+  const rim = new THREE.DirectionalLight(lin('#ffc2a3'), 0.9);
+  rim.position.set(3, 2, -4);
+  scene.add(rim);
+
+  // ---------- jelly mesh: indexed icosphere with neighbour lists ----------
+  const ico = new THREE.IcosahedronGeometry(1, 16);
+  const src = ico.attributes.position.array;
+  const keyMap = new Map(), pos = [], index = [];
+  for (let i = 0; i < src.length / 3; i++) {
+    const x = src[3 * i], y = src[3 * i + 1], z = src[3 * i + 2];
+    const k = Math.round(x * 1e4) + ',' + Math.round(y * 1e4) + ',' + Math.round(z * 1e4);
+    let j = keyMap.get(k);
+    if (j === undefined) { j = pos.length / 3; keyMap.set(k, j); pos.push(x, y, z); }
+    index.push(j);
+  }
+  ico.dispose();
+  const N = pos.length / 3;
+  const rest = new Float32Array(3 * N), rn = new Float32Array(3 * N);
+  let minY = Infinity, maxY = -Infinity;
+  for (let i = 0; i < N; i++) {
+    const i3 = 3 * i;
+    let x = pos[i3], y = pos[i3 + 1], z = pos[i3 + 2];
+    rn[i3] = x; rn[i3 + 1] = y; rn[i3 + 2] = z;
+    // a gumdrop: a little squat, with a flattened bottom
+    x *= 1.05; z *= 1.05; y *= 0.9;
+    if (y < -0.62) y = -0.62 + (y + 0.62) * 0.3;
+    rest[i3] = x; rest[i3 + 1] = y; rest[i3 + 2] = z;
+    minY = Math.min(minY, y); maxY = Math.max(maxY, y);
+  }
+  const nbSets = Array.from({ length: N }, () => new Set());
+  for (let t = 0; t < index.length; t += 3) {
+    const a = index[t], b = index[t + 1], c = index[t + 2];
+    nbSets[a].add(b).add(c); nbSets[b].add(a).add(c); nbSets[c].add(a).add(b);
+  }
+  const nbStart = new Int32Array(N + 1), nbFlat = [];
+  for (let i = 0; i < N; i++) { nbStart[i] = nbFlat.length; nbSets[i].forEach((j) => nbFlat.push(j)); }
+  nbStart[N] = nbFlat.length;
+  const nbList = Int32Array.from(nbFlat);
+
+  const geo = new THREE.BufferGeometry();
+  const P = new Float32Array(rest);
+  geo.setAttribute('position', new THREE.BufferAttribute(P, 3));
+  geo.setIndex(index);
+  geo.computeVertexNormals();
+  geo.boundingSphere = new THREE.Sphere(new THREE.Vector3(), 3);
+  const NA = geo.attributes.normal.array;
+
+  const HAPPY = lin('#1f7dff'), ANGRY = lin('#ff2a1f');
+  const jellyMat = new THREE.MeshPhysicalMaterial({
+    color: HAPPY.clone(), roughness: 0.22, metalness: 0,
+    clearcoat: 1, clearcoatRoughness: 0.05,
+    emissive: HAPPY.clone().multiplyScalar(0.12),
+    envMapIntensity: 0.55,
+  });
+  const mesh = new THREE.Mesh(geo, jellyMat);
+  mesh.castShadow = true;
+
+  // pivot sits at floor level so wobbles rock around the base
+  const pivot = new THREE.Group();
+  const blob = new THREE.Group();
+  pivot.position.y = minY;
+  blob.position.y = -minY;
+  pivot.add(blob);
+  blob.add(mesh);
+  scene.add(pivot);
+
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(30, 30), new THREE.ShadowMaterial({ opacity: 0.22, color: lin('#7a2e2a') }));
+  floor.rotation.x = -Math.PI / 2;
+  floor.position.y = minY - 0.002;
+  floor.receiveShadow = true;
+  scene.add(floor);
+
+  // ---------- soft-body sim ----------
+  const D = new Float32Array(3 * N), V = new Float32Array(3 * N), W = new Float32Array(N);
+  const K = 70, C = 3.0, L = 260, KV = 45, G = 420, H = 1 / 120;
+  let breath = 0, grabbing = false;
+  const grabDelta = new THREE.Vector3();
+
+  function step(dt) {
+    let rd = 0;
+    for (let i = 0; i < N; i++) { const i3 = 3 * i; rd += D[i3] * rn[i3] + D[i3 + 1] * rn[i3 + 1] + D[i3 + 2] * rn[i3 + 2]; }
+    rd /= N;
+    for (let i = 0; i < N; i++) {
+      const i3 = 3 * i;
+      let mx = 0, my = 0, mz = 0;
+      const s = nbStart[i], e = nbStart[i + 1];
+      for (let k = s; k < e; k++) { const j = 3 * nbList[k]; mx += D[j]; my += D[j + 1]; mz += D[j + 2]; }
+      const inv = 1 / (e - s); mx *= inv; my *= inv; mz *= inv;
+      const dx = D[i3], dy = D[i3 + 1], dz = D[i3 + 2];
+      const b = breath, vol = KV * rd;
+      let ax = -K * (dx - rn[i3] * b) + L * (mx - dx) - C * V[i3] - vol * rn[i3];
+      let ay = -K * (dy - rn[i3 + 1] * b) + L * (my - dy) - C * V[i3 + 1] - vol * rn[i3 + 1];
+      let az = -K * (dz - rn[i3 + 2] * b) + L * (mz - dz) - C * V[i3 + 2] - vol * rn[i3 + 2];
+      if (grabbing) {
+        const w = W[i];
+        if (w > 0) {
+          ax += G * w * (grabDelta.x * w - dx) - 8 * w * V[i3];
+          ay += G * w * (grabDelta.y * w - dy) - 8 * w * V[i3 + 1];
+          az += G * w * (grabDelta.z * w - dz) - 8 * w * V[i3 + 2];
+        }
+      }
+      V[i3] += ax * dt; V[i3 + 1] += ay * dt; V[i3 + 2] += az * dt;
+    }
+    for (let i = 0; i < 3 * N; i++) {
+      let d = D[i] + V[i] * dt;
+      if (d > 1.6) { d = 1.6; V[i] = 0; } else if (d < -1.6) { d = -1.6; V[i] = 0; }
+      D[i] = d;
+    }
+  }
+
+  // apply fn(i, w) to vertices within radius of a blob-local point
+  function region(pt, radius, fn) {
+    for (let i = 0; i < N; i++) {
+      const i3 = 3 * i;
+      const dx = P[i3] - pt.x, dy = P[i3 + 1] - pt.y, dz = P[i3 + 2] - pt.z;
+      const d = Math.sqrt(dx * dx + dy * dy + dz * dz);
+      if (d < radius) { let w = 1 - d / radius; w = w * w * (3 - 2 * w); fn(i3, w, i); }
+    }
+  }
+
+  // body-level motion: rocking, hopping, turning away
+  const body = { y: 0, vy: 0, ax: 0, avx: 0, az: 0, avz: 0, rotY: 0, rotTarget: 0 };
+  function bodyStep(dt) {
+    body.avx += (-55 * body.ax - 4 * body.avx) * dt; body.ax += body.avx * dt;
+    body.avz += (-55 * body.az - 4 * body.avz) * dt; body.az += body.avz * dt;
+    body.ax = Math.max(-0.5, Math.min(0.5, body.ax));
+    body.az = Math.max(-0.5, Math.min(0.5, body.az));
+    if (body.y > 0 || body.vy > 0) {
+      body.vy -= 24 * dt; body.y += body.vy * dt;
+      if (body.y <= 0) { land(-body.vy); body.y = 0; body.vy = 0; }
+    }
+    body.rotY += (body.rotTarget - body.rotY) * Math.min(1, dt * 4);
+  }
+  function land(impact) {
+    const span = maxY - minY;
+    for (let i = 0; i < N; i++) {
+      const i3 = 3 * i, h = (rest[i3 + 1] - minY) / span;
+      V[i3 + 1] -= impact * 0.55 * h;
+      V[i3] += rn[i3] * impact * 0.3 * (1 - Math.abs(rn[i3 + 1]));
+      V[i3 + 2] += rn[i3 + 2] * impact * 0.3 * (1 - Math.abs(rn[i3 + 1]));
+    }
+    sfx.thud();
+  }
+
+  // ---------- face ----------
+  function anchorIndex(x, y, z) {
+    const v = new THREE.Vector3(x, y, z).normalize();
+    let best = 0, bestDot = -2;
+    for (let i = 0; i < N; i++) {
+      const d = rn[3 * i] * v.x + rn[3 * i + 1] * v.y + rn[3 * i + 2] * v.z;
+      if (d > bestDot) { bestDot = d; best = i; }
+    }
+    return best;
+  }
+  const inkMat = new THREE.MeshStandardMaterial({ color: lin('#1c0f16'), roughness: 0.35 });
+  const whiteMat = new THREE.MeshPhysicalMaterial({ color: 0xffffff, roughness: 0.25, clearcoat: 1 });
+  const glintMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+
+  const EYE_R = 0.17, DOME = 0.55;
+  function makeEye(side) {
+    const g = new THREE.Group();
+    const lid = new THREE.Group();
+    const white = new THREE.Mesh(new THREE.SphereGeometry(EYE_R, 32, 16), whiteMat);
+    white.scale.z = DOME;
+    const pupil = new THREE.Mesh(new THREE.SphereGeometry(0.08, 24, 12), inkMat);
+    pupil.scale.z = 0.4;
+    const glint = new THREE.Mesh(new THREE.SphereGeometry(0.02, 12, 8), glintMat);
+    glint.position.set(0.05, 0.055, EYE_R * DOME * 0.92);
+    lid.add(white, pupil, glint);
+    g.add(lid);
+    blob.add(g);
+    return {
+      g, lid, pupil, idx: anchorIndex(side * 0.37, 0.33, 0.87),
+      p: new THREE.Vector2(0, -0.2), pv: new THREE.Vector2(),
+      prev: new THREE.Vector3(), prevVel: new THREE.Vector3(), primed: false,
+    };
+  }
+  const eyes = [makeEye(-1), makeEye(1)];
+
+  const browGeo = new THREE.CylinderGeometry(0.024, 0.024, 0.18, 10);
+  browGeo.rotateZ(Math.PI / 2);
+  function makeBrow(side) {
+    const g = new THREE.Group();
+    const m = new THREE.Mesh(browGeo, inkMat);
+    g.add(m); blob.add(g);
+    return { g, m, side, idx: anchorIndex(side * 0.37, 0.62, 0.7) };
+  }
+  const brows = [makeBrow(-1), makeBrow(1)];
+
+  const mouth = { g: new THREE.Group(), idx: anchorIndex(0, -0.1, 1) };
+  const arcGeo = new THREE.TorusGeometry(0.12, 0.024, 10, 28, Math.PI);
+  const smile = new THREE.Mesh(arcGeo, inkMat); smile.rotation.z = Math.PI; smile.position.y = 0.05;
+  const frown = new THREE.Mesh(arcGeo, inkMat); frown.position.y = -0.06;
+  const oMouth = new THREE.Mesh(new THREE.TorusGeometry(0.055, 0.024, 10, 24), inkMat);
+  mouth.g.add(smile, frown, oMouth);
+  blob.add(mouth.g);
+
+  const tmpV = new THREE.Vector3(), tmpN = new THREE.Vector3(), tmpW = new THREE.Vector3();
+  function placeOnSurface(obj, idx, out, forward) {
+    const i3 = 3 * idx;
+    tmpN.set(NA[i3], NA[i3 + 1], NA[i3 + 2]);
+    tmpN.z += forward; tmpN.normalize();
+    obj.position.set(P[i3] + tmpN.x * out, P[i3 + 1] + tmpN.y * out, P[i3 + 2] + tmpN.z * out);
+    tmpV.copy(obj.position).add(tmpN);
+    blob.localToWorld(tmpW.copy(tmpV));
+    obj.lookAt(tmpW);
+  }
+
+  // ---------- mood ----------
+  const LINES = {
+    poke: [
+      ['boop!', 'hehe', 'that tickles', 'squish!', 'boing', 'oh hi'],
+      ['hey.', 'personal space?', 'ok, ok, I jiggled', 'careful, I bruise', 'again?'],
+      ['stop it.', "I'm made of feelings", 'do you poke everyone like this?', 'I will wobble at you', 'last warning-ish'],
+      ['STOP.', 'I SAID STOP', 'you are testing me', 'grrrrr'],
+    ],
+    slap: [
+      ['wah!', 'hey, rude', 'oof', 'my jiggle!'],
+      ['OW.', 'did you just slap me?', 'not cool'],
+      ['seriously??', 'that one stung', "I'm telling the fridge"],
+      ['WHY', 'I AM A DESSERT', 'enough!!'],
+    ],
+    stretch: ['wheee!', "I'm stretchy!", 'do that again', 'ooh, that felt nice', 'taffy mode'],
+    sulk: ['...', 'nope.', 'still mad.', 'go poke a pillow', 'not listening'],
+    idle: ['poke me?', 'I am Gloop. I jiggle.', 'bored...', '*wobbles quietly*', 'is anyone there?'],
+  };
+  const lastPick = new Map();
+  function pick(arr) {
+    let s;
+    do { s = arr[Math.floor(Math.random() * arr.length)]; } while (arr.length > 1 && s === lastPick.get(arr));
+    lastPick.set(arr, s);
+    return s;
+  }
+
+  let annoy = 0, state = 'normal', stateT = 0, tantrumJumps = 0;
+  let lastTouch = performance.now(), nextIdle = 0, oUntil = 0;
+  const stats = { poke: 0, slap: 0, stretch: 0 };
+  const tier = () => (annoy < 25 ? 0 : annoy < 55 ? 1 : annoy < 85 ? 2 : 3);
+
+  function bother(n) {
+    lastTouch = performance.now();
+    if (state !== 'normal') return;
+    annoy = Math.min(100, annoy + n);
+    if (annoy >= 100) startTantrum();
+  }
+  function startTantrum() {
+    state = 'tantrum'; stateT = 0; tantrumJumps = 0;
+    say("THAT'S IT.", 1700, true);
+    sfx.grumble();
+  }
+
+  // ---------- speech bubble ----------
+  const bubble = document.getElementById('bubble');
+  let sayUntil = performance.now() + 3000, sayLock = 0;
+  function say(text, ms = 1500, force = false) {
+    const now = performance.now();
+    if (!force && now < sayLock) return;
+    bubble.textContent = text;
+    bubble.classList.remove('pop');
+    void bubble.offsetWidth;
+    bubble.classList.add('pop', 'show');
+    sayUntil = now + ms;
+    sayLock = now + 450;
+  }
+
+  // ---------- sound ----------
+  let ac = null, muted = false;
+  function audio() {
+    if (!ac) { try { ac = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { ac = null; } }
+    if (ac && ac.state === 'suspended') ac.resume();
+  }
+  function tone({ type = 'sine', f0, f1, f2, dur, vol = 0.2, vib = 0 }) {
+    if (muted || !ac) return;
+    const t = ac.currentTime;
+    const o = ac.createOscillator(), g = ac.createGain();
+    o.type = type;
+    o.frequency.setValueAtTime(f0, t);
+    o.frequency.exponentialRampToValueAtTime(f1, t + dur * 0.4);
+    if (f2) o.frequency.exponentialRampToValueAtTime(f2, t + dur);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(vol, t + 0.012);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    if (vib) {
+      const l = ac.createOscillator(), lg = ac.createGain();
+      l.frequency.value = vib; lg.gain.value = f0 * 0.09;
+      l.connect(lg); lg.connect(o.frequency);
+      l.start(t); l.stop(t + dur + 0.02);
+    }
+    o.connect(g); g.connect(ac.destination);
+    o.start(t); o.stop(t + dur + 0.02);
+  }
+  const sfx = {
+    bloop: () => tone({ f0: 340 + Math.random() * 60, f1: 130, dur: 0.18, vol: 0.28 }),
+    squeak: (k) => tone({ type: 'triangle', f0: 650 * k, f1: 1500 * k, f2: 900 * k, dur: 0.22, vol: 0.16, vib: 32 }),
+    boing: () => tone({ f0: 170, f1: 430, f2: 250, dur: 0.55, vol: 0.22, vib: 13 }),
+    thud: () => tone({ f0: 130, f1: 55, dur: 0.22, vol: 0.32 }),
+    grumble: () => tone({ type: 'sawtooth', f0: 105, f1: 82, f2: 70, dur: 0.8, vol: 0.05, vib: 9 }),
+  };
+  const soundBtn = document.getElementById('sound');
+  soundBtn.addEventListener('click', () => {
+    muted = !muted;
+    soundBtn.textContent = muted ? 'Sound off' : 'Sound on';
+    soundBtn.setAttribute('aria-pressed', String(!muted));
+    if (!muted) { audio(); sfx.bloop(); }
+  });
+
+  // ---------- pointer ----------
+  const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
+  const lookPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), -1.4);
+  const lookWorld = new THREE.Vector3();
+  let pointerIn = false, grab = null;
+  let lastPx = null;
+
+  function setNdc(x, y) {
+    const r = canvas.getBoundingClientRect();
+    ndc.set(((x - r.left) / r.width) * 2 - 1, -((y - r.top) / r.height) * 2 + 1);
+    ray.setFromCamera(ndc, camera);
+  }
+  // a ray that lands exactly on a seam edge can slip between triangles, so retry with a sub-pixel nudge
+  const JITTER = [[0, 0], [0.37, 0.21], [-0.29, 0.33], [0.18, -0.41]];
+  function hitAt(x, y) {
+    for (const [jx, jy] of JITTER) {
+      setNdc(x + jx, y + jy);
+      const h = ray.intersectObject(mesh, false);
+      if (h.length) return h[0];
+    }
+    return null;
+  }
+
+  canvas.addEventListener('pointerdown', (e) => {
+    audio();
+    const hit = hitAt(e.clientX, e.clientY);
+    lastPx = { x: e.clientX, y: e.clientY, t: performance.now() };
+    if (!hit) return;
+    canvas.setPointerCapture(e.pointerId);
+    const local = blob.worldToLocal(hit.point.clone());
+    // poke: push the surface in along its normal
+    region(local, 0.5, (i3, w) => {
+      V[i3] -= NA[i3] * 7 * w; V[i3 + 1] -= NA[i3 + 1] * 7 * w; V[i3 + 2] -= NA[i3 + 2] * 7 * w;
+    });
+    body.avx -= 0.6; body.avz += local.x * -0.8;
+    // set up a stretch grab around the same spot
+    W.fill(0);
+    region(local, 0.65, (i3, w, i) => { W[i] = w; });
+    const normal = new THREE.Vector3();
+    camera.getWorldDirection(normal);
+    grab = {
+      plane: new THREE.Plane().setFromNormalAndCoplanarPoint(normal, hit.point),
+      startLocal: local, maxLen: 0,
+    };
+    grabDelta.set(0, 0, 0);
+    stats.poke++; renderStats();
+    sfx.bloop();
+    if (state === 'normal') { bother(9); if (state === 'normal') say(pick(LINES.poke[tier()])); }
+    else if (state === 'sulk') say(pick(LINES.sulk));
+    canvas.style.cursor = 'grabbing';
+  });
+
+  const moveTmp = new THREE.Vector3();
+  canvas.addEventListener('pointermove', (e) => {
+    pointerIn = true;
+    const now = performance.now();
+    setNdc(e.clientX, e.clientY);
+    ray.ray.intersectPlane(lookPlane, lookWorld);
+
+    if (grab) {
+      if (ray.ray.intersectPlane(grab.plane, moveTmp)) {
+        const local = blob.worldToLocal(moveTmp.clone());
+        grabDelta.copy(local).sub(grab.startLocal);
+        if (grabDelta.length() > 1.4) grabDelta.setLength(1.4);
+        grab.maxLen = Math.max(grab.maxLen, grabDelta.length());
+        if (!grabbing && grabDelta.length() > 0.03) grabbing = true;
+      }
+      lastPx = { x: e.clientX, y: e.clientY, t: now };
+      return;
+    }
+
+    // slap: a fast swipe that crosses the blob
+    if (lastPx) {
+      const dx = e.clientX - lastPx.x, dy = e.clientY - lastPx.y;
+      const dtm = Math.max(1, now - lastPx.t);
+      const speed = Math.hypot(dx, dy) / dtm;
+      if (speed > 1.3 && now - (canvas._lastSlap || 0) > 260) {
+        const hit = hitAt(e.clientX, e.clientY) || hitAt(lastPx.x + dx / 2, lastPx.y + dy / 2);
+        if (hit) { canvas._lastSlap = now; slap(hit, dx, dy, speed); }
+      }
+    }
+    lastPx = { x: e.clientX, y: e.clientY, t: now };
+    if (e.pointerType === 'mouse') canvas.style.cursor = hitAt(e.clientX, e.clientY) ? 'grab' : 'default';
+  });
+
+  function endGrab() {
+    if (!grab) return;
+    if (grab.maxLen > 0.35) {
+      stats.stretch++; renderStats();
+      sfx.boing();
+      if (state === 'normal') { annoy = Math.max(0, annoy - 8); say(pick(LINES.stretch)); }
+    }
+    grab = null; grabbing = false;
+    canvas.style.cursor = 'grab';
+  }
+  canvas.addEventListener('pointerup', endGrab);
+  canvas.addEventListener('pointercancel', endGrab);
+  canvas.addEventListener('pointerleave', () => { pointerIn = false; lastPx = null; });
+
+  const camRight = new THREE.Vector3(), camUp = new THREE.Vector3(), qInv = new THREE.Quaternion();
+  function slap(hit, dx, dy, speed) {
+    audio();
+    const f = Math.min(speed, 4) * 3.2;
+    camRight.setFromMatrixColumn(camera.matrixWorld, 0);
+    camUp.setFromMatrixColumn(camera.matrixWorld, 1);
+    const dir = camRight.clone().multiplyScalar(dx).addScaledVector(camUp, -dy).normalize();
+    blob.getWorldQuaternion(qInv).invert();
+    dir.applyQuaternion(qInv);
+    const local = blob.worldToLocal(hit.point.clone());
+    region(local, 0.95, (i3, w) => {
+      V[i3] += (dir.x - NA[i3] * 0.35) * w * f;
+      V[i3 + 1] += (dir.y - NA[i3 + 1] * 0.35) * w * f;
+      V[i3 + 2] += (dir.z - NA[i3 + 2] * 0.35) * w * f;
+    });
+    const len = Math.hypot(dx, dy) || 1;
+    body.avz -= (dx / len) * f * 0.35;
+    body.avx += (dy / len) * f * 0.2;
+    stats.slap++; renderStats();
+    sfx.squeak(0.85 + Math.min(speed, 4) * 0.12);
+    oUntil = performance.now() + 450;
+    if (state === 'normal') { bother(14 + Math.min(speed, 4) * 3); if (state === 'normal') say(pick(LINES.slap[tier()])); }
+    else if (state === 'sulk') say(pick(LINES.sulk));
+  }
+
+  // ---------- UI ----------
+  const fillEl = document.getElementById('fill'), moodEl = document.getElementById('mood');
+  const sPoke = document.getElementById('sPoke'), sSlap = document.getElementById('sSlap'), sStretch = document.getElementById('sStretch');
+  function renderStats() { sPoke.textContent = stats.poke; sSlap.textContent = stats.slap; sStretch.textContent = stats.stretch; }
+  let lastMood = '';
+  function renderGauge() {
+    const left = state === 'normal' ? 100 - annoy : 0;
+    fillEl.style.width = left.toFixed(1) + '%';
+    fillEl.style.background = `hsl(${Math.round(left * 1.3)}, 62%, 44%)`;
+    const mood = state === 'tantrum' ? 'Tantrum' : state === 'sulk' ? 'Sulking'
+      : ['Content', 'Mildly bothered', 'Annoyed', 'About to lose it'][tier()];
+    if (mood !== lastMood) { moodEl.textContent = mood; lastMood = mood; }
+  }
+
+  // ---------- layout ----------
+  function resize() {
+    const w = window.innerWidth, h = window.innerHeight;
+    renderer.setSize(w, h, false);
+    camera.aspect = w / h;
+    const dist = camera.aspect < 0.75 ? 8.4 : camera.aspect < 1.1 ? 6.8 : 5.6;
+    camera.position.set(0, 0.55, dist);
+    camera.lookAt(0, -0.02, 0);
+    camera.updateProjectionMatrix();
+  }
+  window.addEventListener('resize', resize);
+  resize();
+
+  // ---------- loop ----------
+  const curColor = HAPPY.clone(), targetColor = new THREE.Color();
+  const wp = new THREE.Vector3(), vel = new THREE.Vector3(), accW = new THREE.Vector3();
+  const gLocal = new THREE.Vector3(), aLocal = new THREE.Vector3(), lookLocal = new THREE.Vector3(), eyeQ = new THREE.Quaternion();
+  const headPt = new THREE.Vector3();
+  let last = performance.now(), simAcc = 0, nextBlink = last + 2500, blinkUntil = 0;
+
+  function frame(t) {
+    const dt = Math.min(0.05, (t - last) / 1000);
+    last = t;
+
+    // mood state machine
+    stateT += dt;
+    if (state === 'normal') {
+      annoy = Math.max(0, annoy - dt * (t - lastTouch > 1500 ? 9 : 2));
+      if (t - lastTouch > 9000 && t > nextIdle) { say(pick(LINES.idle), 2200); nextIdle = t + 10000; }
+    } else if (state === 'tantrum') {
+      if (tantrumJumps === 0 && stateT > 0.2) { body.vy = 5.6; body.y = 0.001; tantrumJumps = 1; }
+      if (tantrumJumps === 1 && stateT > 1.0) { body.vy = 5.0; body.y = 0.001; tantrumJumps = 2; }
+      if (!reduceMotion) { body.avz += (Math.random() - 0.5) * 9; }
+      if (stateT > 2.0) {
+        state = 'sulk'; stateT = 0; body.rotTarget = Math.PI;
+        say('not talking to you.', 2000, true);
+      }
+    } else if (state === 'sulk' && stateT > 5.5) {
+      state = 'normal'; stateT = 0; annoy = 30; body.rotTarget = 0; lastTouch = t;
+      say('...fine. one more poke.', 2400, true);
+    }
+    if (state === 'normal' && annoy > 85 && !reduceMotion) body.avz += (Math.random() - 0.5) * 2.5;
+
+    breath = reduceMotion ? 0 : 0.02 * Math.sin(t * 0.0017);
+
+    simAcc += dt;
+    let n = 0;
+    while (simAcc >= H && n < 6) { step(H); bodyStep(H); simAcc -= H; n++; }
+    if (n === 6) simAcc = 0;
+
+    for (let i = 0; i < 3 * N; i++) P[i] = rest[i] + D[i];
+    geo.attributes.position.needsUpdate = true;
+    geo.computeVertexNormals();
+
+    pivot.position.y = minY + body.y;
+    pivot.rotation.set(body.ax, body.rotY, body.az);
+    pivot.updateMatrixWorld(true);
+
+    // colour follows the mood
+    const m = state === 'tantrum' ? 1 : state === 'sulk' ? 0.7 : Math.pow(annoy / 100, 1.4);
+    targetColor.copy(HAPPY).lerp(ANGRY, m);
+    curColor.lerp(targetColor, Math.min(1, dt * 5));
+    jellyMat.color.copy(curColor);
+    jellyMat.emissive.copy(curColor).multiplyScalar(0.12 + m * 0.1);
+
+    // eyes, with googly pupils
+    if (t > nextBlink) { blinkUntil = t + 130; nextBlink = t + 2500 + Math.random() * 3500; }
+    const lidTarget = state === 'sulk' ? 0.25 : t < blinkUntil ? 0.08 : 1;
+    const target = pointerIn && state !== 'sulk' ? lookWorld : camera.position;
+    for (const e of eyes) {
+      placeOnSurface(e.g, e.idx, 0.015, 0.5);
+      e.g.updateMatrixWorld(true);
+      e.lid.scale.y += (lidTarget - e.lid.scale.y) * Math.min(1, dt * 25);
+      e.g.getWorldPosition(wp);
+      if (!e.primed) { e.prev.copy(wp); e.prevVel.set(0, 0, 0); e.primed = true; }
+      const fdt = Math.max(dt, 1 / 240);
+      vel.copy(wp).sub(e.prev).divideScalar(fdt);
+      accW.copy(vel).sub(e.prevVel).divideScalar(fdt);
+      if (accW.length() > 80) accW.setLength(80);
+      e.prev.copy(wp); e.prevVel.copy(vel);
+      e.g.getWorldQuaternion(eyeQ).invert();
+      gLocal.set(0, -9.8, 0).applyQuaternion(eyeQ);
+      aLocal.copy(accW).applyQuaternion(eyeQ);
+      lookLocal.copy(target).sub(wp).applyQuaternion(eyeQ).normalize();
+      const lx = lookLocal.x * 1.6, ly = lookLocal.y * 1.6;
+      const ax = gLocal.x * 0.45 - aLocal.x * 0.035 + 12 * (lx - e.p.x) - 2.4 * e.pv.x;
+      const ay = gLocal.y * 0.45 - aLocal.y * 0.035 + 12 * (ly - e.p.y) - 2.4 * e.pv.y;
+      e.pv.x += ax * dt; e.pv.y += ay * dt;
+      e.p.x += e.pv.x * dt; e.p.y += e.pv.y * dt;
+      const r = e.p.length();
+      if (r > 1) {
+        e.p.divideScalar(r);
+        const vr = e.pv.dot(e.p);
+        if (vr > 0) e.pv.addScaledVector(e.p, -1.5 * vr);
+      }
+      const off = 0.075, px = e.p.x * off, py = e.p.y * off;
+      const rr = Math.min(0.99, Math.hypot(px, py) / EYE_R);
+      e.pupil.position.set(px, py, EYE_R * DOME * Math.sqrt(1 - rr * rr) - 0.006);
+      const fury = state === 'tantrum' ? 1 : Math.max(0, (annoy - 50) / 50);
+      e.pupil.scale.set(1 - fury * 0.35, 1 - fury * 0.35, 0.4);
+    }
+
+    // brows: relaxed arch when happy, slanted in when cross
+    const browMood = state === 'tantrum' ? 1 : Math.max(0, Math.min(1, (annoy - 20) / 60));
+    for (const b of brows) {
+      placeOnSurface(b.g, b.idx, 0.03, 0.4);
+      const ang = -b.side * 0.2 * (1 - browMood) + b.side * 0.55 * browMood;
+      b.m.rotation.z = ang;
+      b.m.position.y = -0.035 * browMood;
+    }
+
+    // mouth
+    placeOnSurface(mouth.g, mouth.idx, 0.01, 0.3);
+    const shocked = t < oUntil;
+    const frowny = state !== 'normal' || annoy > 40;
+    oMouth.visible = shocked;
+    smile.visible = !shocked && !frowny;
+    frown.visible = !shocked && frowny;
+    smile.scale.y = 0.55 + 0.35 * (1 - Math.min(1, annoy / 40));
+    frown.scale.y = state !== 'normal' ? 0.9 : 0.15 + 0.75 * Math.min(1, Math.max(0, (annoy - 40) / 45));
+    if (shocked) oMouth.scale.setScalar(1 + 0.15 * Math.sin(t * 0.05));
+
+    // speech bubble follows the top of the head
+    blob.localToWorld(headPt.set(0, maxY + 0.32, 0));
+    headPt.project(camera);
+    const bw = bubble.offsetWidth || 160;
+    let bx = (headPt.x * 0.5 + 0.5) * window.innerWidth;
+    bx = Math.max(16 + bw / 2, Math.min(window.innerWidth - 16 - bw / 2, bx));
+    const by = (-headPt.y * 0.5 + 0.5) * window.innerHeight;
+    bubble.style.left = bx + 'px';
+    bubble.style.top = by + 'px';
+    if (t > sayUntil) bubble.classList.remove('show');
+
+    renderGauge();
+    renderer.render(scene, camera);
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
+</script>
+</body></html>
