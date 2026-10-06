@@ -66,6 +66,16 @@
   .panel header i { font: italic 15px/1 var(--serif); color: var(--muted); }
   .group { padding: 14px 0; border-bottom: 1px solid var(--line); }
   .group:last-child { border-bottom: 0; padding-bottom: 0; }
+  .handbtn { width: 100%; margin-top: 6px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+  .handbtn svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.3; stroke-linecap: round; stroke-linejoin: round; }
+  .handbtn[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+  .handview { position: fixed; top: var(--gutter); left: 50%; transform: translateX(-50%); width: 184px; border: 1px solid var(--line-strong); aspect-ratio: 4 / 3; max-width: 100%; overflow: hidden; background: var(--ink); z-index: 2; }
+  .handview video, .handview canvas { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
+  .handview video { opacity: .55; }
+  .hcursor { position: absolute; left: 0; top: 0; width: 34px; height: 34px; margin: -17px 0 0 -17px; border: 1.5px solid var(--ink); border-radius: 50%; pointer-events: none; transition: width .12s, height .12s, margin .12s, background .12s, border-radius .12s; }
+  .hcursor[data-pose="pinch"] { width: 16px; height: 16px; margin: -8px 0 0 -8px; background: var(--cut); border-color: var(--cut); }
+  .hcursor[data-pose="blade"] { width: 44px; height: 6px; margin: -3px 0 0 -22px; border-radius: 3px; background: var(--ink); }
+  .stroke polyline { fill: none; stroke: var(--cut); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; opacity: .75; }
   .tools { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 10px; }
   .tool, .btn { border: 1px solid var(--line-strong); background: transparent; padding: 8px 10px; min-height: 36px; cursor: pointer; font-size: 12.5px; }
   .tool { display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
@@ -138,6 +148,7 @@
     .stats > div { padding-right: 6px; }
     .stats > div + div { padding-left: 10px; }
     .panel { grid-area: panel; width: auto; margin: 14px var(--gutter) 0; background: transparent; }
+    .handview { position: relative; top: auto; left: auto; transform: none; width: 100%; margin-top: 8px; }
     .notes { grid-area: notes; width: auto; margin: 14px var(--gutter) 0; background: transparent; }
     .notes .body { max-height: none; }
     .btn, .tool { min-height: 44px; font-size: 14px; }
@@ -155,7 +166,8 @@
 
 <div class="stage" id="stage">
   <canvas id="gl" role="img" aria-label="A 3D slice of watermelon jelly. Drag it to stretch it, or pick the knife and draw across it to cut it."></canvas>
-  <svg class="stroke" id="stroke" aria-hidden="true"><line id="strokeLine" x1="0" y1="0" x2="0" y2="0" visibility="hidden"/></svg>
+  <svg class="stroke" id="stroke" aria-hidden="true"><line id="strokeLine" x1="0" y1="0" x2="0" y2="0" visibility="hidden"/><polyline id="trailLine" points=""/></svg>
+  <div class="hcursor" id="handCursor" data-pose="none" hidden></div>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
   <div class="fallback" id="fallback" hidden>
     <div>
@@ -182,6 +194,12 @@
       <button class="tool" type="button" data-tool="hand" aria-pressed="true"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M6 10V5.5a1.2 1.2 0 0 1 2.4 0V9m0-4.8V3.8a1.2 1.2 0 0 1 2.4 0V9m0-4.2a1.2 1.2 0 0 1 2.4 0V9.5m0-3a1.2 1.2 0 0 1 2.4 0V12c0 3.3-2.4 5.5-5.4 5.5-2.2 0-3.6-1-4.8-2.8L3.3 11.6a1.3 1.3 0 0 1 2-1.6L6 11"/></svg>Hand</button>
       <button class="tool" type="button" data-tool="knife" aria-pressed="false"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 17l9.2-9.2M12.2 7.8l3.6-4.3c.8 1.6.3 4-1.4 5.7L12.6 11 9 7.4"/><path d="M3 17l2.6-.6"/></svg>Knife</button>
     </div>
+    <button class="btn handbtn" id="handBtn" type="button" aria-pressed="false"><svg viewBox="0 0 20 20" aria-hidden="true"><rect x="2.5" y="5.5" width="11" height="9" rx="1.5"/><path d="M13.5 9l4-2.5v7l-4-2.5"/></svg>Use my hands</button>
+    <div class="handview" id="handView" hidden>
+      <video id="handVideo" playsinline muted></video>
+      <canvas id="handCanvas" aria-hidden="true"></canvas>
+    </div>
+
   </div>
   <div class="group">
     <span class="label">Variety</span>
@@ -233,6 +251,8 @@
     <p>Each piece remembers its outline in the flat, uncut shape. Your stroke sets a vertical blade plane. For each piece it crosses, the piece's current pose is fitted to a best rotation, and the plane is carried back into the rest shape, where it becomes a straight line. The outline is split along that line, and each half is rebuilt as a new tet mesh. Every new particle copies the position and velocity of the jelly it was cut from, so the halves carry on moving the way the whole was. Then the blade pushes them apart. Pieces bump into each other instead of passing through.</p>
     <h3>The skin you see</h3>
     <p>The smooth surface, seeds and air bubbles are separate meshes. Each of their vertices is pinned inside one tetrahedron by barycentric weights, so seeds stretch, turn and travel with the flesh around them. Colour comes from where a point sat in the original melon, so a fresh cut shows the right rind, pith and flesh.</p>
+    <h3>Using your hands</h3>
+    <p>“Use my hands” turns on your webcam and tracks 21 points on your hand with Google’s MediaPipe hand model, running entirely in your browser; no video leaves your device. Pinch your thumb and index finger to grab the jelly under the cursor, move to pull it, and open your fingers to let go. Hold your index and middle fingers out like a blade and swipe fast across the slice to cut along the swipe. The camera needs a normal web page; the claude.ai preview does not allow it.</p>
     <h3>Light through jelly</h3>
     <p>Each frame is drawn in three passes. First everything behind the jelly, then the depth of the jelly's back faces, which tells every pixel how much jelly its view ray crosses. The visible surface bends the background through that thickness, tints it by how much colour the flesh absorbs over that distance, adds a milky glow in the pale rind and at thin edges, and finishes with wet reflections of a soft studio.</p>
   </div>
@@ -1291,6 +1311,45 @@
     return ray.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 1, 0), -h), out) ? out : null;
   }
 
+  // shared by mouse, touch and hand tracking
+  function startGrabAt(cx, cy) {
+    const hit = pickPiece(cx, cy);
+    if (!hit) return false;
+    const p = hit.object.userData.piece, P = hit.point, RG = 0.4;
+    const ids = [], wt = [], off = [];
+    let nearest = -1, nd = Infinity;
+    for (let i = 0; i < p.N; i++) {
+      const dx = p.pos[3 * i] - P.x, dy = p.pos[3 * i + 1] - P.y, dz = p.pos[3 * i + 2] - P.z, d = Math.hypot(dx, dy, dz);
+      if (d < nd) { nd = d; nearest = i; }
+      if (d < RG) { const f = 1 - d / RG; ids.push(i); wt.push(f * f * (3 - 2 * f)); off.push(dx, dy, dz); }
+    }
+    if (!ids.length) { ids.push(nearest); wt.push(1); off.push(p.pos[3 * nearest] - P.x, p.pos[3 * nearest + 1] - P.y, p.pos[3 * nearest + 2] - P.z); }
+    const nrm = new THREE.Vector3();
+    camera.getWorldDirection(nrm);
+    grab = { piece: p, ids: Int32Array.from(ids), wt: Float32Array.from(wt), off: Float32Array.from(off), target: P.clone(), start: P.clone(), plane: new THREE.Plane().setFromNormalAndCoplanarPoint(nrm, P) };
+    return true;
+  }
+  function moveGrabTo(cx, cy) {
+    if (!grab) return;
+    setNdc(cx, cy);
+    const t = new THREE.Vector3();
+    if (!ray.ray.intersectPlane(grab.plane, t)) return;
+    const d = t.sub(grab.start);
+    if (d.length() > 2.2) d.setLength(2.2);
+    grab.target.copy(grab.start).add(d);
+    // never drive the held patch into the floor: lift the patch instead
+    let lowest = Infinity;
+    for (let k = 0; k < grab.ids.length; k++) lowest = Math.min(lowest, grab.off[3 * k + 1]);
+    grab.target.y = Math.max(grab.target.y, 0.004 - lowest);
+  }
+  function cutAlong(x0, y0, x1, y1) {
+    if (bladeAnim || Math.hypot(x1 - x0, y1 - y0) < 24) return false;
+    const A = planePoint(x0, y0, THICK), B = planePoint(x1, y1, THICK);
+    if (!A || !B || A.distanceTo(B) < 0.05) return false;
+    startBlade(A, B);
+    return true;
+  }
+
   canvas.addEventListener('pointerdown', (e) => {
     if (e.button === 2) return;
     canvas.setPointerCapture(e.pointerId);
@@ -1302,20 +1361,7 @@
       strokeLine.setAttribute('visibility', 'visible');
       return;
     }
-    const hit = pickPiece(e.clientX, e.clientY);
-    if (hit) {
-      const p = hit.object.userData.piece, P = hit.point, RG = 0.4;
-      const ids = [], wt = [], off = [];
-      let nearest = -1, nd = Infinity;
-      for (let i = 0; i < p.N; i++) {
-        const dx = p.pos[3 * i] - P.x, dy = p.pos[3 * i + 1] - P.y, dz = p.pos[3 * i + 2] - P.z, d = Math.hypot(dx, dy, dz);
-        if (d < nd) { nd = d; nearest = i; }
-        if (d < RG) { const f = 1 - d / RG; ids.push(i); wt.push(f * f * (3 - 2 * f)); off.push(dx, dy, dz); }
-      }
-      if (!ids.length) { ids.push(nearest); wt.push(1); off.push(p.pos[3 * nearest] - P.x, p.pos[3 * nearest + 1] - P.y, p.pos[3 * nearest + 2] - P.z); }
-      const nrm = new THREE.Vector3();
-      camera.getWorldDirection(nrm);
-      grab = { piece: p, ids: Int32Array.from(ids), wt: Float32Array.from(wt), off: Float32Array.from(off), target: P.clone(), start: P.clone(), plane: new THREE.Plane().setFromNormalAndCoplanarPoint(nrm, P) };
+    if (startGrabAt(e.clientX, e.clientY)) {
       drag = { mode: 'grab' };
       canvas.dataset.cursor = 'grabbing';
     } else {
@@ -1331,18 +1377,8 @@
     }
     if (drag.mode === 'knife') {
       strokeLine.setAttribute('x2', e.clientX - r.left); strokeLine.setAttribute('y2', e.clientY - r.top);
-    } else if (drag.mode === 'grab' && grab) {
-      setNdc(e.clientX, e.clientY);
-      const t = new THREE.Vector3();
-      if (ray.ray.intersectPlane(grab.plane, t)) {
-        const d = t.sub(grab.start);
-        if (d.length() > 2.2) d.setLength(2.2);
-        grab.target.copy(grab.start).add(d);
-        // never drive the held patch into the floor: lift the patch instead
-        let lowest = Infinity;
-        for (let k = 0; k < grab.ids.length; k++) lowest = Math.min(lowest, grab.off[3 * k + 1]);
-        grab.target.y = Math.max(grab.target.y, 0.004 - lowest);
-      }
+    } else if (drag.mode === 'grab') {
+      moveGrabTo(e.clientX, e.clientY);
     } else if (drag.mode === 'orbit') {
       orbit.az -= (e.clientX - drag.x) * 0.006;
       orbit.el = Math.max(0.12, Math.min(1.35, orbit.el + (e.clientY - drag.y) * 0.004));
@@ -1354,10 +1390,7 @@
     if (!drag) return;
     if (drag.mode === 'knife') {
       strokeLine.setAttribute('visibility', 'hidden');
-      if (Math.hypot(e.clientX - drag.x0, e.clientY - drag.y0) > 24) {
-        const A = planePoint(drag.x0, drag.y0, THICK), B = planePoint(e.clientX, e.clientY, THICK);
-        if (A && B && A.distanceTo(B) > 0.05) startBlade(A, B);
-      }
+      cutAlong(drag.x0, drag.y0, e.clientX, e.clientY);
     } else if (drag.mode === 'grab') grab = null;
     drag = null;
     canvas.dataset.cursor = tool === 'knife' ? 'knife' : 'grab';
@@ -1414,6 +1447,7 @@
   });
   let paused = false, slow = false;
   function renderStatus() {
+    if (hand.on) { const p = hand.pose; hand.pose = ''; setHandStatus(p || 'none'); return; }
     $('status').dataset.state = paused ? 'paused' : 'live';
     $('statusText').textContent = 'WEBGL · ' + (paused ? 'PAUSED' : slow ? '¼ SPEED' : 'LIVE');
   }
@@ -1448,6 +1482,165 @@
     const uj = ke / mass * (grams / 1000) * (SCALE_CM / 100) ** 2 * 1e6;
     $('keOut').textContent = uj < 10 ? uj.toFixed(1) : Math.round(uj).toLocaleString('en-US');
     $('piecesOut').textContent = pieces.length;
+  }
+
+  // ---------- hand tracking (webcam + MediaPipe hand landmarks) ----------
+  const MP = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14';
+  const HAND_MODEL = 'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task';
+  const BONES = [[0, 1], [1, 2], [2, 3], [3, 4], [0, 5], [5, 6], [6, 7], [7, 8], [5, 9], [9, 10], [10, 11], [11, 12], [9, 13], [13, 14], [14, 15], [15, 16], [13, 17], [17, 18], [18, 19], [19, 20], [0, 17]];
+  const handBtn = $('handBtn'), handView = $('handView'), handVideo = $('handVideo'), handCanvas = $('handCanvas');
+  const handCursor = $('handCursor'), trailLine = $('trailLine');
+  const hctx = handCanvas.getContext('2d');
+  const hand = { on: false, starting: false, lm: null, stream: null, lastVideoTime: -1, seen: 0, sx: 0, sy: 0, init: false, pinch: false, pinchMiss: false, blade: false, trail: [], cooldown: 0, pose: 'none' };
+
+  function setHandStatus(pose) {
+    if (pose === hand.pose) return;
+    hand.pose = pose;
+    handCursor.dataset.pose = pose;
+    handCursor.hidden = pose === 'none';
+    const label = { none: 'NO HAND', open: 'OPEN', pinch: 'PINCH', blade: 'KNIFE' }[pose];
+    $('statusText').textContent = 'HANDS · ' + label;
+  }
+  async function startHands() {
+    if (hand.on || hand.starting) return;
+    hand.starting = true;
+    handBtn.lastChild.textContent = 'Starting camera…';
+    try {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) throw Object.assign(new Error('no camera api'), { name: 'NoCamera' });
+      hand.stream = await navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' }, audio: false });
+      handVideo.srcObject = hand.stream;
+      await handVideo.play();
+      handBtn.lastChild.textContent = 'Loading hand model…';
+      if (!hand.landmarker) {
+        const vision = await import(MP + '/vision_bundle.mjs');
+        const files = await vision.FilesetResolver.forVisionTasks(MP + '/wasm');
+        const opts = (delegate) => ({ baseOptions: { modelAssetPath: HAND_MODEL, delegate }, runningMode: 'VIDEO', numHands: 1, minHandDetectionConfidence: 0.6, minHandPresenceConfidence: 0.6, minTrackingConfidence: 0.5 });
+        try { hand.landmarker = await vision.HandLandmarker.createFromOptions(files, opts('GPU')); }
+        catch (err) { hand.landmarker = await vision.HandLandmarker.createFromOptions(files, opts('CPU')); }
+      }
+      handCanvas.width = handVideo.videoWidth || 640; handCanvas.height = handVideo.videoHeight || 480;
+      hand.on = true;
+      handView.hidden = false;
+      handCursor.hidden = true;
+      handBtn.lastChild.textContent = 'Stop camera';
+      handBtn.setAttribute('aria-pressed', 'true');
+      $('hint').innerHTML = '<b>Hands</b>Pinch to grab and pull. Hold two fingers out and swipe fast to cut.';
+      hand.pose = '';
+      setHandStatus('none');
+      toast('Camera on. Hold your hand up to the camera.');
+    } catch (err) {
+      stopHands(true);
+      const msg = err && err.name === 'NotAllowedError' ? 'Camera access was blocked. Allow it in the browser to use your hands.'
+        : err && (err.name === 'NotFoundError' || err.name === 'OverconstrainedError') ? 'No camera found.'
+        : 'Hand tracking can’t start here. Open the page from your own site or localhost.';
+      toast(msg);
+    }
+    hand.starting = false;
+  }
+  function stopHands(quiet) {
+    if (hand.pinch && grab) grab = null;
+    hand.on = false; hand.pinch = false; hand.blade = false; hand.trail.length = 0; hand.init = false; hand.lm = null;
+    if (hand.stream) { for (const t of hand.stream.getTracks()) t.stop(); hand.stream = null; }
+    handVideo.srcObject = null;
+    handView.hidden = true;
+    handCursor.hidden = true;
+    trailLine.setAttribute('points', '');
+    handBtn.lastChild.textContent = 'Use my hands';
+    handBtn.setAttribute('aria-pressed', 'false');
+    hand.pose = '';
+    if (!quiet) { $('hint').innerHTML = hints[tool]; renderStatus(); }
+  }
+  handBtn.addEventListener('click', () => (hand.on ? stopHands(false) : startHands()));
+
+  const d2 = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+  // a finger counts as straight when its tip is clearly farther from the wrist than its middle joint
+  const straight = (lm, tip, pip) => d2(lm[0], lm[tip]) > d2(lm[0], lm[pip]) * 1.18;
+  function toScreen(p) {
+    // mirror the camera and use its central area, so the hand need not reach the frame edge
+    const r = canvas.getBoundingClientRect();
+    const u = Math.min(1, Math.max(0, ((1 - p.x) - 0.12) / 0.76)), v = Math.min(1, Math.max(0, (p.y - 0.1) / 0.7));
+    return [r.left + u * r.width, r.top + v * r.height];
+  }
+
+  // gesture state machine, fed one landmark set (or null) per camera frame
+  function handFrame(lm, now) {
+    if (!lm) {
+      if (now - hand.seen > 350) {
+        if (hand.pinch) { grab = null; hand.pinch = false; }
+        hand.blade = false; hand.trail.length = 0; hand.init = false;
+        trailLine.setAttribute('points', '');
+        setHandStatus('none');
+      }
+      return;
+    }
+    hand.seen = now;
+    const size = Math.max(1e-3, d2(lm[0], lm[9]));
+    const pinchD = d2(lm[4], lm[8]) / size;
+    const wasPinch = hand.pinch;
+    const pinch = wasPinch ? pinchD < 0.5 : pinchD < 0.32;
+    const indexOut = straight(lm, 8, 6), middleOut = straight(lm, 12, 10);
+    const blade = !pinch && indexOut && middleOut;
+
+    // the cursor sits between thumb and index when pinching, between the two fingertips for the knife
+    const src = pinch || pinchD < 0.6 ? { x: (lm[4].x + lm[8].x) / 2, y: (lm[4].y + lm[8].y) / 2 } : blade ? { x: (lm[8].x + lm[12].x) / 2, y: (lm[8].y + lm[12].y) / 2 } : lm[8];
+    const [rx, ry] = toScreen(src);
+    if (!hand.init) { hand.sx = rx; hand.sy = ry; hand.init = true; }
+    const jump = Math.hypot(rx - hand.sx, ry - hand.sy);
+    // light smoothing that loosens when the hand moves fast, so swipes stay sharp
+    const k = Math.min(0.85, 0.3 + jump * 0.004);
+    hand.sx += (rx - hand.sx) * k; hand.sy += (ry - hand.sy) * k;
+    const r = canvas.getBoundingClientRect();
+    handCursor.style.transform = `translate(${hand.sx - r.left}px, ${hand.sy - r.top}px)`;
+
+    if (pinch && !wasPinch) { hand.pinchMiss = !startGrabAt(hand.sx, hand.sy); hand.trail.length = 0; }
+    else if (pinch && !hand.pinchMiss) moveGrabTo(hand.sx, hand.sy);
+    else if (!pinch && wasPinch) { if (!hand.pinchMiss) grab = null; hand.pinchMiss = false; }
+    hand.pinch = pinch;
+
+    if (blade) {
+      hand.trail.push({ x: hand.sx, y: hand.sy, t: now });
+      while (hand.trail.length && now - hand.trail[0].t > 420) hand.trail.shift();
+      const a = hand.trail[0], b = hand.trail[hand.trail.length - 1];
+      const span = Math.min(r.width, r.height);
+      if (a && now > hand.cooldown && b.t - a.t > 60) {
+        const dist = Math.hypot(b.x - a.x, b.y - a.y), speed = dist / (b.t - a.t);
+        if (dist > span * 0.22 && speed > 0.75) {
+          // extend the swipe a little at both ends so it reaches across the jelly
+          const ex = (b.x - a.x) * 0.15, ey = (b.y - a.y) * 0.15;
+          if (cutAlong(a.x - ex, a.y - ey, b.x + ex, b.y + ey)) hand.cooldown = now + 900;
+          hand.trail.length = 0;
+        }
+      }
+    } else hand.trail.length = 0;
+    hand.blade = blade;
+    trailLine.setAttribute('points', hand.trail.map((p) => `${p.x - r.left},${p.y - r.top}`).join(' '));
+    setHandStatus(pinch ? 'pinch' : blade ? 'blade' : 'open');
+  }
+
+  function drawHandPreview(lm) {
+    const w = handCanvas.width, h = handCanvas.height;
+    hctx.clearRect(0, 0, w, h);
+    if (!lm) return;
+    hctx.lineWidth = Math.max(2, w / 160);
+    hctx.strokeStyle = hand.pinch ? '#a3202f' : hand.blade ? '#1d1b18' : '#2e6b45';
+    hctx.beginPath();
+    for (const [a, b] of BONES) { hctx.moveTo(lm[a].x * w, lm[a].y * h); hctx.lineTo(lm[b].x * w, lm[b].y * h); }
+    hctx.stroke();
+    hctx.fillStyle = '#fff';
+    for (const p of lm) { hctx.beginPath(); hctx.arc(p.x * w, p.y * h, Math.max(2.5, w / 140), 0, Math.PI * 2); hctx.fill(); }
+  }
+
+  function updateHands(now) {
+    if (!hand.on || !hand.landmarker || handVideo.readyState < 2) return;
+    if (handVideo.currentTime === hand.lastVideoTime) return;
+    hand.lastVideoTime = handVideo.currentTime;
+    let lm = null;
+    try {
+      const res = hand.landmarker.detectForVideo(handVideo, now);
+      lm = res.landmarks && res.landmarks.length ? res.landmarks[0] : null;
+    } catch (e) { lm = null; }
+    handFrame(lm, now);
+    drawHandPreview(lm);
   }
 
   // ---------- layout ----------
@@ -1518,6 +1711,7 @@
       while (acc >= STEP && n < 3) { step(); acc -= STEP; n++; }
       if (n === 3) acc = 0;
     }
+    updateHands(t);
     for (const p of pieces) p.updateRender();
     if (++frameNo % 6 === 0) updateReadouts();
     renderFrame();
