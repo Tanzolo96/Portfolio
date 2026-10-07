@@ -150,7 +150,7 @@
 </aside>
 
 <section class="progress card" aria-label="Progress">
-  <p class="hint" id="hint"><b>Hand</b>Grab a piece and carry it to the bowl. Switch to the knife to cut.</p>
+  <p class="hint" id="hint"><b>Hand</b>Grab a piece, it lifts up. Move it anywhere on the counter and let go over the bowl.</p>
   <div class="meter" id="meter" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div>
   <div class="nums"><span>Bowl <b id="bowlOut">0</b>/6</span><span>Pieces <b id="piecesOut">1</b></span><span>Time <b id="timeOut">0:00</b></span></div>
 </section>
@@ -1050,9 +1050,14 @@
   }
 
   const onBoard = (x, z) => x > BOARD.x0 && x < BOARD.x1 && z > BOARD.z0 && z < BOARD.z1;
-  function contactFriction(x, prev, k, pen) {
-    const dx = x[k] - prev[k], dy = x[k + 1] - prev[k + 1], dz = x[k + 2] - prev[k + 2], dl = Math.hypot(dx, dy, dz);
-    if (dl > 1e-12) { const f = dl < FRICTION * pen ? 1 : FRICTION * pen / dl; x[k] -= dx * f; x[k + 1] -= dy * f * 0.3; x[k + 2] -= dz * f; }
+  // friction against a curved surface: remove sliding along the surface only (never along its normal),
+  // the same in every direction, so pieces settle instead of ratcheting up the bowl wall
+  function contactFriction(x, prev, k, pen, nx, ny, nz) {
+    let dx = x[k] - prev[k], dy = x[k + 1] - prev[k + 1], dz = x[k + 2] - prev[k + 2];
+    const dn = dx * nx + dy * ny + dz * nz;
+    dx -= dn * nx; dy -= dn * ny; dz -= dn * nz;
+    const dl = Math.hypot(dx, dy, dz), mu = 0.8;
+    if (dl > 1e-12) { const f = dl < mu * pen ? 1 : mu * pen / dl; x[k] -= dx * f; x[k + 1] -= dy * f; x[k + 2] -= dz * f; }
   }
   function solveFloor(p) {
     const x = p.pos, prev = p.prev, PAD = 0.02;
@@ -1074,11 +1079,23 @@
         if (wasInside && d > BOWL.Rs - PAD && d > 1e-6) {
           const s = (BOWL.Rs - PAD) / d, pen2 = d - (BOWL.Rs - PAD);
           x[k] = BOWL.x + cx * s; x[k + 1] = BOWL.cy + cy * s; x[k + 2] = BOWL.z + cz * s;
-          contactFriction(x, prev, k, pen2);
+          contactFriction(x, prev, k, pen2, -cx / d, -cy / d, -cz / d);
         } else if (!wasInside && d < BOWL.Rs + BOWL.t + PAD && d > 1e-6) {
           const s = (BOWL.Rs + BOWL.t + PAD) / d, pen2 = BOWL.Rs + BOWL.t + PAD - d;
           x[k] = BOWL.x + cx * s; x[k + 1] = BOWL.cy + cy * s; x[k + 2] = BOWL.z + cz * s;
-          contactFriction(x, prev, k, pen2);
+          contactFriction(x, prev, k, pen2, cx / d, cy / d, cz / d);
+        }
+      }
+      // rounded rim lip (a torus around the opening)
+      {
+        const hx = x[k] - BOWL.x, hz = x[k + 2] - BOWL.z, hd = Math.hypot(hx, hz);
+        if (hd > 1e-6) {
+          const qx = hd - (BOWL.rimR + BOWL.t / 2), qy = x[k + 1] - BOWL.rimY, qd = Math.hypot(qx, qy), lip = BOWL.t / 2 + PAD;
+          if (qd < lip && qd > 1e-6) {
+            const s = lip / qd, nh = (BOWL.rimR + BOWL.t / 2) + qx * s;
+            x[k] = BOWL.x + hx / hd * nh; x[k + 2] = BOWL.z + hz / hd * nh; x[k + 1] = BOWL.rimY + qy * s;
+            contactFriction(x, prev, k, lip - qd, hx / hd * qx / qd, qy / qd, hz / hd * qx / qd);
+          }
         }
       }
       const rr = Math.hypot(x[k] - 0.5, x[k + 2]);
@@ -1381,7 +1398,7 @@
   function startGrabAt(cx, cy) {
     const hit = pickPiece(cx, cy);
     if (!hit) return false;
-    const p = hit.object.userData.piece, P = hit.point, RG = 0.4;
+    const p = hit.object.userData.piece, P = hit.point, RG = 0.55;
     const ids = [], wt = [], off = [];
     let nearest = -1, nd = Infinity;
     for (let i = 0; i < p.N; i++) {
@@ -1392,21 +1409,32 @@
     if (!ids.length) { ids.push(nearest); wt.push(1); off.push(p.pos[3 * nearest] - P.x, p.pos[3 * nearest + 1] - P.y, p.pos[3 * nearest + 2] - P.z); }
     const nrm = new THREE.Vector3();
     camera.getWorldDirection(nrm);
-    grab = { piece: p, ids: Int32Array.from(ids), wt: Float32Array.from(wt), off: Float32Array.from(off), target: P.clone(), start: P.clone(), plane: new THREE.Plane().setFromNormalAndCoplanarPoint(nrm, P) };
+    // the cursor moves the piece over a horizontal plane, so it can travel near or far across the counter;
+    // while held it lifts clear of the bowl rim
+    grab = { piece: p, ids: Int32Array.from(ids), wt: Float32Array.from(wt), off: Float32Array.from(off), target: P.clone(), start: P.clone(),
+      plane: new THREE.Plane(new THREE.Vector3(0, 1, 0), -P.y), base: P.clone(), xz: P.clone(), lift: 0 };
     return true;
   }
   function moveGrabTo(cx, cy) {
     if (!grab) return;
     setNdc(cx, cy);
     const t = new THREE.Vector3();
-    if (!ray.ray.intersectPlane(grab.plane, t)) return;
-    const d = t.sub(grab.start);
-    if (d.length() > 5) d.setLength(5);
-    grab.target.copy(grab.start).add(d);
-    // never drive the held patch into the floor: lift the patch instead
-    let lowest = Infinity;
-    for (let k = 0; k < grab.ids.length; k++) lowest = Math.min(lowest, grab.off[3 * k + 1]);
-    grab.target.y = Math.max(grab.target.y, 0.004 - lowest);
+    if (!ray.ray.intersectPlane(grab.plane, t)) {
+      // pointing above the horizon: push the piece to the far edge of the counter in that direction
+      ray.ray.at(40, t);
+    }
+    grab.xz.set(Math.max(-5, Math.min(5.6, t.x)), grab.base.y, Math.max(-2.9, Math.min(2.9, t.z)));
+  }
+  const CARRY_LIFT = 0.95;
+  function updateCarry(dt) {
+    if (!grab || !grab.xz) return;
+    grab.lift = Math.min(1, grab.lift + dt * 4);
+    const e = grab.lift * grab.lift * (3 - 2 * grab.lift);
+    // ease toward the cursor so fast moves swing the jelly instead of teleporting it
+    const k = Math.min(1, dt * 14);
+    grab.target.x += (grab.xz.x - grab.target.x) * k;
+    grab.target.z += (grab.xz.z - grab.target.z) * k;
+    grab.target.y = grab.base.y + CARRY_LIFT * e;
   }
   function cutAlong(x0, y0, x1, y1) {
     if (bladeAnim || Math.hypot(x1 - x0, y1 - y0) < 24) return false;
@@ -1471,7 +1499,7 @@
 
   // ---------- panel ----------
   const hints = {
-    hand: '<b>Hand</b>Grab a piece and carry it to the bowl. Switch to the knife to cut.',
+    hand: '<b>Hand</b>Grab a piece, it lifts up. Move it anywhere on the counter and let go over the bowl.',
     knife: '<b>Knife</b>Draw a line across the melon. The blade follows your stroke.',
   };
   document.querySelectorAll('.tool').forEach((b) => b.addEventListener('click', () => {
@@ -1507,13 +1535,12 @@
   const cc = new THREE.Vector3();
   function inBowl(p) {
     p.centroid(cc);
-    // a piece counts once its centre is over the bowl and it is resting in it or on the pile, not held
+    // a piece counts while its centre is inside the bowl's opening and it is not held or still falling in
     if (grab && grab.piece === p) return false;
-    if (Math.hypot(cc.x - BOWL.x, cc.z - BOWL.z) > BOWL.rimR + 0.15 || cc.y > BOWL.rimY + 0.9) return false;
-    // judge rest by how the whole piece moves, not by its internal wobble
-    let vx = 0, vy = 0, vz = 0;
-    for (let i = 0; i < p.N; i++) { const m = p.mass[i]; vx += p.vel[3 * i] * m; vy += p.vel[3 * i + 1] * m; vz += p.vel[3 * i + 2] * m; }
-    return Math.hypot(vx, vy, vz) / p.totalMass < 0.25;
+    if (Math.hypot(cc.x - BOWL.x, cc.z - BOWL.z) > BOWL.rimR + 0.1 || cc.y > BOWL.rimY + 0.6) return false;
+    let vy = 0;
+    for (let i = 0; i < p.N; i++) vy += p.vel[3 * i + 1] * p.mass[i];
+    return Math.abs(vy / p.totalMass) < 1.2;
   }
   function updateReadouts() {
     const n = pieces.filter(inBowl).length;
@@ -1757,6 +1784,7 @@
     if (!paused) {
       const scaled = real * (slow ? 0.25 : 1);
       updateBlade(scaled);
+      updateCarry(scaled);
       acc += scaled;
       let n = 0;
       while (acc >= STEP && n < 3) { step(); acc -= STEP; n++; }
