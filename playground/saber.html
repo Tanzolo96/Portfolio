@@ -51,7 +51,7 @@
   button:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
   .count { text-align: center; font: 500 13px var(--mono); color: var(--muted); font-variant-numeric: tabular-nums; }
   .err { margin: 0; color: #ffb4a6; font: 500 14px var(--mono); text-align: center; }
-  .calib { position: absolute; inset: 0; display: grid; align-content: center; justify-items: center; gap: 14px; text-align: center; background: rgba(7, 6, 13, .9); border-radius: 18px; padding: 18px; }
+  .calib { cursor: pointer; position: absolute; inset: 0; display: grid; align-content: center; justify-items: center; gap: 14px; text-align: center; background: rgba(7, 6, 13, .9); border-radius: 18px; padding: 18px; }
   .calib .stepno { font: 500 12px var(--mono); letter-spacing: .2em; color: var(--muted); }
   .calib h2 { margin: 0; font: 700 30px/1.05 var(--display); text-transform: uppercase; color: var(--glow); text-shadow: 0 0 14px var(--glow); }
   .calib p { margin: 0; max-width: 30ch; color: #c9c4e4; }
@@ -164,6 +164,7 @@
     a[3] * b[3] - a[0] * b[0] - a[1] * b[1] - a[2] * b[2]];
   const qconj = (v) => [-v[0], -v[1], -v[2], v[3]];
   const qrot = (r, v) => { const p = qmul(qmul(r, [v[0], v[1], v[2], 0]), qconj(r)); return [p[0], p[1], p[2]]; };
+  const qnorm = (v) => { const l = Math.hypot(v[0], v[1], v[2], v[3]) || 1; return [v[0] / l, v[1] / l, v[2] / l, v[3] / l]; };
   const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
   const cross = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
   const norm = (v) => { const l = Math.hypot(v[0], v[1], v[2]) || 1; return [v[0] / l, v[1] / l, v[2] / l]; };
@@ -172,8 +173,61 @@
     const qz = [0, 0, Math.sin(a / 2), Math.cos(a / 2)], qx = [Math.sin(b / 2), 0, 0, Math.cos(b / 2)], qy = [0, Math.sin(g / 2), 0, Math.cos(g / 2)];
     return qmul(qmul(qz, qx), qy);
   }
+  function nlerp(a, b, t) {
+    const s2 = a[0] * b[0] + a[1] * b[1] + a[2] * b[2] + a[3] * b[3] < 0 ? -1 : 1;
+    return qnorm([a[0] + (b[0] * s2 - a[0]) * t, a[1] + (b[1] * s2 - a[1]) * t, a[2] + (b[2] * s2 - a[2]) * t, a[3] + (b[3] * s2 - a[3]) * t]);
+  }
+  // spin between two orientations, in the phone's own frame (rad/s)
+  function spinBetween(qa, qb, dt) {
+    let d = qmul(qconj(qa), qb);
+    if (d[3] < 0) d = [-d[0], -d[1], -d[2], -d[3]];
+    const s = Math.hypot(d[0], d[1], d[2]);
+    if (s < 1e-9 || dt <= 0) return [0, 0, 0];
+    const ang = 2 * Math.atan2(s, d[3]) / dt;
+    return [d[0] / s * ang, d[1] / s * ang, d[2] / s * ang];
+  }
 
-  let q = null, gyro = [0, 0, 0], gyroMag = 0;
+  // qO: the browser's orientation (always available, shaky only when the phone points straight up)
+  // q:  what the saber uses; once the gyro's axes are confirmed, it is driven by the gyro instead
+  let qO = null, q = null, lastOT = 0, spinO = [0, 0, 0], spinEMA = 0, betaNow = 0, upS = null;
+  const upHist = [];
+  let gyroRaw = null, gyro = [0, 0, 0], lastMT = 0;
+  // Browsers disagree on how gyro rates are labelled (Safari differs from the standard), so the phone
+  // learns the mapping by comparing raw gyro rates with how its orientation actually turns.
+  const learn = { S: [[0, 0, 0], [0, 0, 0], [0, 0, 0]], weight: 0, map: null, trust: 1 };
+  try { const m = JSON.parse(localStorage.getItem('beatGyroMap') || 'null'); if (Array.isArray(m) && m.length === 3) learn.map = m; } catch (e) {}
+  const mapGyro = (r) => learn.map.map(([j, sgn]) => r[j] * sgn);
+  function learnGyro() {
+    if (!gyroRaw || Math.abs(betaNow) > 55) return;
+    const m = Math.hypot(spinO[0], spinO[1], spinO[2]);
+    if (m < 0.4 || m > 8) return;
+    if (learn.map) {
+      // keep checking the mapping; if the gyro stops agreeing with the orientation, forget it and relearn
+      if (m < 0.6) return;
+      const g = mapGyro(gyroRaw), gm = Math.hypot(g[0], g[1], g[2]) || 1;
+      learn.trust = learn.trust * 0.92 + 0.08 * (dot(g, spinO) / (gm * m));
+      if (learn.trust < 0.35) {
+        learn.map = null; learn.trust = 1; learn.weight = 0; learn.S = [[0, 0, 0], [0, 0, 0], [0, 0, 0]];
+        lastMT = 0; q = qO.slice();
+        try { localStorage.removeItem('beatGyroMap'); } catch (e) {}
+      }
+      return;
+    }
+    for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) learn.S[i][j] += spinO[i] * gyroRaw[j];
+    learn.weight += m * m;
+    if (learn.weight < 60) return;
+    // each phone axis takes the raw channel that tracks it most strongly, if clearly so
+    const map = [], used = new Set();
+    for (let i = 0; i < 3; i++) {
+      const row = learn.S[i].map((v, j) => ({ j, v }));
+      row.sort((a, b) => Math.abs(b.v) - Math.abs(a.v));
+      if (used.has(row[0].j) || Math.abs(row[0].v) < 2.5 * Math.abs(row[1].v)) return;
+      used.add(row[0].j); map.push([row[0].j, Math.sign(row[0].v)]);
+    }
+    learn.map = map;
+    try { localStorage.setItem('beatGyroMap', JSON.stringify(map)); } catch (e) {}
+  }
+
   // which phone axis is the blade, and the pose that means "facing the screen"
   const cal = { blade: [0, 1, 0], q0: null, F: null, U: null, R: null, done: false };
   function setReference(qRef) {
@@ -184,61 +238,64 @@
     cal.U = norm([up[0] - cal.F[0] * k, up[1] - cal.F[1] * k, up[2] - cal.F[2] * k]);
     cal.R = cross(cal.F, cal.U);
   }
-  // blade direction and spin in screen space (x right, y up, z toward the player)
   function screenPose() {
     const rel = qmul(qconj(cal.q0), q);
-    const v = qrot(rel, cal.blade), w = qrot(rel, gyro);
+    const spin = learn.map ? gyro : spinO;
+    const v = qrot(rel, cal.blade), w = qrot(rel, spin);
     const toScreen = (u) => [dot(u, cal.R), dot(u, cal.U), -dot(u, cal.F)];
     return { v: toScreen(v), w: toScreen(w) };
   }
-  // Orientation = the gyro's spin, added up 60+ times a second. Unlike the browser's angles this never
-  // jumps, even with the blade pointing straight up. The browser's angles only nudge out slow drift,
-  // and only when the phone is well away from the pose where those angles become unstable.
-  let qOrient = null, gyroLive = false, lastMotionT = 0;
-  function nlerp(a, b, t) {
-    const d = a[0] * b[0] + a[1] * b[1] + a[2] * b[2] + a[3] * b[3], s2 = d < 0 ? -1 : 1;
-    const r = [a[0] + (b[0] * s2 - a[0]) * t, a[1] + (b[1] * s2 - a[1]) * t, a[2] + (b[2] * s2 - a[2]) * t, a[3] + (b[3] * s2 - a[3]) * t];
-    const l = Math.hypot(r[0], r[1], r[2], r[3]) || 1;
-    return [r[0] / l, r[1] / l, r[2] / l, r[3] / l];
-  }
   function onOrient(e) {
     if (e.alpha == null || e.beta == null || e.gamma == null) return;
-    qOrient = eulerQuat(e.alpha * D2R, e.beta * D2R, e.gamma * D2R);
-    if (!q || !gyroLive) q = qOrient;
-    else if (Math.abs(e.beta) < 65 && gyroMag < 3) q = nlerp(q, qOrient, 0.03);
-    if (!cal.q0) setReference(q);
+    const t = e.timeStamp || performance.now();
+    const qn = eulerQuat(e.alpha * D2R, e.beta * D2R, e.gamma * D2R);
+    betaNow = e.beta;
+    if (qO && lastOT) {
+      const dt = (t - lastOT) / 1000;
+      if (dt > 0.004 && dt < 0.2) {
+        spinO = spinBetween(qO, qn, dt);
+      }
+    }
+    qO = qn; lastOT = t;
+    // Stillness comes from the phone's tilt (which way is down), smoothed and compared over a quarter
+    // second. Tilt stays trustworthy pointing straight up, and the smoothing soaks up sensor jitter.
+    const u = qrot(qconj(qn), [0, 0, 1]);
+    upS = upS ? norm([upS[0] + (u[0] - upS[0]) * 0.15, upS[1] + (u[1] - upS[1]) * 0.15, upS[2] + (u[2] - upS[2]) * 0.15]) : u;
+    upHist.push([t, upS]);
+    while (upHist.length > 2 && t - upHist[1][0] >= 250) upHist.shift();
+    const old = upHist[0], span = (t - old[0]) / 1000;
+    if (span > 0.1) spinEMA = Math.acos(Math.max(-1, Math.min(1, dot(old[1], upS)))) / span;
+    learnGyro();
+    if (!q || !learn.map || !lastMT) q = qO;
+    else if (Math.abs(e.beta) < 65 && Math.hypot(gyro[0], gyro[1], gyro[2]) < 3) q = nlerp(q, qO, 0.03);
+    if (!cal.q0) setReference(qO);
   }
   function onMotion(e) {
     const r = e.rotationRate;
     if (!r || r.alpha == null) return;
-    gyro = [r.beta * D2R, r.gamma * D2R, r.alpha * D2R];
-    gyroMag = Math.hypot(gyro[0], gyro[1], gyro[2]);
+    gyroRaw = [r.alpha * D2R, r.beta * D2R, r.gamma * D2R];
+    if (!learn.map || !q) return;
+    gyro = mapGyro(gyroRaw);
     const t = e.timeStamp || performance.now();
-    const dt = lastMotionT ? Math.min(0.05, Math.max(0, (t - lastMotionT) / 1000)) : 0;
-    lastMotionT = t;
-    if (!q || dt === 0) return;
-    gyroLive = true;
-    // q <- q * exp(omega dt / 2), omega in the phone's own frame
-    const ang = gyroMag * dt;
-    if (ang > 1e-6) {
-      const s2 = Math.sin(ang / 2) / gyroMag;
-      q = qmul(q, [gyro[0] * s2, gyro[1] * s2, gyro[2] * s2, Math.cos(ang / 2)]);
-      const l = Math.hypot(q[0], q[1], q[2], q[3]); q = [q[0] / l, q[1] / l, q[2] / l, q[3] / l];
-    }
+    const dt = lastMT ? Math.min(0.05, Math.max(0, (t - lastMT) / 1000)) : 0;
+    lastMT = t;
+    const m = Math.hypot(gyro[0], gyro[1], gyro[2]), ang = m * dt;
+    if (ang > 1e-6) { const s2 = Math.sin(ang / 2) / m; q = qnorm(qmul(q, [gyro[0] * s2, gyro[1] * s2, gyro[2] * s2, Math.cos(ang / 2)])); }
   }
-  // 20 updates a second is plenty: the screen fills the gaps using the spin it is sent
+  // 20 updates a second; the screen fills the gaps with the reported spin
   setInterval(() => {
-    if (!q || !cal.q0) return;
     if (calib.active) { calibTick(); return; }
+    if (!q || !cal.q0) return;
     const p = screenPose();
     send('pose', { v: p.v.map((x) => +x.toFixed(4)), w: p.w.map((x) => +x.toFixed(3)) });
-    $('live').textContent = 'aim ' + p.v.map((x) => (x >= 0 ? '+' : '') + x.toFixed(2)).join(' ') + (gyroLive ? '  · gyro' : '');
+    $('live').textContent = 'aim ' + p.v.map((x) => (x >= 0 ? '+' : '') + x.toFixed(2)).join(' ') + (learn.map ? ' · gyro' : ' · tilt');
   }, 50);
 
   // ---------- two-step calibration: tip at the screen, then tip straight up ----------
-  const calib = { active: false, step: 0, still: 0, lastT: 0, qA: null };
+  // Uses only the phone's tilt and heading, which are reliable here, never the raw gyro.
+  const calib = { active: false, step: 0, still: 0, lastT: 0, qA: null, stepT: 0 };
   function startCalib() {
-    Object.assign(calib, { active: true, step: 1, still: 0, lastT: performance.now(), qA: null });
+    Object.assign(calib, { active: true, step: 1, still: 0, lastT: performance.now(), qA: null, stepT: performance.now() });
     showCalibStep();
     $('calib').hidden = false;
   }
@@ -246,30 +303,39 @@
     $('calStep').textContent = 'STEP ' + calib.step + ' OF 2';
     $('calIcon').textContent = calib.step === 1 ? '→' : '↑';
     $('calTitle').textContent = calib.step === 1 ? 'Point at the screen' : 'Point straight up';
-    $('calText').textContent = calib.step === 1 ? 'Hold the phone the way you will swing it, aim the saber tip at the screen and keep still.' : 'Same grip. Raise the saber tip straight up at the ceiling and keep still.';
+    $('calText').textContent = calib.step === 1 ? 'Hold the phone the way you will swing it and aim the saber tip at the screen. Keep roughly still, or tap here.' : 'Same grip. Raise the saber tip up to the ceiling. Keep roughly still, or tap here.';
     $('calRing').style.setProperty('--p', 0);
+    calib.stepT = performance.now();
   }
   function calibTick() {
     const now = performance.now(), dt = Math.min(100, now - calib.lastT); calib.lastT = now;
-    // hold still for 0.8 s to capture
-    calib.still = gyroMag < 0.35 ? calib.still + dt : 0;
-    $('calRing').style.setProperty('--p', Math.min(100, calib.still / 8));
-    if (calib.still >= 800) capture();
+    if (!qO) { $('calText').textContent = 'Waiting for motion data… move the phone a little.'; return; }
+    // step 2 only counts once the tip has really been raised away from step 1
+    if (calib.step === 2 && upS) {
+      const upA = qrot(qconj(calib.qA), [0, 0, 1]);
+      if (Math.abs(dot(upS, upA)) > 0.75) { calib.still = 0; $('calRing').style.setProperty('--p', 0); return; }
+    }
+    // roughly still fills the ring; moving drains it slowly instead of resetting it
+    if (spinEMA < 0.6) calib.still += dt; else calib.still = Math.max(0, calib.still - dt * 0.5);
+    $('calRing').style.setProperty('--p', Math.min(100, calib.still / 7));
+    if (calib.still >= 700) capture();
+    else if (now - calib.stepT > 5000) $('calText').textContent = 'Hard to hold still? Tap anywhere on this card to capture.';
   }
   function capture() {
-    if (!q) return;
+    if (!qO || !calib.active) return;
     try { navigator.vibrate && navigator.vibrate(30); } catch (e) {}
-    if (calib.step === 1) { calib.qA = q.slice(); calib.step = 2; calib.still = 0; showCalibStep(); return; }
-    // the blade is whichever phone axis now points at the sky
-    const blade = norm(qrot(qconj(q), [0, 0, 1]));
+    if (calib.step === 1) { calib.qA = qO.slice(); calib.step = 2; calib.still = 0; showCalibStep(); return; }
+    // the blade is whichever phone axis now points at the sky (from tilt alone, stable even pointing up)
+    const blade = norm(qrot(qconj(qO), [0, 0, 1]));
     const upAtA = qrot(qconj(calib.qA), [0, 0, 1]);
-    if (Math.abs(dot(blade, upAtA)) > 0.6) {
-      calib.step = 1; calib.still = 0; showCalibStep();
-      $('calText').textContent = 'That looked the same as step 1. Point at the screen again, then raise the tip all the way up.';
+    if (Math.abs(dot(blade, upAtA)) > 0.75) {
+      calib.still = 0; showCalibStep();
+      $('calText').textContent = 'Raise the tip higher, all the way up to the ceiling, then hold.';
       return;
     }
     cal.blade = blade;
     setReference(calib.qA);
+    q = qO.slice();
     cal.done = true;
     calib.active = false;
     $('calib').hidden = true;
@@ -277,7 +343,8 @@
     $('tip').textContent = 'Calibrated. Swing away. Tap Recenter if the aim drifts.';
     try { navigator.vibrate && navigator.vibrate([30, 60, 30]); } catch (e) {}
   }
-  $('calNow').addEventListener('click', capture);
+  $('calNow').addEventListener('click', (e) => { e.stopPropagation(); capture(); });
+  $('calib').addEventListener('click', capture);
 
   $('start').addEventListener('click', async () => {
     showErr('');
@@ -295,7 +362,7 @@
     }
     window.addEventListener('deviceorientation', onOrient);
     window.addEventListener('devicemotion', onMotion);
-    setTimeout(() => { if (!q) showErr('No motion data yet. This needs a phone with motion sensors.'); }, 2500);
+    setTimeout(() => { if (!qO) showErr('No motion data yet. Allow motion access for this site, or this phone has no motion sensors.'); }, 3000);
     $('start').hidden = true; $('liveRow').hidden = false; $('count').hidden = false; $('live').hidden = false;
     startCalib();
     setStatus('idle', 'CONNECTING');
