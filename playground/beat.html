@@ -132,7 +132,7 @@
   </div>
   <ol class="steps">
     <li>Scan one code with each phone and tap <b>Ignite saber</b>.</li>
-    <li>Hold each phone like a sword hilt. Point both at the screen and tap <b>Recenter</b>.</li>
+    <li>Hold each phone however feels like a hilt, upright or sideways. Follow the two calibration steps on the phone: tip at the screen, then tip straight up.</li>
     <li>Stand back a little so your arms have room. Then start.</li>
   </ol>
   <div class="btns">
@@ -386,12 +386,6 @@
   makeSaber('l'); makeSaber('r');
   const BLADE = 1.15;
 
-  // phone heading/pitch -> world direction, relative to where the phone pointed at recenter
-  function phoneToWorld(f, ref) {
-    const h = Math.atan2(f[0], f[1]) - (ref ? ref.h : 0);
-    const horiz = Math.hypot(f[0], f[1]);
-    return new THREE.Vector3(Math.sin(h) * horiz, f[2], -Math.cos(h) * horiz).normalize();
-  }
   const qTmp = new THREE.Quaternion(), UP = new THREE.Vector3(0, 1, 0);
   function updateSaber(s, dt) {
     if (!s.connected) { s.g.visible = false; s.trail.visible = false; return; }
@@ -428,7 +422,7 @@
       const on = sabers[k].connected;
       $(k === 'l' ? 'pairL' : 'pairR').classList.toggle('on', on);
       const st = $(k === 'l' ? 'stateL' : 'stateR');
-      st.textContent = on ? (sabers[k].ref ? 'Connected · centred' : 'Connected · tap Recenter') : 'Waiting…';
+      st.textContent = on ? (sabers[k].ref ? 'Connected · centred' : 'Connected · calibrating') : 'Waiting…';
       st.classList.toggle('on', on);
     }
     $('playBtn').disabled = !(sabers.l.connected || sabers.r.connected);
@@ -458,20 +452,23 @@
   }
   function hello() { if (net.channel) net.channel.send({ type: 'broadcast', event: 'hello', payload: {} }); }
   function tellPhone(side, bad) { if (net.channel) net.channel.send({ type: 'broadcast', event: 'hit', payload: { s: side, bad: !!bad } }); }
-  const validF = (f) => Array.isArray(f) && f.length === 3 && f.every((v) => typeof v === 'number' && isFinite(v));
+  const valid3 = (f) => Array.isArray(f) && f.length === 3 && f.every((v) => typeof v === 'number' && isFinite(v));
+  // the phone sends its blade direction already in screen space (x right, y up, z toward you),
+  // calibrated to however it is held, plus its gyro spin; lean ahead by the spin to hide network delay
+  const LEAD_S = 0.06;
   function onPose(p) {
-    if (!p || (p.s !== 'l' && p.s !== 'r') || !validF(p.f)) return;
+    if (!p || (p.s !== 'l' && p.s !== 'r') || !valid3(p.v)) return;
     const s = sabers[p.s];
     s.lastPose = performance.now();
     if (!s.connected) { s.connected = true; s.primed = false; renderPairs(); }
-    s.raw = p.f;
-    s.target.copy(phoneToWorld(p.f, s.ref));
+    const v = new THREE.Vector3(p.v[0], p.v[1], p.v[2]);
+    if (valid3(p.w)) v.add(new THREE.Vector3(p.w[0], p.w[1], p.w[2]).cross(v).multiplyScalar(LEAD_S));
+    if (v.lengthSq() > 1e-6) s.target.copy(v.normalize());
   }
   function onRecenter(p) {
     if (!p || (p.s !== 'l' && p.s !== 'r')) return;
-    const s = sabers[p.s], f = validF(p.f) ? p.f : s.raw;
-    if (!f) return;
-    s.ref = { h: Math.atan2(f[0], f[1]) };
+    const s = sabers[p.s];
+    s.ref = true;
     renderPairs();
     judge(p.s === 'l' ? 'Red centred' : 'Blue centred', p.s === 'l' ? '#ff3b5c' : '#2fa8ff');
   }
