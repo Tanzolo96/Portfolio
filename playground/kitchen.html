@@ -88,6 +88,18 @@
   .nums { display: flex; gap: 18px; font: 12px/1 var(--mono); font-variant-numeric: tabular-nums; color: var(--muted); }
   .nums b { color: var(--ink); font-weight: 500; }
 
+  /* phone pairing */
+  .pair { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(340px, calc(100% - 32px)); max-height: calc(100% - 32px); overflow: auto; padding: 20px; display: grid; gap: 10px; justify-items: center; text-align: center; z-index: 3; }
+  .pair[hidden] { display: none; }
+  .pair h2 { margin: 0; font: italic 400 32px/1 var(--serif); }
+  .qr { width: 196px; height: 196px; padding: 8px; background: #fff; border: 1px solid var(--line); }
+  .qr img, .qr canvas { width: 100%; height: 100%; image-rendering: pixelated; }
+  .pairurl { margin: 0; font: 11px/1.3 var(--mono); color: var(--muted); word-break: break-all; -webkit-user-select: text; user-select: text; }
+  .pairstate { margin: 0; font: italic 17px/1.3 var(--serif); }
+  .pairstate.ok { color: var(--basil); }
+  .pairsteps { margin: 0; padding-left: 18px; text-align: left; font-size: 12.5px; display: grid; gap: 4px; justify-self: stretch; }
+  .pair .btn { width: 100%; }
+
   /* win */
   .win { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%) scale(.96); width: min(360px, calc(100% - 32px)); padding: 24px 24px 20px; text-align: center; opacity: 0; pointer-events: none; transition: opacity .3s, transform .3s; }
   .win.on { opacity: 1; pointer-events: auto; transform: translate(-50%, -50%) scale(1); }
@@ -142,6 +154,7 @@
     <button class="tool" type="button" data-tool="knife" aria-pressed="false"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 17l9.2-9.2M12.2 7.8l3.6-4.3c.8 1.6.3 4-1.4 5.7L12.6 11 9 7.4"/><path d="M3 17l2.6-.6"/></svg>Knife</button>
   </div>
   <button class="btn" id="handBtn" type="button" aria-pressed="false"><svg viewBox="0 0 20 20" aria-hidden="true"><rect x="2.5" y="5.5" width="11" height="9" rx="1.5"/><path d="M13.5 9l4-2.5v7l-4-2.5"/></svg><span>Use my hands</span></button>
+  <button class="btn" id="phoneBtn" type="button" aria-pressed="false"><svg viewBox="0 0 20 20" aria-hidden="true"><rect x="6" y="2.5" width="8" height="15" rx="1.8"/><path d="M9 15h2"/></svg><span>Use phone as knife</span></button>
   <button class="btn" id="reset" type="button">New melon</button>
   <div class="handview" id="handView" hidden>
     <video id="handVideo" playsinline muted></video>
@@ -154,6 +167,20 @@
   <div class="meter" id="meter" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div>
   <div class="nums"><span>Bowl <b id="bowlOut">0</b>/6</span><span>Pieces <b id="piecesOut">1</b></span><span>Time <b id="timeOut">0:00</b></span></div>
 </section>
+
+<div class="pair card" id="pair" role="dialog" aria-labelledby="pairTitle" hidden>
+  <div class="label">Phone knife</div>
+  <h2 id="pairTitle">Scan with your phone</h2>
+  <div class="qr" id="qr" aria-label="QR code that opens the phone knife page"></div>
+  <p class="pairurl" id="pairUrl"></p>
+  <p class="pairstate" id="pairState">Waiting for your phone…</p>
+  <ol class="pairsteps">
+    <li>Scan the code and tap <b>Start knife</b>.</li>
+    <li>Hold the phone like a knife handle, top edge pointing at this screen.</li>
+    <li>Turn and tilt to aim, chop down fast to cut.</li>
+  </ol>
+  <button class="btn" id="pairClose" type="button">Close</button>
+</div>
 
 <div class="win card" id="win" role="dialog" aria-labelledby="winTitle" aria-hidden="true">
   <div class="label">Order up</div>
@@ -1514,6 +1541,7 @@
   if (reduceMotion) damping = 0.65;
   let paused = false, slow = false;
   function renderStatus() {
+    if (typeof phone !== 'undefined' && phone.on) { phoneStatus(); return; }
     if (hand.on) { const p = hand.pose; hand.pose = ''; setHandStatus(p || 'none'); return; }
     $('status').dataset.state = 'live';
     $('statusText').textContent = 'KITCHEN · MOUSE';
@@ -1721,6 +1749,124 @@
     drawHandPreview(lm);
   }
 
+  // ---------- phone as knife (motion sensors relayed through a Supabase realtime room) ----------
+  const SB_URL = 'https://txohigzxsieqwgycektl.supabase.co';
+  const SB_KEY = 'sb_publishable_P4PAITc5FyR7ulPbnqJ2uA_4ju0fiDz';
+  const phone = { on: false, channel: null, client: null, room: '', connected: false, ref: null, h: 0, p: 0, aim: new THREE.Vector3(-1.15, 0, 0.05), dir: new THREE.Vector3(0, 0, -1), helloTimer: 0, lastPose: 0 };
+  const AIM_CENTER = new THREE.Vector3(-1.15, 0, 0.05);
+  const loadScript = (src) => new Promise((res, rej) => { const el = document.createElement('script'); el.src = src; el.onload = res; el.onerror = () => rej(new Error('load ' + src)); document.head.appendChild(el); });
+
+  // the floating knife that mirrors the phone, plus a dashed guide where it would cut
+  const knifeGroup = new THREE.Group();
+  {
+    const steel = new THREE.MeshStandardMaterial({ color: 0xdfe3e8, metalness: 1, roughness: 0.2, envMapIntensity: 1.2 });
+    const wood = new THREE.MeshStandardMaterial({ color: '#5e3b22', roughness: 0.6 });
+    const blade = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.34, 0.012), steel); blade.position.x = 0.45; blade.castShadow = true;
+    const handle = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.13, 0.09), wood); handle.position.set(-0.62, 0.08, 0); handle.castShadow = true;
+    knifeGroup.add(blade, handle);
+    knifeGroup.visible = false;
+    knifeGroup.userData.prop = true;
+    scene.add(knifeGroup);
+  }
+  const guideGeo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]);
+  const guide = new THREE.Line(guideGeo, new THREE.LineDashedMaterial({ color: 0xc8402e, dashSize: 0.12, gapSize: 0.08, transparent: true, opacity: 0.9, depthTest: false }));
+  guide.renderOrder = 11; guide.visible = false; guide.frustumCulled = false;
+  scene.add(guide);
+
+  function phoneStatus() {
+    if (!phone.on) return;
+    $('statusText').textContent = phone.connected ? 'KITCHEN · PHONE KNIFE' : 'KITCHEN · WAITING FOR PHONE';
+  }
+  async function startPhone() {
+    if (phone.on) { $('pair').hidden = false; return; }
+    const btnLabel = $('phoneBtn').lastChild;
+    btnLabel.textContent = 'Connecting…';
+    try {
+      if (!window.supabase) await loadScript('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js');
+      if (!window.QRCode) await loadScript('https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js');
+      const bytes = new Uint8Array(6); crypto.getRandomValues(bytes);
+      phone.room = Array.from(bytes, (b) => (b % 36).toString(36)).join('') + Date.now().toString(36).slice(-3);
+      phone.client = window.supabase.createClient(SB_URL, SB_KEY, { realtime: { params: { eventsPerSecond: 20 } } });
+      phone.channel = phone.client.channel('knife-' + phone.room, { config: { broadcast: { self: false, ack: false } } });
+      phone.channel.on('broadcast', { event: 'pose' }, ({ payload }) => onPose(payload));
+      phone.channel.on('broadcast', { event: 'chop' }, () => onChop());
+      phone.channel.on('broadcast', { event: 'recenter' }, () => { phone.ref = null; toast('Aim recentered.'); });
+      phone.channel.on('broadcast', { event: 'phone' }, () => sayHello());
+      await new Promise((res, rej) => {
+        const to = setTimeout(() => rej(new Error('timeout')), 10000);
+        phone.channel.subscribe((st) => { if (st === 'SUBSCRIBED') { clearTimeout(to); res(); } else if (st === 'CHANNEL_ERROR' || st === 'TIMED_OUT') { clearTimeout(to); rej(new Error(st)); } });
+      });
+      const url = new URL('knife.html', location.href); url.hash = phone.room;
+      $('qr').textContent = '';
+      new window.QRCode($('qr'), { text: url.href, width: 360, height: 360, correctLevel: window.QRCode.CorrectLevel.M });
+      $('pairUrl').textContent = url.href;
+      $('pairState').textContent = 'Waiting for your phone…'; $('pairState').classList.remove('ok');
+      $('pair').hidden = false;
+      phone.on = true;
+      phone.helloTimer = setInterval(sayHello, 2000);
+      btnLabel.textContent = 'Stop phone knife';
+      $('phoneBtn').setAttribute('aria-pressed', 'true');
+      phoneStatus();
+    } catch (err) {
+      stopPhone();
+      toast('Could not open the phone link. Check your connection and try again.');
+    }
+  }
+  function sayHello() { if (phone.channel) phone.channel.send({ type: 'broadcast', event: 'hello', payload: {} }); }
+  function stopPhone() {
+    if (phone.helloTimer) clearInterval(phone.helloTimer);
+    if (phone.channel) { try { phone.client.removeChannel(phone.channel); } catch (e) {} }
+    Object.assign(phone, { on: false, channel: null, client: null, connected: false, ref: null, helloTimer: 0 });
+    knifeGroup.visible = false; guide.visible = false;
+    $('pair').hidden = true;
+    $('phoneBtn').lastChild.textContent = 'Use phone as knife';
+    $('phoneBtn').setAttribute('aria-pressed', 'false');
+    renderStatus();
+  }
+  $('phoneBtn').addEventListener('click', () => (phone.on ? stopPhone() : startPhone()));
+  $('pairClose').addEventListener('click', () => { $('pair').hidden = true; });
+
+  const wrapAngle = (a) => { while (a > Math.PI) a -= 2 * Math.PI; while (a < -Math.PI) a += 2 * Math.PI; return a; };
+  function onPose(pl) {
+    if (!pl || typeof pl.h !== 'number' || typeof pl.p !== 'number' || !isFinite(pl.h) || !isFinite(pl.p)) return;
+    phone.lastPose = performance.now();
+    if (!phone.connected) {
+      phone.connected = true;
+      $('pairState').textContent = 'Phone connected. Chop away.'; $('pairState').classList.add('ok');
+      setTimeout(() => { $('pair').hidden = true; }, 1200);
+      toast('Phone knife connected.');
+      phoneStatus();
+    }
+    // the first pose (or a recenter) becomes "pointing at the middle of the board"
+    if (!phone.ref) phone.ref = { h: pl.h, p: pl.p };
+    phone.h = pl.h; phone.p = pl.p;
+  }
+  function updatePhoneKnife(dt) {
+    if (!phone.on || !phone.connected || !phone.ref) { knifeGroup.visible = false; guide.visible = false; return; }
+    const yaw = wrapAngle(phone.h - phone.ref.h), tilt = phone.p - phone.ref.p;
+    // turning the phone sweeps the aim left and right, tilting it up reaches further back
+    const tx = Math.max(-4.6, Math.min(5.2, AIM_CENTER.x + yaw * 4.2));
+    const tz = Math.max(-2.6, Math.min(2.6, AIM_CENTER.z - tilt * 4.2));
+    const k = Math.min(1, dt * 12);
+    phone.aim.x += (tx - phone.aim.x) * k; phone.aim.z += (tz - phone.aim.z) * k;
+    phone.dir.set(Math.sin(yaw), 0, -Math.cos(yaw)).normalize();
+    const busy = !!bladeAnim;
+    knifeGroup.visible = !busy;
+    knifeGroup.position.set(phone.aim.x, THICK + 0.75 + Math.sin(performance.now() * 0.004) * 0.02, phone.aim.z);
+    knifeGroup.rotation.set(0, -Math.atan2(phone.dir.z, phone.dir.x), 0);
+    const a = phone.aim.clone().addScaledVector(phone.dir, -1.8), b = phone.aim.clone().addScaledVector(phone.dir, 1.8);
+    a.y = b.y = THICK + 0.02;
+    guideGeo.setFromPoints([a, b]); guide.computeLineDistances();
+    guide.visible = !busy;
+    if (performance.now() - phone.lastPose > 4000 && phone.connected) { phone.connected = false; $('statusText').textContent = 'KITCHEN · PHONE SILENT'; }
+  }
+  function onChop() {
+    if (!phone.on || !phone.ref || bladeAnim) return;
+    const a = phone.aim.clone().addScaledVector(phone.dir, -1.8), b = phone.aim.clone().addScaledVector(phone.dir, 1.8);
+    a.y = b.y = THICK;
+    startBlade(a, b);
+  }
+
   // ---------- layout ----------
   const stage = $('stage');
   function resize() {
@@ -1785,6 +1931,7 @@
       const scaled = real * (slow ? 0.25 : 1);
       updateBlade(scaled);
       updateCarry(scaled);
+      updatePhoneKnife(real);
       acc += scaled;
       let n = 0;
       while (acc >= STEP && n < 3) { step(); acc -= STEP; n++; }
