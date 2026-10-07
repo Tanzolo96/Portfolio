@@ -36,9 +36,11 @@
   .status[data-state="live"] { color: var(--ink); }
   .status[data-state="live"] i { background: #63e08a; box-shadow: 0 0 8px #63e08a; }
   .status[data-state="error"] i { background: #ff8a3d; }
-  .saber { position: relative; display: grid; place-items: center; min-height: 0; }
-  .blade { width: 22px; height: min(62vh, 440px); border-radius: 11px; background: linear-gradient(90deg, #fff 0 30%, var(--glow) 70%); box-shadow: 0 0 22px 6px var(--glow), 0 0 60px 12px var(--glow); opacity: .9; transition: transform .06s; }
-  .hilt { width: 34px; height: 110px; margin-top: -4px; border-radius: 6px; background: repeating-linear-gradient(#2a2838 0 10px, #1a1824 10px 14px); border: 2px solid #3b384e; }
+  /* the saber art shrinks to whatever room is left and never covers a button */
+  .saber { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 0; overflow: hidden; padding: 14px 0 28px; }
+  .blade, .hilt { pointer-events: none; }
+  .blade { width: 22px; flex: 1 1 auto; min-height: 0; max-height: 440px; border-radius: 11px; background: linear-gradient(90deg, #fff 0 30%, var(--glow) 70%); box-shadow: 0 0 22px 6px var(--glow), 0 0 60px 12px var(--glow); opacity: .9; transition: transform .06s; }
+  .hilt { width: 34px; height: min(110px, 18vh); flex: none; margin-top: -4px; border-radius: 6px; background: repeating-linear-gradient(#2a2838 0 10px, #1a1824 10px 14px); border: 2px solid #3b384e; }
   .saber.hit .blade { transform: scaleX(1.5); }
   .tip { position: absolute; bottom: 0; left: 0; right: 0; text-align: center; font: 500 13px var(--mono); color: var(--muted); }
   .actions { display: grid; gap: 10px; }
@@ -49,6 +51,14 @@
   button:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
   .count { text-align: center; font: 500 13px var(--mono); color: var(--muted); font-variant-numeric: tabular-nums; }
   .err { margin: 0; color: #ffb4a6; font: 500 14px var(--mono); text-align: center; }
+  .calib { position: absolute; inset: 0; display: grid; align-content: center; justify-items: center; gap: 14px; text-align: center; background: rgba(7, 6, 13, .9); border-radius: 18px; padding: 18px; }
+  .calib .stepno { font: 500 12px var(--mono); letter-spacing: .2em; color: var(--muted); }
+  .calib h2 { margin: 0; font: 700 30px/1.05 var(--display); text-transform: uppercase; color: var(--glow); text-shadow: 0 0 14px var(--glow); }
+  .calib p { margin: 0; max-width: 30ch; color: #c9c4e4; }
+  .ring { width: 92px; height: 92px; border-radius: 50%; background: conic-gradient(var(--glow) calc(var(--p, 0) * 1%), #2a2838 0); display: grid; place-items: center; }
+  .ring::after { content: ""; width: 74px; height: 74px; border-radius: 50%; background: var(--bg); }
+  .pose { font: 700 64px/1 var(--display); color: var(--glow); }
+  .live { font: 500 12px var(--mono); color: var(--muted); font-variant-numeric: tabular-nums; text-align: center; }
   [hidden] { display: none !important; }
 </style>
 </head>
@@ -62,12 +72,24 @@
   <section class="saber" id="saber" aria-label="Saber">
     <div class="blade" aria-hidden="true"></div>
     <div class="hilt" aria-hidden="true"></div>
-    <p class="tip" id="tip">Hold the phone like a sword hilt, top edge up.</p>
+    <p class="tip" id="tip">Hold the phone however feels like a sword hilt.</p>
+    <div class="calib" id="calib" hidden>
+      <span class="stepno" id="calStep">STEP 1 OF 2</span>
+      <div class="pose" id="calIcon" aria-hidden="true">→</div>
+      <h2 id="calTitle">Point at the screen</h2>
+      <p id="calText">Hold the phone the way you will swing it, aim the saber tip at the screen and keep still.</p>
+      <div class="ring" id="calRing" aria-hidden="true"></div>
+      <button class="ghost" id="calNow" type="button">Capture now</button>
+    </div>
   </section>
   <footer class="actions">
     <p class="err" id="err" hidden></p>
     <button id="start" type="button">Ignite saber</button>
-    <button class="ghost" id="recenter" type="button" hidden>Point at screen · Recenter</button>
+    <div class="row" id="liveRow" hidden>
+      <button class="ghost" id="recenter" type="button">Recenter</button>
+      <button class="ghost" id="recal" type="button">Calibrate</button>
+    </div>
+    <div class="live" id="live" hidden></div>
     <div class="count" id="count" hidden>Hits <span id="hits">0</span></div>
   </footer>
 </main>
@@ -93,35 +115,169 @@
     return;
   }
 
-  let channel = null, joined = false, seen = false, hits = 0, last = 0, f = [0, 1, 0];
+  let channel = null, joined = false, seen = false, hits = 0, last = 0, started = false;
 
+  // each saber talks on its own channel so its messages are not copied to the other phone,
+  // and the link heals itself when the network blips or the phone wakes up
+  let client = null, retryTimer = 0;
   function connect() {
-    const client = window.supabase.createClient(SB_URL, SB_KEY, { realtime: { params: { eventsPerSecond: 50 } } });
-    channel = client.channel('beat-' + room, { config: { broadcast: { self: false, ack: false } } });
-    channel.on('broadcast', { event: 'hello' }, () => {
-      if (!seen) { seen = true; setStatus('live', 'CONNECTED'); $('tip').textContent = 'Point at the screen and tap Recenter, then slice.'; }
+    if (!client) client = window.supabase.createClient(SB_URL, SB_KEY, { realtime: { params: { eventsPerSecond: 30 }, heartbeatIntervalMs: 10000 } });
+    if (channel) { try { client.removeChannel(channel); } catch (e) {} channel = null; }
+    joined = false;
+    const ch = client.channel('beat-' + room + '-' + side, { config: { broadcast: { self: false, ack: false } } });
+    channel = ch;
+    ch.on('broadcast', { event: 'hello' }, () => {
+      if (!seen) { seen = true; $('tip').textContent = cal.done ? 'Calibrated. Swing away.' : 'Finish the two calibration steps.'; }
+      setStatus('live', 'CONNECTED');
     });
-    channel.on('broadcast', { event: 'hit' }, ({ payload }) => {
+    ch.on('broadcast', { event: 'hit' }, ({ payload }) => {
       if (!payload || payload.s !== side) return;
       hits++; $('hits').textContent = hits;
       try { navigator.vibrate && navigator.vibrate(payload.bad ? [20, 40, 20] : 28); } catch (e) {}
       $('saber').classList.add('hit'); setTimeout(() => $('saber').classList.remove('hit'), 90);
     });
-    channel.subscribe((s) => {
-      if (s === 'SUBSCRIBED') { joined = true; setStatus(seen ? 'live' : 'idle', seen ? 'CONNECTED' : 'LOOKING FOR SCREEN'); send('join', {}); }
-      else if (s === 'CHANNEL_ERROR' || s === 'TIMED_OUT') { setStatus('error', 'CONNECTION LOST'); showErr('Could not reach the game. Check your internet and reload this page.'); }
+    ch.subscribe((st) => {
+      if (ch !== channel) return;
+      if (st === 'SUBSCRIBED') { joined = true; showErr(''); setStatus(seen ? 'live' : 'idle', seen ? 'CONNECTED' : 'LOOKING FOR SCREEN'); send('join', {}); }
+      else if (st === 'CHANNEL_ERROR' || st === 'TIMED_OUT' || st === 'CLOSED') { joined = false; setStatus('error', 'RECONNECTING'); scheduleReconnect(); }
     });
   }
+  function scheduleReconnect() {
+    clearTimeout(retryTimer);
+    retryTimer = setTimeout(() => { if (!joined && started) connect(); }, 1200);
+  }
+  document.addEventListener('visibilitychange', async () => {
+    if (document.hidden || !started) return;
+    if (!joined) connect();
+    // the screen lock is released whenever the page is hidden; take it again
+    try { navigator.wakeLock && await navigator.wakeLock.request('screen'); } catch (e) {}
+  });
+  window.addEventListener('online', () => { if (started && !joined) connect(); });
   const send = (event, payload) => { if (joined) channel.send({ type: 'broadcast', event, payload: Object.assign({ s: side }, payload) }); };
 
-  // the phone's long axis in earth space (x east, y north, z up)
-  function onOrient(e) {
-    if (e.alpha == null || e.beta == null) return;
-    const a = e.alpha * Math.PI / 180, b = e.beta * Math.PI / 180;
-    f = [-Math.cos(b) * Math.sin(a), Math.cos(a) * Math.cos(b), Math.sin(b)];
-    const now = performance.now();
-    if (now - last > 22) { last = now; send('pose', { f: f.map((v) => +v.toFixed(4)) }); }
+  // ---------- orientation as a quaternion (no gimbal flips, any grip) ----------
+  const D2R = Math.PI / 180;
+  const qmul = (a, b) => [
+    a[3] * b[0] + a[0] * b[3] + a[1] * b[2] - a[2] * b[1],
+    a[3] * b[1] - a[0] * b[2] + a[1] * b[3] + a[2] * b[0],
+    a[3] * b[2] + a[0] * b[1] - a[1] * b[0] + a[2] * b[3],
+    a[3] * b[3] - a[0] * b[0] - a[1] * b[1] - a[2] * b[2]];
+  const qconj = (v) => [-v[0], -v[1], -v[2], v[3]];
+  const qrot = (r, v) => { const p = qmul(qmul(r, [v[0], v[1], v[2], 0]), qconj(r)); return [p[0], p[1], p[2]]; };
+  const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+  const cross = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+  const norm = (v) => { const l = Math.hypot(v[0], v[1], v[2]) || 1; return [v[0] / l, v[1] / l, v[2] / l]; };
+  // W3C device orientation: intrinsic Z (alpha), X' (beta), Y'' (gamma)
+  function eulerQuat(a, b, g) {
+    const qz = [0, 0, Math.sin(a / 2), Math.cos(a / 2)], qx = [Math.sin(b / 2), 0, 0, Math.cos(b / 2)], qy = [0, Math.sin(g / 2), 0, Math.cos(g / 2)];
+    return qmul(qmul(qz, qx), qy);
   }
+
+  let q = null, gyro = [0, 0, 0], gyroMag = 0;
+  // which phone axis is the blade, and the pose that means "facing the screen"
+  const cal = { blade: [0, 1, 0], q0: null, F: null, U: null, R: null, done: false };
+  function setReference(qRef) {
+    cal.q0 = qRef.slice();
+    const up = qrot(qconj(qRef), [0, 0, 1]);          // world up, seen from the phone at that moment
+    cal.F = norm(cal.blade);
+    const k = dot(up, cal.F);
+    cal.U = norm([up[0] - cal.F[0] * k, up[1] - cal.F[1] * k, up[2] - cal.F[2] * k]);
+    cal.R = cross(cal.F, cal.U);
+  }
+  // blade direction and spin in screen space (x right, y up, z toward the player)
+  function screenPose() {
+    const rel = qmul(qconj(cal.q0), q);
+    const v = qrot(rel, cal.blade), w = qrot(rel, gyro);
+    const toScreen = (u) => [dot(u, cal.R), dot(u, cal.U), -dot(u, cal.F)];
+    return { v: toScreen(v), w: toScreen(w) };
+  }
+  // Orientation = the gyro's spin, added up 60+ times a second. Unlike the browser's angles this never
+  // jumps, even with the blade pointing straight up. The browser's angles only nudge out slow drift,
+  // and only when the phone is well away from the pose where those angles become unstable.
+  let qOrient = null, gyroLive = false, lastMotionT = 0;
+  function nlerp(a, b, t) {
+    const d = a[0] * b[0] + a[1] * b[1] + a[2] * b[2] + a[3] * b[3], s2 = d < 0 ? -1 : 1;
+    const r = [a[0] + (b[0] * s2 - a[0]) * t, a[1] + (b[1] * s2 - a[1]) * t, a[2] + (b[2] * s2 - a[2]) * t, a[3] + (b[3] * s2 - a[3]) * t];
+    const l = Math.hypot(r[0], r[1], r[2], r[3]) || 1;
+    return [r[0] / l, r[1] / l, r[2] / l, r[3] / l];
+  }
+  function onOrient(e) {
+    if (e.alpha == null || e.beta == null || e.gamma == null) return;
+    qOrient = eulerQuat(e.alpha * D2R, e.beta * D2R, e.gamma * D2R);
+    if (!q || !gyroLive) q = qOrient;
+    else if (Math.abs(e.beta) < 65 && gyroMag < 3) q = nlerp(q, qOrient, 0.03);
+    if (!cal.q0) setReference(q);
+  }
+  function onMotion(e) {
+    const r = e.rotationRate;
+    if (!r || r.alpha == null) return;
+    gyro = [r.beta * D2R, r.gamma * D2R, r.alpha * D2R];
+    gyroMag = Math.hypot(gyro[0], gyro[1], gyro[2]);
+    const t = e.timeStamp || performance.now();
+    const dt = lastMotionT ? Math.min(0.05, Math.max(0, (t - lastMotionT) / 1000)) : 0;
+    lastMotionT = t;
+    if (!q || dt === 0) return;
+    gyroLive = true;
+    // q <- q * exp(omega dt / 2), omega in the phone's own frame
+    const ang = gyroMag * dt;
+    if (ang > 1e-6) {
+      const s2 = Math.sin(ang / 2) / gyroMag;
+      q = qmul(q, [gyro[0] * s2, gyro[1] * s2, gyro[2] * s2, Math.cos(ang / 2)]);
+      const l = Math.hypot(q[0], q[1], q[2], q[3]); q = [q[0] / l, q[1] / l, q[2] / l, q[3] / l];
+    }
+  }
+  // 20 updates a second is plenty: the screen fills the gaps using the spin it is sent
+  setInterval(() => {
+    if (!q || !cal.q0) return;
+    if (calib.active) { calibTick(); return; }
+    const p = screenPose();
+    send('pose', { v: p.v.map((x) => +x.toFixed(4)), w: p.w.map((x) => +x.toFixed(3)) });
+    $('live').textContent = 'aim ' + p.v.map((x) => (x >= 0 ? '+' : '') + x.toFixed(2)).join(' ') + (gyroLive ? '  · gyro' : '');
+  }, 50);
+
+  // ---------- two-step calibration: tip at the screen, then tip straight up ----------
+  const calib = { active: false, step: 0, still: 0, lastT: 0, qA: null };
+  function startCalib() {
+    Object.assign(calib, { active: true, step: 1, still: 0, lastT: performance.now(), qA: null });
+    showCalibStep();
+    $('calib').hidden = false;
+  }
+  function showCalibStep() {
+    $('calStep').textContent = 'STEP ' + calib.step + ' OF 2';
+    $('calIcon').textContent = calib.step === 1 ? '→' : '↑';
+    $('calTitle').textContent = calib.step === 1 ? 'Point at the screen' : 'Point straight up';
+    $('calText').textContent = calib.step === 1 ? 'Hold the phone the way you will swing it, aim the saber tip at the screen and keep still.' : 'Same grip. Raise the saber tip straight up at the ceiling and keep still.';
+    $('calRing').style.setProperty('--p', 0);
+  }
+  function calibTick() {
+    const now = performance.now(), dt = Math.min(100, now - calib.lastT); calib.lastT = now;
+    // hold still for 0.8 s to capture
+    calib.still = gyroMag < 0.35 ? calib.still + dt : 0;
+    $('calRing').style.setProperty('--p', Math.min(100, calib.still / 8));
+    if (calib.still >= 800) capture();
+  }
+  function capture() {
+    if (!q) return;
+    try { navigator.vibrate && navigator.vibrate(30); } catch (e) {}
+    if (calib.step === 1) { calib.qA = q.slice(); calib.step = 2; calib.still = 0; showCalibStep(); return; }
+    // the blade is whichever phone axis now points at the sky
+    const blade = norm(qrot(qconj(q), [0, 0, 1]));
+    const upAtA = qrot(qconj(calib.qA), [0, 0, 1]);
+    if (Math.abs(dot(blade, upAtA)) > 0.6) {
+      calib.step = 1; calib.still = 0; showCalibStep();
+      $('calText').textContent = 'That looked the same as step 1. Point at the screen again, then raise the tip all the way up.';
+      return;
+    }
+    cal.blade = blade;
+    setReference(calib.qA);
+    cal.done = true;
+    calib.active = false;
+    $('calib').hidden = true;
+    send('recenter', {});
+    $('tip').textContent = 'Calibrated. Swing away. Tap Recenter if the aim drifts.';
+    try { navigator.vibrate && navigator.vibrate([30, 60, 30]); } catch (e) {}
+  }
+  $('calNow').addEventListener('click', capture);
 
   $('start').addEventListener('click', async () => {
     showErr('');
@@ -129,18 +285,27 @@
       if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
         if ((await DeviceOrientationEvent.requestPermission()) !== 'granted') throw new Error('denied');
       }
+      // the gyro's spin rate needs motion access too on iPhone
+      if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
+        await DeviceMotionEvent.requestPermission().catch(() => 'denied');
+      }
     } catch (e) {
       showErr('Motion access was blocked. Allow it for this site in your browser settings, then reload.');
       return;
     }
     window.addEventListener('deviceorientation', onOrient);
-    setTimeout(() => { if (!last) showErr('No motion data yet. This needs a phone with motion sensors.'); }, 2500);
-    $('start').hidden = true; $('recenter').hidden = false; $('count').hidden = false;
+    window.addEventListener('devicemotion', onMotion);
+    setTimeout(() => { if (!q) showErr('No motion data yet. This needs a phone with motion sensors.'); }, 2500);
+    $('start').hidden = true; $('liveRow').hidden = false; $('count').hidden = false; $('live').hidden = false;
+    startCalib();
     setStatus('idle', 'CONNECTING');
+    started = true;
     connect();
     try { navigator.wakeLock && await navigator.wakeLock.request('screen'); } catch (e) {}
   });
-  $('recenter').addEventListener('click', () => { send('recenter', { f }); try { navigator.vibrate && navigator.vibrate(15); } catch (e) {} });
+  // recenter keeps the learned grip and just re-aims "forward" at the screen
+  $('recenter').addEventListener('click', () => { if (!q) return; setReference(q); send('recenter', {}); try { navigator.vibrate && navigator.vibrate(15); } catch (e) {} });
+  $('recal').addEventListener('click', startCalib);
 })();
 </script>
 </body>
