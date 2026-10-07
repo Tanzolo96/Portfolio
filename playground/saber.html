@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#07060d">
+<title>Beat Slice Saber</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;700&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+  /* Layout: one tall screen held like a sword hilt; side and status on top, the glowing blade in the middle, actions at the bottom. */
+  :root {
+    --bg: #07060d;
+    --panel: #15131f;
+    --ink: #f2f0ff;
+    --muted: #8f8aa8;
+    --red: #ff3b5c;
+    --blue: #2fa8ff;
+    --glow: var(--red);
+    --display: "Chakra Petch", "Arial Narrow", system-ui, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+    color-scheme: dark;
+  }
+  body[data-side="r"] { --glow: var(--blue); }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.4 var(--display); overflow: hidden; -webkit-user-select: none; user-select: none; touch-action: manipulation; }
+  main { height: 100%; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; gap: 12px; padding: calc(env(safe-area-inset-top, 0px) + 18px) 18px calc(env(safe-area-inset-bottom, 0px) + 18px); }
+  .top { display: grid; gap: 6px; }
+  .label { font: 500 11px/1 var(--mono); letter-spacing: .2em; text-transform: uppercase; color: var(--muted); }
+  h1 { margin: 0; font: 700 38px/1 var(--display); text-transform: uppercase; color: var(--glow); text-shadow: 0 0 18px var(--glow); }
+  .status { display: inline-flex; align-items: center; gap: 8px; font: 500 12px/1 var(--mono); letter-spacing: .1em; color: var(--muted); }
+  .status i { width: 9px; height: 9px; border-radius: 50%; background: var(--muted); }
+  .status[data-state="live"] { color: var(--ink); }
+  .status[data-state="live"] i { background: #63e08a; box-shadow: 0 0 8px #63e08a; }
+  .status[data-state="error"] i { background: #ff8a3d; }
+  .saber { position: relative; display: grid; place-items: center; min-height: 0; }
+  .blade { width: 22px; height: min(62vh, 440px); border-radius: 11px; background: linear-gradient(90deg, #fff 0 30%, var(--glow) 70%); box-shadow: 0 0 22px 6px var(--glow), 0 0 60px 12px var(--glow); opacity: .9; transition: transform .06s; }
+  .hilt { width: 34px; height: 110px; margin-top: -4px; border-radius: 6px; background: repeating-linear-gradient(#2a2838 0 10px, #1a1824 10px 14px); border: 2px solid #3b384e; }
+  .saber.hit .blade { transform: scaleX(1.5); }
+  .tip { position: absolute; bottom: 0; left: 0; right: 0; text-align: center; font: 500 13px var(--mono); color: var(--muted); }
+  .actions { display: grid; gap: 10px; }
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  button { font: 700 17px var(--display); text-transform: uppercase; letter-spacing: .06em; color: var(--bg); background: var(--glow); border: 0; border-radius: 14px; padding: 16px; min-height: 56px; }
+  button.ghost { background: var(--panel); color: var(--ink); }
+  button:disabled { opacity: .45; }
+  button:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+  .count { text-align: center; font: 500 13px var(--mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+  .err { margin: 0; color: #ffb4a6; font: 500 14px var(--mono); text-align: center; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body data-side="l">
+<main>
+  <header class="top">
+    <span class="label">Beat Slice · <span id="sideName">Left</span> saber</span>
+    <h1 id="title">Red saber</h1>
+    <span class="status" id="status" data-state="idle"><i aria-hidden="true"></i><span id="statusText">NOT CONNECTED</span></span>
+  </header>
+  <section class="saber" id="saber" aria-label="Saber">
+    <div class="blade" aria-hidden="true"></div>
+    <div class="hilt" aria-hidden="true"></div>
+    <p class="tip" id="tip">Hold the phone like a sword hilt, top edge up.</p>
+  </section>
+  <footer class="actions">
+    <p class="err" id="err" hidden></p>
+    <button id="start" type="button">Ignite saber</button>
+    <button class="ghost" id="recenter" type="button" hidden>Point at screen · Recenter</button>
+    <div class="count" id="count" hidden>Hits <span id="hits">0</span></div>
+  </footer>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script>
+(() => {
+  'use strict';
+  const SB_URL = 'https://txohigzxsieqwgycektl.supabase.co';
+  const SB_KEY = 'sb_publishable_P4PAITc5FyR7ulPbnqJ2uA_4ju0fiDz';
+  const $ = (id) => document.getElementById(id);
+  const [room, sideRaw] = (location.hash || '').slice(1).toLowerCase().split('.');
+  const side = sideRaw === 'r' ? 'r' : 'l';
+  document.body.dataset.side = side;
+  $('sideName').textContent = side === 'r' ? 'Right' : 'Left';
+  $('title').textContent = side === 'r' ? 'Blue saber' : 'Red saber';
+  const setStatus = (state, text) => { $('status').dataset.state = state; $('statusText').textContent = text; };
+  const showErr = (msg) => { $('err').textContent = msg; $('err').hidden = !msg; };
+  if (!/^[a-z0-9]{6,16}$/.test(room || '')) {
+    setStatus('error', 'NO ROOM CODE');
+    showErr('Scan a QR code on the Beat Slice screen to open this page.');
+    $('start').disabled = true;
+    return;
+  }
+
+  let channel = null, joined = false, seen = false, hits = 0, last = 0, f = [0, 1, 0];
+
+  function connect() {
+    const client = window.supabase.createClient(SB_URL, SB_KEY, { realtime: { params: { eventsPerSecond: 50 } } });
+    channel = client.channel('beat-' + room, { config: { broadcast: { self: false, ack: false } } });
+    channel.on('broadcast', { event: 'hello' }, () => {
+      if (!seen) { seen = true; setStatus('live', 'CONNECTED'); $('tip').textContent = 'Point at the screen and tap Recenter, then slice.'; }
+    });
+    channel.on('broadcast', { event: 'hit' }, ({ payload }) => {
+      if (!payload || payload.s !== side) return;
+      hits++; $('hits').textContent = hits;
+      try { navigator.vibrate && navigator.vibrate(payload.bad ? [20, 40, 20] : 28); } catch (e) {}
+      $('saber').classList.add('hit'); setTimeout(() => $('saber').classList.remove('hit'), 90);
+    });
+    channel.subscribe((s) => {
+      if (s === 'SUBSCRIBED') { joined = true; setStatus(seen ? 'live' : 'idle', seen ? 'CONNECTED' : 'LOOKING FOR SCREEN'); send('join', {}); }
+      else if (s === 'CHANNEL_ERROR' || s === 'TIMED_OUT') { setStatus('error', 'CONNECTION LOST'); showErr('Could not reach the game. Check your internet and reload this page.'); }
+    });
+  }
+  const send = (event, payload) => { if (joined) channel.send({ type: 'broadcast', event, payload: Object.assign({ s: side }, payload) }); };
+
+  // the phone's long axis in earth space (x east, y north, z up)
+  function onOrient(e) {
+    if (e.alpha == null || e.beta == null) return;
+    const a = e.alpha * Math.PI / 180, b = e.beta * Math.PI / 180;
+    f = [-Math.cos(b) * Math.sin(a), Math.cos(a) * Math.cos(b), Math.sin(b)];
+    const now = performance.now();
+    if (now - last > 22) { last = now; send('pose', { f: f.map((v) => +v.toFixed(4)) }); }
+  }
+
+  $('start').addEventListener('click', async () => {
+    showErr('');
+    try {
+      if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+        if ((await DeviceOrientationEvent.requestPermission()) !== 'granted') throw new Error('denied');
+      }
+    } catch (e) {
+      showErr('Motion access was blocked. Allow it for this site in your browser settings, then reload.');
+      return;
+    }
+    window.addEventListener('deviceorientation', onOrient);
+    setTimeout(() => { if (!last) showErr('No motion data yet. This needs a phone with motion sensors.'); }, 2500);
+    $('start').hidden = true; $('recenter').hidden = false; $('count').hidden = false;
+    setStatus('idle', 'CONNECTING');
+    connect();
+    try { navigator.wakeLock && await navigator.wakeLock.request('screen'); } catch (e) {}
+  });
+  $('recenter').addEventListener('click', () => { send('recenter', { f }); try { navigator.vibrate && navigator.vibrate(15); } catch (e) {} });
+})();
+</script>
+</body>
+</html>
