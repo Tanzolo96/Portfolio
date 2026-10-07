@@ -381,6 +381,7 @@
       dir: new THREE.Vector3(0, 1, 0), target: new THREE.Vector3(0, 1, 0), raw: null, ref: null,
       base: new THREE.Vector3(), tip: new THREE.Vector3(), prevBase: new THREE.Vector3(), prevTip: new THREE.Vector3(),
       tipVel: new THREE.Vector3(), connected: false, lastPose: 0, primed: false,
+      netV: new THREE.Vector3(0, 1, 0), netW: new THREE.Vector3(), netT: 0, stale: false,
     };
   }
   makeSaber('l'); makeSaber('r');
@@ -389,7 +390,11 @@
   const qTmp = new THREE.Quaternion(), UP = new THREE.Vector3(0, 1, 0);
   function updateSaber(s, dt) {
     if (!s.connected) { s.g.visible = false; s.trail.visible = false; return; }
-    if (performance.now() - s.lastPose > 3000) { s.connected = false; renderPairs(); return; }
+    const now = performance.now(), gap = now - s.lastPose;
+    // a short network gap keeps the saber where it was; only a long silence counts as gone
+    if (gap > 10000) { s.connected = false; s.stale = false; renderPairs(); return; }
+    if (gap > 1500 && !s.stale) { s.stale = true; renderPairs(); }
+    if (gap < 400) predict(s, now); else s.target.copy(s.netV);
     // follow the phone closely; a little smoothing hides network jitter
     s.dir.lerp(s.target, Math.min(1, dt * 30)).normalize();
     s.prevBase.copy(s.base); s.prevTip.copy(s.tip);
@@ -415,43 +420,60 @@
   // ---------- phones over Supabase realtime ----------
   const SB_URL = 'https://txohigzxsieqwgycektl.supabase.co';
   const SB_KEY = 'sb_publishable_P4PAITc5FyR7ulPbnqJ2uA_4ju0fiDz';
-  const net = { channel: null, client: null, room: '', hello: 0 };
+  const net = { channels: null, client: null, room: '', hello: 0 };
   const loadScript = (src) => new Promise((res, rej) => { const el = document.createElement('script'); el.src = src; el.onload = res; el.onerror = () => rej(new Error(src)); document.head.appendChild(el); });
   function renderPairs() {
     for (const k of ['l', 'r']) {
       const on = sabers[k].connected;
       $(k === 'l' ? 'pairL' : 'pairR').classList.toggle('on', on);
       const st = $(k === 'l' ? 'stateL' : 'stateR');
-      st.textContent = on ? (sabers[k].ref ? 'Connected · centred' : 'Connected · calibrating') : 'Waiting…';
+      st.textContent = on ? (sabers[k].stale ? 'Reconnecting…' : sabers[k].ref ? 'Connected · centred' : 'Connected · calibrating') : 'Waiting…';
       st.classList.toggle('on', on);
     }
     $('playBtn').disabled = !(sabers.l.connected || sabers.r.connected);
   }
+  // one channel per saber: a phone's 20 updates a second go only to this screen, never to the other phone
   async function openRoom() {
-    if (net.channel) return;
+    if (net.channels) return;
     if (!window.supabase) await loadScript('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js');
     if (!window.QRCode) await loadScript('https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js');
     const b = new Uint8Array(6); crypto.getRandomValues(b);
     net.room = Array.from(b, (x) => (x % 36).toString(36)).join('') + Date.now().toString(36).slice(-3);
-    net.client = window.supabase.createClient(SB_URL, SB_KEY, { realtime: { params: { eventsPerSecond: 20 } } });
-    net.channel = net.client.channel('beat-' + net.room, { config: { broadcast: { self: false, ack: false } } });
-    net.channel.on('broadcast', { event: 'pose' }, ({ payload }) => onPose(payload));
-    net.channel.on('broadcast', { event: 'recenter' }, ({ payload }) => onRecenter(payload));
-    net.channel.on('broadcast', { event: 'join' }, () => hello());
-    await new Promise((res, rej) => {
-      const to = setTimeout(() => rej(new Error('timeout')), 10000);
-      net.channel.subscribe((st) => { if (st === 'SUBSCRIBED') { clearTimeout(to); res(); } else if (st === 'CHANNEL_ERROR' || st === 'TIMED_OUT') { clearTimeout(to); rej(new Error(st)); } });
-    });
+    net.client = window.supabase.createClient(SB_URL, SB_KEY, { realtime: { params: { eventsPerSecond: 20 }, heartbeatIntervalMs: 10000 } });
+    net.channels = {};
+    await Promise.all(['l', 'r'].map((k) => joinSide(k, true)));
     for (const k of ['l', 'r']) {
       const url = new URL('saber.html', location.href); url.hash = net.room + '.' + k;
       const el = $(k === 'l' ? 'qrL' : 'qrR'); el.textContent = '';
       new window.QRCode(el, { text: url.href, width: 300, height: 300, correctLevel: window.QRCode.CorrectLevel.M });
       el.title = url.href;
     }
-    net.hello = setInterval(hello, 2000);
+    net.hello = setInterval(() => { hello('l'); hello('r'); }, 2000);
   }
-  function hello() { if (net.channel) net.channel.send({ type: 'broadcast', event: 'hello', payload: {} }); }
-  function tellPhone(side, bad) { if (net.channel) net.channel.send({ type: 'broadcast', event: 'hit', payload: { s: side, bad: !!bad } }); }
+  function joinSide(k, first) {
+    return new Promise((res, rej) => {
+      const old = net.channels[k];
+      if (old) { try { net.client.removeChannel(old); } catch (e) {} }
+      const ch = net.client.channel('beat-' + net.room + '-' + k, { config: { broadcast: { self: false, ack: false } } });
+      net.channels[k] = ch;
+      ch.on('broadcast', { event: 'pose' }, ({ payload }) => onPose(payload));
+      ch.on('broadcast', { event: 'recenter' }, ({ payload }) => onRecenter(payload));
+      ch.on('broadcast', { event: 'join' }, () => hello(k));
+      const to = setTimeout(() => (first ? rej(new Error('timeout')) : res()), 10000);
+      ch.subscribe((st) => {
+        if (net.channels[k] !== ch) return;
+        if (st === 'SUBSCRIBED') { clearTimeout(to); res(); hello(k); }
+        else if (st === 'CHANNEL_ERROR' || st === 'TIMED_OUT' || st === 'CLOSED') {
+          clearTimeout(to);
+          if (first) { first = false; rej(new Error(st)); return; }
+          // heal the link quietly
+          setTimeout(() => { if (net.channels[k] === ch) joinSide(k, false); }, 1500);
+        }
+      });
+    });
+  }
+  function hello(k) { const ch = net.channels && net.channels[k]; if (ch) ch.send({ type: 'broadcast', event: 'hello', payload: {} }); }
+  function tellPhone(side, bad) { const ch = net.channels && net.channels[side]; if (ch) ch.send({ type: 'broadcast', event: 'hit', payload: { s: side, bad: !!bad } }); }
   const valid3 = (f) => Array.isArray(f) && f.length === 3 && f.every((v) => typeof v === 'number' && isFinite(v));
   // the phone sends its blade direction already in screen space (x right, y up, z toward you),
   // calibrated to however it is held, plus its gyro spin; lean ahead by the spin to hide network delay
@@ -461,9 +483,22 @@
     const s = sabers[p.s];
     s.lastPose = performance.now();
     if (!s.connected) { s.connected = true; s.primed = false; renderPairs(); }
-    const v = new THREE.Vector3(p.v[0], p.v[1], p.v[2]);
-    if (valid3(p.w)) v.add(new THREE.Vector3(p.w[0], p.w[1], p.w[2]).cross(v).multiplyScalar(LEAD_S));
-    if (v.lengthSq() > 1e-6) s.target.copy(v.normalize());
+    s.netV.set(p.v[0], p.v[1], p.v[2]);
+    if (s.netV.lengthSq() < 1e-6) return;
+    s.netV.normalize();
+    s.netW.set(0, 0, 0);
+    if (valid3(p.w)) s.netW.set(p.w[0], p.w[1], p.w[2]);
+    s.netT = s.lastPose;
+    if (s.stale) { s.stale = false; renderPairs(); }
+  }
+  // between updates, keep turning the blade at the spin the phone last reported (plus a small lead)
+  const axisTmp = new THREE.Vector3();
+  function predict(s, now) {
+    const w = s.netW.length();
+    const dt = Math.min(0.15, (now - s.netT) / 1000 + LEAD_S);
+    if (w < 1e-4) return s.target.copy(s.netV);
+    axisTmp.copy(s.netW).divideScalar(w);
+    return s.target.copy(s.netV).applyAxisAngle(axisTmp, w * dt).normalize();
   }
   function onRecenter(p) {
     if (!p || (p.s !== 'l' && p.s !== 'r')) return;
