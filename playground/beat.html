@@ -24,7 +24,9 @@
   html, body { height: 100%; }
   body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.4 var(--display); overflow: hidden; -webkit-user-select: none; user-select: none; }
   button { font: inherit; color: inherit; }
-  #gl { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; cursor: crosshair; }
+  #gl { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; cursor: crosshair; z-index: 0; }
+  /* everything drawn over the game stays above the canvas, even if a browser re-attaches it after VR */
+  .trail, .hud, .bottom, .judge, .panel, .count, .fallback { z-index: 1; }
   .trail { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; }
   .trail polyline { fill: none; stroke: #fff; stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; filter: drop-shadow(0 0 6px #b9a8ff); opacity: .85; }
 
@@ -118,10 +120,12 @@
   <h1><b>Beat</b> <em>Slice</em></h1>
   <p>Boxes fly at you on the beat. Slice red with your left saber and blue with your right, in the direction of each arrow. Dots can be cut any way.</p>
   <div class="btns">
+    <button class="btn primary" id="vrBtn" type="button" hidden>Play in VR</button>
     <button class="btn primary" id="phonesBtn" type="button">Play with 2 phones</button>
     <button class="btn" id="mouseBtn" type="button">Play with mouse</button>
   </div>
   <p class="label" style="letter-spacing:.1em">Mouse: swipe across a box in its arrow's direction. Any colour works.</p>
+  <p class="label" id="vrNote" style="letter-spacing:.1em">VR: open this page in your headset's browser (Quest and others) and a Play in VR button appears.</p>
 </section>
 
 <section class="panel" id="pairPanel" aria-label="Connect phones" hidden>
@@ -172,6 +176,8 @@
   const HIT_Z = -1.0;               // where a box is "on the beat"
   const LEAD = 3.6;                 // seconds a box is visible before its beat
   const LANES = [-0.95, -0.32, 0.32, 0.95], ROWS = [0.75, 1.3, 1.85];
+  const ROWS_VR = [0.85, 1.25, 1.65];   // standing in a headset, the grid sits a little lower
+  let rows = ROWS;
   const DIRS = { d: 0, u: Math.PI, l: -Math.PI / 2, r: Math.PI / 2, dl: -Math.PI / 4, dr: Math.PI / 4, ul: -3 * Math.PI / 4, ur: 3 * Math.PI / 4 };
   const section = (bar) => bar < 2 ? 'intro' : bar < 10 ? 'verse' : bar < 18 ? 'build' : bar < 26 ? 'chorus' : bar < 30 ? 'break' : bar < 39 ? 'final' : 'end';
 
@@ -261,12 +267,15 @@
   try { renderer = new THREE.WebGLRenderer({ canvas, antialias: true }); } catch (e) { $('fallback').hidden = false; return; }
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
   renderer.outputEncoding = THREE.sRGBEncoding;
+  renderer.xr.enabled = true;
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0x07060d);
   scene.fog = new THREE.Fog(0x07060d, 14, 46);
   const camera = new THREE.PerspectiveCamera(70, 1, 0.05, 80);
-  camera.position.set(0, 1.45, 1.5);
-  camera.lookAt(0, 1.15, -8);
+  // the rig is where the player stands; in a headset the head moves inside it
+  const rig = new THREE.Group(); rig.add(camera); scene.add(rig);
+  function deskCamera() { rig.position.set(0, 0, 0); camera.position.set(0, 1.45, 1.5); camera.quaternion.identity(); camera.lookAt(0, 1.15, -8); }
+  deskCamera();
   scene.add(new THREE.HemisphereLight(0x8070ff, 0x100818, 0.3));
   const keyL = new THREE.DirectionalLight(0xffffff, 0.8); keyL.position.set(0, 4, 3); scene.add(keyL);
 
@@ -389,14 +398,24 @@
 
   const qTmp = new THREE.Quaternion(), UP = new THREE.Vector3(0, 1, 0);
   function updateSaber(s, dt) {
-    if (!s.connected) { s.g.visible = false; s.trail.visible = false; return; }
-    const now = performance.now(), gap = now - s.lastPose;
-    // a short network gap keeps the saber where it was; only a long silence counts as gone
-    if (gap > 10000) { s.connected = false; s.stale = false; renderPairs(); return; }
-    if (gap > 1500 && !s.stale) { s.stale = true; renderPairs(); }
-    if (gap < 400) predict(s, now); else s.target.copy(s.netV);
-    // follow the phone closely; a little smoothing hides network jitter
-    s.dir.lerp(s.target, Math.min(1, dt * 30)).normalize();
+    if (mode === 'vr') {
+      // the blade comes straight out of the fist, along the controller's grip
+      const gr = s.grip;
+      s.connected = !!(gr && gr.visible && renderer.xr.isPresenting);
+      if (!s.connected) { s.g.visible = false; s.trail.visible = false; s.primed = false; return; }
+      gr.getWorldQuaternion(qTmp);
+      s.dir.set(0, 0, -1).applyQuaternion(qTmp);
+      gr.getWorldPosition(s.pivot).addScaledVector(s.dir, 0.08);
+    } else {
+      if (!s.connected) { s.g.visible = false; s.trail.visible = false; return; }
+      const now = performance.now(), gap = now - s.lastPose;
+      // a short network gap keeps the saber where it was; only a long silence counts as gone
+      if (gap > 10000) { s.connected = false; s.stale = false; renderPairs(); return; }
+      if (gap > 1500 && !s.stale) { s.stale = true; renderPairs(); }
+      if (gap < 400) predict(s, now); else s.target.copy(s.netV);
+      // follow the phone closely; a little smoothing hides network jitter
+      s.dir.lerp(s.target, Math.min(1, dt * 30)).normalize();
+    }
     s.prevBase.copy(s.base); s.prevTip.copy(s.tip);
     s.base.copy(s.pivot);
     s.tip.copy(s.pivot).addScaledVector(s.dir, BLADE);
@@ -473,7 +492,7 @@
     });
   }
   function hello(k) { const ch = net.channels && net.channels[k]; if (ch) ch.send({ type: 'broadcast', event: 'hello', payload: {} }); }
-  function tellPhone(side, bad) { const ch = net.channels && net.channels[side]; if (ch) ch.send({ type: 'broadcast', event: 'hit', payload: { s: side, bad: !!bad } }); }
+  function tellPhone(side, bad) { if (mode === 'vr') { buzz(side, bad); return; } const ch = net.channels && net.channels[side]; if (ch) ch.send({ type: 'broadcast', event: 'hit', payload: { s: side, bad: !!bad } }); }
   const valid3 = (f) => Array.isArray(f) && f.length === 3 && f.every((v) => typeof v === 'number' && isFinite(v));
   // the phone sends its blade direction already in screen space (x right, y up, z toward you),
   // calibrated to however it is held, plus its gyro spin; lean ahead by the spin to hide network delay
@@ -546,6 +565,7 @@
   const MULT_STEPS = { 1: 2, 2: 4, 4: 8 };
   const inZone = (b) => b.mesh.position.z > HIT_Z - 1.6 && b.mesh.position.z < HIT_Z + 1.1;
   function judge(text, color) {
+    vrMsg(text, color || '#fff', '', 0.38);
     const j = $('judge'); j.textContent = text; j.style.color = color || '#fff';
     j.classList.remove('on'); void j.offsetWidth; j.classList.add('on');
     clearTimeout(judge.t); judge.t = setTimeout(() => j.classList.remove('on'), 380);
@@ -556,6 +576,7 @@
     $('mult').textContent = '×' + stats.mult;
     $('multFill').style.width = stats.mult === 8 ? '100%' : (100 * stats.prog / MULT_STEPS[stats.mult]) + '%';
     $('health').style.width = stats.health + '%';
+    vr.dirty = true;
   }
   function hit(box, cut2d, side) {
     const need = box.note.dir;
@@ -600,14 +621,15 @@
       for (const box of live.slice()) {
         if (box.done || !inZone(box)) continue;
         // sample the blade now and halfway back to its last position
-        const c = box.mesh.position, r = BOX * 0.75;
+        // in a headset the blade really is in the room, so depth has to match too
+        const c = box.mesh.position, r = BOX * 0.75, depth = mode === 'vr' ? BOX * 0.9 : 1.4;
         let touched = false;
         for (const f of [0, 0.5, 1]) for (let q = 0.25; q <= 1.0001 && !touched; q += 0.125) {
           const bx = s.prevBase.x + (s.base.x - s.prevBase.x) * f, by = s.prevBase.y + (s.base.y - s.prevBase.y) * f, bz = s.prevBase.z + (s.base.z - s.prevBase.z) * f;
           const tx = s.prevTip.x + (s.tip.x - s.prevTip.x) * f, ty = s.prevTip.y + (s.tip.y - s.prevTip.y) * f, tz = s.prevTip.z + (s.tip.z - s.prevTip.z) * f;
           const px = bx + (tx - bx) * q, py = by + (ty - by) * q, pz = bz + (tz - bz) * q;
           // boxes are judged in the plane of the screen; depth only needs to be close
-          if (Math.abs(px - c.x) < r && Math.abs(py - c.y) < r && Math.abs(pz - c.z) < 1.4) touched = true;
+          if (Math.abs(px - c.x) < r && Math.abs(py - c.y) < r && Math.abs(pz - c.z) < depth) touched = true;
         }
         if (touched) hit(box, new THREE.Vector2(s.tipVel.x, s.tipVel.y).normalize(), k);
       }
@@ -641,6 +663,9 @@
     $('resScore').textContent = stats.score.toLocaleString('en-US');
     $('rHits').textContent = stats.hits; $('rMiss').textContent = stats.miss; $('rCombo').textContent = stats.best; $('rAcc').textContent = Math.round(acc * 100) + '%';
     setTimeout(() => showOnly('results'), cleared ? 900 : 300);
+    vr.resultsAt = performance.now();
+    vrMsg((cleared ? 'Song complete · ' : 'Out of energy · ') + $('rank').textContent, cleared ? '#ffd166' : '#ff8a3d',
+      stats.score.toLocaleString('en-US') + ' points · ' + Math.round(acc * 100) + '% · pull a trigger to play again', 1e9);
     $('count').hidden = true;
   }
 
@@ -658,8 +683,137 @@
   $('menuBtn').addEventListener('click', () => { state = 'menu'; showOnly(mode === 'phones' ? 'pairPanel' : 'menu'); });
   document.addEventListener('visibilitychange', () => { if (!ac) return; if (document.hidden) ac.suspend(); else if (state === 'play' || state === 'count') ac.resume(); });
 
+  // ---------- VR: WebXR headset, the controllers are the sabers ----------
+  const vr = { on: false, session: null, dirty: true, hudAt: 0, msgText: '', msgSub: '', msgColor: '#fff', msgAt: 0, msgHold: 0, msgDirty: false, resultsAt: 0 };
+  const FONT = '"Chakra Petch", "Arial Narrow", sans-serif', MONO = '"IBM Plex Mono", monospace';
+  function makePanel(w, h, px, x, y, z, ry) {
+    const c = document.createElement('canvas'); c.width = px; c.height = Math.round(px * h / w);
+    const tex = new THREE.CanvasTexture(c); tex.encoding = THREE.sRGBEncoding; tex.anisotropy = 4;
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false, fog: false }));
+    m.position.set(x, y, z); m.rotation.y = ry; m.renderOrder = 5; m.visible = false; scene.add(m);
+    return { c, ctx: c.getContext('2d'), tex, m };
+  }
+  // score on the left of the track, multiplier and energy on the right, messages above it
+  const panL = makePanel(1.0, 0.56, 512, -1.85, 1.2, -2.4, 0.5);
+  const panR = makePanel(1.0, 0.56, 512, 1.85, 1.2, -2.4, -0.5);
+  const panM = makePanel(2.6, 0.62, 1024, 0, 2.45, -3.4, 0);
+  function plate(ctx, w, h) {
+    ctx.clearRect(0, 0, w, h);
+    ctx.fillStyle = 'rgba(12, 9, 26, 0.62)'; ctx.strokeStyle = 'rgba(155, 140, 255, 0.35)'; ctx.lineWidth = 3;
+    ctx.beginPath(); if (ctx.roundRect) ctx.roundRect(4, 4, w - 8, h - 8, 26); else ctx.rect(4, 4, w - 8, h - 8); ctx.fill(); ctx.stroke();
+  }
+  function bar(ctx, x, y, w, h, f, color) {
+    ctx.fillStyle = 'rgba(255,255,255,0.12)'; ctx.fillRect(x, y, w, h);
+    ctx.fillStyle = color; ctx.fillRect(x, y, w * Math.max(0, Math.min(1, f)), h);
+  }
+  function drawHudPanels() {
+    let { ctx, c } = panL; const W = c.width, H = c.height;
+    plate(ctx, W, H);
+    ctx.fillStyle = '#b9b0d8'; ctx.font = `500 26px ${MONO}`; ctx.fillText('SCORE', 40, 66);
+    ctx.fillStyle = '#ffffff'; ctx.font = `700 112px ${FONT}`; ctx.fillText(stats.score.toLocaleString('en-US'), 36, 180);
+    ctx.fillStyle = '#e8e4ff'; ctx.font = `500 34px ${MONO}`; ctx.fillText(stats.combo + ' combo', 40, 244);
+    panL.tex.needsUpdate = true;
+    ({ ctx, c } = panR);
+    plate(ctx, W, H);
+    ctx.fillStyle = '#ffd166'; ctx.font = `700 96px ${FONT}`; ctx.fillText('×' + stats.mult, 40, 120);
+    bar(ctx, 220, 80, 250, 16, stats.mult === 8 ? 1 : stats.prog / MULT_STEPS[stats.mult], '#ffd166');
+    ctx.fillStyle = '#b9b0d8'; ctx.font = `500 24px ${MONO}`; ctx.fillText('ENERGY', 40, 170);
+    bar(ctx, 40, 184, 432, 20, stats.health / 100, stats.health < 30 ? '#ff5b5b' : '#7dffb0');
+    ctx.fillStyle = '#b9b0d8'; ctx.fillText('SONG', 40, 236);
+    const t = songTime();
+    bar(ctx, 40, 248, 432, 8, state === 'play' ? t / SONG_LEN : state === 'results' ? 1 : 0, '#9b8cff');
+    panR.tex.needsUpdate = true;
+  }
+  function drawMsg() {
+    const { ctx, c } = panM; const W = c.width, H = c.height;
+    ctx.clearRect(0, 0, W, H);
+    if (!vr.msgText) { panM.tex.needsUpdate = true; return; }
+    ctx.textAlign = 'center';
+    ctx.shadowColor = vr.msgColor; ctx.shadowBlur = 24;
+    ctx.fillStyle = vr.msgColor; ctx.font = `700 ${vr.msgSub ? 92 : 130}px ${FONT}`;
+    ctx.fillText(vr.msgText, W / 2, vr.msgSub ? 110 : 170);
+    if (vr.msgSub) { ctx.shadowBlur = 0; ctx.fillStyle = '#e8e4ff'; ctx.font = `500 34px ${MONO}`; ctx.fillText(vr.msgSub, W / 2, 190); }
+    ctx.textAlign = 'start'; ctx.shadowBlur = 0;
+    panM.tex.needsUpdate = true;
+  }
+  function vrMsg(text, color, sub, hold) {
+    vr.msgText = text; vr.msgColor = color; vr.msgSub = sub || ''; vr.msgHold = hold * 1000; vr.msgAt = performance.now(); vr.msgDirty = true;
+  }
+  function drawVr(now) {
+    if (vr.dirty || now - vr.hudAt > 120) { drawHudPanels(); vr.dirty = false; vr.hudAt = now; }
+    if (vr.msgDirty) { drawMsg(); vr.msgDirty = false; }
+    // messages pop in and fade out
+    const age = performance.now() - vr.msgAt;
+    panM.m.material.opacity = age < vr.msgHold ? 1 : Math.max(0, 1 - (age - vr.msgHold) / 250);
+    const pop = 1 + 0.25 * Math.exp(-age / 60);
+    panM.m.scale.setScalar(pop);
+  }
+  function buzz(side, bad) {
+    const src = sabers[side].source, gp = src && src.gamepad;
+    const h = gp && gp.hapticActuators && gp.hapticActuators[0];
+    try { if (h && h.pulse) h.pulse(bad ? 0.25 : 0.9, bad ? 40 : 60); } catch (e) {}
+  }
+  // the two controllers: whichever reports "left" gets the red saber
+  for (let i = 0; i < 2; i++) {
+    const grip = renderer.xr.getControllerGrip(i);
+    rig.add(grip);
+    grip.addEventListener('connected', (e) => {
+      const side = e.data.handedness === 'left' ? 'l' : e.data.handedness === 'right' ? 'r' : (i === 0 ? 'l' : 'r');
+      grip.userData.side = side;
+      sabers[side].grip = grip; sabers[side].source = e.data;
+    });
+    grip.addEventListener('disconnected', () => {
+      const s = sabers[grip.userData.side];
+      if (s && s.grip === grip) { s.grip = null; s.source = null; }
+    });
+    grip.addEventListener('selectstart', () => {
+      if (vr.on && (state === 'results' || state === 'menu') && performance.now() - vr.resultsAt > 1200) startSong();
+    });
+  }
+  function stopSong() {
+    clearInterval(schedTimer);
+    if (master) { master.gain.setTargetAtTime(0.0001, ac.currentTime, 0.1); setTimeout(() => { if (master) master.gain.value = 0.7; }, 600); }
+    for (const b of live) scene.remove(b.mesh);
+    live = [];
+    state = 'menu';
+    $('count').hidden = true;
+  }
+  async function enterVR() {
+    audioInit();
+    if (ac.state === 'suspended') ac.resume();
+    let session;
+    try { session = await navigator.xr.requestSession('immersive-vr', { optionalFeatures: ['local-floor', 'bounded-floor'] }); }
+    catch (e) { $('vrNote').hidden = false; $('vrNote').textContent = 'Could not start VR: ' + (e.message || e); return; }
+    try {
+      renderer.xr.setReferenceSpaceType('local-floor');
+      await renderer.xr.setSession(session);
+    } catch (e) { session.end().catch(() => {}); $('vrNote').hidden = false; $('vrNote').textContent = 'This headset did not give a floor-level space.'; return; }
+    vr.on = true; vr.session = session; mode = 'vr'; rows = ROWS_VR;
+    if (renderer.xr.setFoveation) renderer.xr.setFoveation(1);
+    // stand a little over a metre behind the line where boxes are on the beat
+    rig.position.set(0, 0, 0.25);
+    for (const p of [panL, panR, panM]) p.m.visible = true;
+    session.addEventListener('end', () => {
+      vr.on = false; vr.session = null; mode = 'mouse'; rows = ROWS;
+      for (const p of [panL, panR, panM]) p.m.visible = false;
+      for (const k of ['l', 'r']) { const s = sabers[k]; s.connected = false; s.primed = false; s.g.visible = false; s.trail.visible = false; s.pivot.set(k === 'l' ? -0.38 : 0.38, 1.0, 0.35); }
+      if (state === 'play' || state === 'count') { stopSong(); showOnly('menu'); }
+      deskCamera(); resize();
+    });
+    startSong();
+  }
+  $('vrBtn').addEventListener('click', enterVR);
+  if (navigator.xr && navigator.xr.isSessionSupported) {
+    navigator.xr.isSessionSupported('immersive-vr').then((ok) => {
+      if (!ok) return;
+      $('vrBtn').hidden = false; $('vrNote').hidden = true;
+      $('phonesBtn').classList.remove('primary');
+    }).catch(() => {});
+  }
+
   // ---------- loop ----------
   function resize() {
+    if (renderer.xr.isPresenting) return;
     const w = window.innerWidth, h = window.innerHeight;
     renderer.setSize(w, h, false);
     camera.aspect = w / h;
@@ -677,6 +831,7 @@
       const left = -t;
       $('count').hidden = left <= 0;
       $('count').textContent = Math.max(1, Math.ceil(left - 0.2));
+      if (left > 0 && vr.msgText !== $('count').textContent) vrMsg($('count').textContent, '#ffffff', '', 0.9);
       if (left <= 0) state = 'play';
     }
     if (state === 'play' || state === 'count') {
@@ -686,7 +841,7 @@
         live.push({ note: n, mesh: makeBox(n), done: false });
       }
       for (const b of live.slice()) {
-        b.mesh.position.set(LANES[b.note.lane], ROWS[b.note.row], HIT_Z - (b.note.t - t) * SPEED);
+        b.mesh.position.set(LANES[b.note.lane], rows[b.note.row], HIT_Z - (b.note.t - t) * SPEED);
         if (!b.done && b.mesh.position.z > HIT_Z + 1.1) { b.done = true; removeBox(b); miss(b, false); }
       }
       if (state === 'play' && t > SONG_LEN + 0.5) endSong(true);
@@ -724,11 +879,11 @@
     mouse.pts = mouse.pts.filter((p) => now - p.t < 140);
     trailEl.setAttribute('points', state === 'play' ? mouse.pts.map((p) => p.x + ',' + p.y).join(' ') : '');
 
+    if (vr.on) drawVr(now);
     renderer.render(scene, camera);
-    requestAnimationFrame(frame);
   }
   renderHud();
-  requestAnimationFrame(frame);
+  renderer.setAnimationLoop(frame);
 })();
 </script>
 </body></html>
