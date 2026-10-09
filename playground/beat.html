@@ -1,0 +1,889 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="robots" content="noindex"></head><body>
+<title>Beat Slice</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  /* Layout: full-bleed neon corridor; score top-left, multiplier and combo top-right, health along the bottom,
+     start / pairing / results as centred panels. Deliberately single dark theme: it is a night-club stage. */
+  :root {
+    --bg: #07060d;
+    --panel: rgba(16, 14, 26, .86);
+    --ink: #f2f0ff;
+    --muted: #8f8aa8;
+    --line: rgba(242, 240, 255, .16);
+    --red: #ff3b5c;
+    --blue: #2fa8ff;
+    --gold: #ffd166;
+    --display: "Chakra Petch", "Arial Narrow", system-ui, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+    --gutter: clamp(14px, 2.4vw, 32px);
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.4 var(--display); overflow: hidden; -webkit-user-select: none; user-select: none; }
+  button { font: inherit; color: inherit; }
+  #gl { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; cursor: crosshair; z-index: 0; }
+  /* everything drawn over the game stays above the canvas, even if a browser re-attaches it after VR */
+  .trail, .hud, .bottom, .judge, .panel, .count, .fallback { z-index: 1; }
+  .trail { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+  .trail polyline { fill: none; stroke: #fff; stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; filter: drop-shadow(0 0 6px #b9a8ff); opacity: .85; }
+
+  .label { font: 500 11px/1 var(--mono); letter-spacing: .2em; text-transform: uppercase; color: var(--muted); }
+  .hud { position: fixed; top: var(--gutter); pointer-events: none; display: grid; gap: 4px; }
+  .hud.left { left: var(--gutter); }
+  .hud.right { right: var(--gutter); text-align: right; justify-items: end; }
+  .score { font: 700 clamp(34px, 5vw, 56px)/1 var(--display); font-variant-numeric: tabular-nums; letter-spacing: .02em; }
+  .mult { font: 700 clamp(30px, 4vw, 46px)/1 var(--display); color: var(--gold); text-shadow: 0 0 16px rgba(255, 209, 102, .55); }
+  .multbar { width: 120px; height: 5px; background: var(--line); border-radius: 3px; overflow: hidden; }
+  .multbar i { display: block; height: 100%; width: 0; background: var(--gold); transition: width .12s; }
+  .combo { font: 500 15px var(--mono); font-variant-numeric: tabular-nums; }
+  .pairs { display: flex; gap: 10px; margin-top: 6px; font: 500 11px var(--mono); letter-spacing: .08em; }
+  .pairs span { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); }
+  .pairs i { width: 8px; height: 8px; border-radius: 50%; background: #3b3850; }
+  .pairs span.on { color: var(--ink); }
+  .pairs span.l.on i { background: var(--red); box-shadow: 0 0 8px var(--red); }
+  .pairs span.r.on i { background: var(--blue); box-shadow: 0 0 8px var(--blue); }
+  .bottom { position: fixed; left: 50%; bottom: var(--gutter); transform: translateX(-50%); width: min(520px, calc(100% - 2 * var(--gutter))); display: grid; gap: 6px; pointer-events: none; }
+  .bar { height: 8px; border-radius: 4px; background: var(--line); overflow: hidden; }
+  .bar i { display: block; height: 100%; width: 50%; background: linear-gradient(90deg, var(--red), var(--gold), #63e08a); transition: width .2s; }
+  .prog { height: 3px; border-radius: 2px; background: var(--line); overflow: hidden; }
+  .prog i { display: block; height: 100%; width: 0; background: var(--ink); }
+  .judge { position: fixed; left: 50%; top: 38%; transform: translate(-50%, -50%); font: 700 28px var(--display); letter-spacing: .08em; text-transform: uppercase; opacity: 0; pointer-events: none; transition: opacity .25s, transform .25s; }
+  .judge.on { opacity: 1; transform: translate(-50%, -60%); transition: none; }
+
+  .panel { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(560px, calc(100% - 2 * var(--gutter))); max-height: calc(100% - 2 * var(--gutter)); overflow: auto; background: var(--panel); border: 1px solid var(--line); border-radius: 18px; padding: clamp(18px, 3vw, 28px); display: grid; gap: 14px; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+  .panel[hidden] { display: none; }
+  .panel h1 { margin: 0; font: 700 clamp(44px, 8vw, 72px)/.9 var(--display); text-transform: uppercase; letter-spacing: .01em; }
+  .panel h1 b { color: var(--red); text-shadow: 0 0 18px var(--red); font-weight: 700; }
+  .panel h1 em { color: var(--blue); text-shadow: 0 0 18px var(--blue); font-style: normal; }
+  .panel h2 { margin: 0; font: 700 34px/1 var(--display); text-transform: uppercase; }
+  .panel p { margin: 0; color: #c9c4e4; max-width: 60ch; }
+  .btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .btn { border: 1px solid var(--line); background: rgba(255, 255, 255, .04); border-radius: 12px; padding: 13px 14px; min-height: 48px; cursor: pointer; font: 700 15px var(--display); text-transform: uppercase; letter-spacing: .05em; }
+  .btn.primary { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+  .btn:hover { border-color: var(--ink); }
+  .btn:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+  .btn:disabled { opacity: .45; cursor: default; }
+  .qrs { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .qrcard { display: grid; gap: 8px; justify-items: center; text-align: center; padding: 12px; border-radius: 14px; border: 1px solid var(--line); }
+  .qrcard.l { box-shadow: inset 0 0 0 1px rgba(255, 59, 92, .35); }
+  .qrcard.r { box-shadow: inset 0 0 0 1px rgba(47, 168, 255, .35); }
+  .qrcard strong { font: 700 16px var(--display); text-transform: uppercase; }
+  .qrcard.l strong { color: var(--red); }
+  .qrcard.r strong { color: var(--blue); }
+  .qr { width: 150px; height: 150px; padding: 7px; background: #fff; border-radius: 6px; }
+  .qr img, .qr canvas { width: 100%; height: 100%; }
+  .qrstate { font: 500 12px var(--mono); color: var(--muted); }
+  .qrstate.on { color: #63e08a; }
+  .steps { margin: 0; padding-left: 18px; display: grid; gap: 4px; color: #c9c4e4; font-size: 13px; }
+  .stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+  .stats div { border: 1px solid var(--line); border-radius: 10px; padding: 10px; display: grid; gap: 6px; }
+  .stats b { font: 700 24px var(--display); font-variant-numeric: tabular-nums; }
+  .rank { font: 700 88px/1 var(--display); color: var(--gold); text-shadow: 0 0 24px rgba(255, 209, 102, .6); }
+  .count { position: fixed; left: 50%; top: 45%; transform: translate(-50%, -50%); font: 700 120px var(--display); pointer-events: none; text-shadow: 0 0 30px #b9a8ff; }
+  .count[hidden] { display: none; }
+  .fallback { position: fixed; inset: 0; display: grid; place-items: center; padding: var(--gutter); text-align: center; }
+  .fallback[hidden] { display: none; }
+  @media (max-width: 640px) {
+    .qrs, .btns { grid-template-columns: 1fr; }
+    .qr { width: 132px; height: 132px; }
+    .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .hud.right .pairs { display: none; }
+  }
+  @media (prefers-reduced-motion: reduce) { .judge, .judge.on { transition: none; } }
+</style>
+
+<canvas id="gl" aria-label="Beat Slice: red and blue boxes fly down a neon corridor in time with the music; slice each in the direction of its arrow."></canvas>
+<svg class="trail" aria-hidden="true"><polyline id="trail" points=""/></svg>
+
+<div class="hud left" aria-live="off">
+  <span class="label">Score</span>
+  <span class="score" id="score">0</span>
+  <span class="combo"><span id="combo">0</span> combo</span>
+</div>
+<div class="hud right">
+  <span class="mult" id="mult">×1</span>
+  <span class="multbar"><i id="multFill"></i></span>
+  <div class="pairs"><span class="l" id="pairL"><i></i>RED</span><span class="r" id="pairR"><i></i>BLUE</span></div>
+</div>
+<div class="bottom" aria-hidden="true">
+  <div class="bar"><i id="health"></i></div>
+  <div class="prog"><i id="prog"></i></div>
+</div>
+<div class="judge" id="judge" aria-live="polite"></div>
+<div class="count" id="count" hidden>3</div>
+
+<section class="panel" id="menu" aria-label="Start">
+  <span class="label">Rhythm · two sabers</span>
+  <h1><b>Beat</b> <em>Slice</em></h1>
+  <p>Boxes fly at you on the beat. Slice red with your left saber and blue with your right, in the direction of each arrow. Dots can be cut any way.</p>
+  <div class="btns">
+    <button class="btn primary" id="vrBtn" type="button" hidden>Play in VR</button>
+    <button class="btn primary" id="phonesBtn" type="button">Play with 2 phones</button>
+    <button class="btn" id="mouseBtn" type="button">Play with mouse</button>
+  </div>
+  <p class="label" style="letter-spacing:.1em">Mouse: swipe across a box in its arrow's direction. Any colour works.</p>
+  <p class="label" id="vrNote" style="letter-spacing:.1em">VR: open this page in your headset's browser (Quest and others) and a Play in VR button appears.</p>
+</section>
+
+<section class="panel" id="pairPanel" aria-label="Connect phones" hidden>
+  <span class="label">Connect your sabers</span>
+  <div class="qrs">
+    <div class="qrcard l"><strong>Left · Red</strong><div class="qr" id="qrL"></div><span class="qrstate" id="stateL">Waiting…</span></div>
+    <div class="qrcard r"><strong>Right · Blue</strong><div class="qr" id="qrR"></div><span class="qrstate" id="stateR">Waiting…</span></div>
+  </div>
+  <ol class="steps">
+    <li>Scan one code with each phone and tap <b>Ignite saber</b>.</li>
+    <li>Hold each phone however feels like a hilt, upright or sideways. Follow the two calibration steps on the phone: tip at the screen, then tip straight up.</li>
+    <li>Stand back a little so your arms have room. Then start.</li>
+  </ol>
+  <div class="btns">
+    <button class="btn primary" id="playBtn" type="button" disabled>Start song</button>
+    <button class="btn" id="backBtn" type="button">Back</button>
+  </div>
+</section>
+
+<section class="panel" id="results" aria-label="Results" hidden>
+  <span class="label" id="resLabel">Song complete</span>
+  <div style="display:flex;align-items:end;gap:18px;flex-wrap:wrap"><span class="rank" id="rank">A</span><h2 id="resScore">0</h2></div>
+  <div class="stats">
+    <div><span class="label">Hits</span><b id="rHits">0</b></div>
+    <div><span class="label">Missed</span><b id="rMiss">0</b></div>
+    <div><span class="label">Best combo</span><b id="rCombo">0</b></div>
+    <div><span class="label">Accuracy</span><b id="rAcc">0%</b></div>
+  </div>
+  <div class="btns">
+    <button class="btn primary" id="againBtn" type="button">Play again</button>
+    <button class="btn" id="menuBtn" type="button">Menu</button>
+  </div>
+</section>
+
+<div class="fallback" id="fallback" hidden><div><h2 style="font:700 30px var(--display)">Beat Slice needs WebGL 2</h2><p>Try a current Chrome, Safari, Firefox or Edge.</p></div></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(() => {
+  'use strict';
+  const $ = (id) => document.getElementById(id);
+  const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // ---------- song and chart ----------
+  const BPM = 112, BEAT = 60 / BPM, BARS = 40;
+  const SONG_LEN = BARS * 4 * BEAT;
+  const SPEED = 10;                 // box speed, units per second
+  const HIT_Z = -1.0;               // where a box is "on the beat"
+  const LEAD = 3.6;                 // seconds a box is visible before its beat
+  const LANES = [-0.95, -0.32, 0.32, 0.95], ROWS = [0.75, 1.3, 1.85];
+  const ROWS_VR = [0.85, 1.25, 1.65];   // standing in a headset, the grid sits a little lower
+  let rows = ROWS;
+  const DIRS = { d: 0, u: Math.PI, l: -Math.PI / 2, r: Math.PI / 2, dl: -Math.PI / 4, dr: Math.PI / 4, ul: -3 * Math.PI / 4, ur: 3 * Math.PI / 4 };
+  const section = (bar) => bar < 2 ? 'intro' : bar < 10 ? 'verse' : bar < 18 ? 'build' : bar < 26 ? 'chorus' : bar < 30 ? 'break' : bar < 39 ? 'final' : 'end';
+
+  function makeChart() {
+    let s = 20261007;
+    const R = () => { s = (s * 16807) % 2147483647; return s / 2147483647; };
+    const notes = [];
+    const next = { l: 'd', r: 'd' };
+    const flip = (d) => ({ d: 'u', u: 'd', l: 'r', r: 'l', dl: 'ur', ur: 'dl', dr: 'ul', ul: 'dr' })[d];
+    const pick = (hand) => {
+      // keep each hand flowing: after a down swing comes an up swing
+      const base = next[hand];
+      let d = base;
+      if (R() < 0.25) d = base === 'd' ? (hand === 'l' ? 'dl' : 'dr') : base === 'u' ? (hand === 'l' ? 'ul' : 'ur') : base;
+      if (R() < 0.12) d = hand === 'l' ? 'l' : 'r';
+      next[hand] = flip(d) || 'd';
+      return d;
+    };
+    const add = (t, hand, any) => {
+      const lane = hand === 'l' ? (R() < 0.7 ? 1 : 0) : (R() < 0.7 ? 2 : 3);
+      const row = R() < 0.55 ? 0 : R() < 0.8 ? 1 : 2;
+      notes.push({ t, hand, lane, row, dir: any ? 'any' : pick(hand) });
+    };
+    let hand = 'l';
+    for (let bar = 2; bar < 39; bar++) {
+      const sec = section(bar);
+      for (let b = 0; b < 4; b++) {
+        const t = (bar * 4 + b) * BEAT;
+        if (sec === 'verse') { if (b % 2 === 0) { add(t, hand, R() < 0.2); hand = hand === 'l' ? 'r' : 'l'; } }
+        else if (sec === 'build') { add(t, hand, false); hand = hand === 'l' ? 'r' : 'l'; }
+        else if (sec === 'chorus' || sec === 'final') {
+          if (b === 0) { add(t, 'l', false); add(t, 'r', false); notes[notes.length - 1].dir = notes[notes.length - 2].dir.replace('l', 'r'); }
+          else { add(t, hand, false); hand = hand === 'l' ? 'r' : 'l'; }
+          if (sec === 'final' && b === 2 && R() < 0.5) { add(t + BEAT / 2, hand, true); hand = hand === 'l' ? 'r' : 'l'; }
+        } else if (sec === 'break') { if (b === 0) { add(t, hand, true); hand = hand === 'l' ? 'r' : 'l'; } }
+      }
+    }
+    // a red and a blue box never share a cell
+    const seen = new Set();
+    return notes.filter((n) => { const k = n.t.toFixed(3) + ':' + n.lane + ':' + n.row; if (seen.has(k)) return false; seen.add(k); return true; }).sort((a, b) => a.t - b.t);
+  }
+
+  // ---------- audio: a small synth band ----------
+  let ac = null, master = null, songStart = 0, schedAt = 0, schedTimer = 0, noiseBuf = null;
+  const BASS = [45, 41, 48, 43];            // A2 F2 C3 G2 (midi)
+  const CHORD = [[57, 60, 64], [53, 57, 60], [48, 52, 55], [55, 59, 62]];
+  const mtof = (m) => 440 * Math.pow(2, (m - 69) / 12);
+  function audioInit() {
+    if (ac) return;
+    ac = new (window.AudioContext || window.webkitAudioContext)();
+    const comp = ac.createDynamicsCompressor(); comp.threshold.value = -14; comp.ratio.value = 4;
+    master = ac.createGain(); master.gain.value = 0.7;
+    master.connect(comp); comp.connect(ac.destination);
+    noiseBuf = ac.createBuffer(1, ac.sampleRate, ac.sampleRate);
+    const d = noiseBuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+  }
+  function env(g, t, a, peak, dec) { g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(peak, t + a); g.gain.exponentialRampToValueAtTime(0.0001, t + a + dec); }
+  function kick(t) { const o = ac.createOscillator(), g = ac.createGain(); o.frequency.setValueAtTime(150, t); o.frequency.exponentialRampToValueAtTime(42, t + 0.14); env(g, t, 0.003, 0.95, 0.32); o.connect(g); g.connect(master); o.start(t); o.stop(t + 0.4); }
+  function noise(t, type, freq, peak, dec) { const s = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain(); s.buffer = noiseBuf; f.type = type; f.frequency.value = freq; env(g, t, 0.002, peak, dec); s.connect(f); f.connect(g); g.connect(master); s.start(t); s.stop(t + dec + 0.05); }
+  function tone(t, freq, type, peak, dec, cutoff) { const o = ac.createOscillator(), f = ac.createBiquadFilter(), g = ac.createGain(); o.type = type; o.frequency.value = freq; f.type = 'lowpass'; f.frequency.value = cutoff; env(g, t, 0.005, peak, dec); o.connect(f); f.connect(g); g.connect(master); o.start(t); o.stop(t + dec + 0.05); }
+  function scheduleStep(step, t) {
+    const bar = Math.floor(step / 16), sec = section(bar), s16 = step % 16, chordI = Math.floor(bar / 2) % 4;
+    if (sec === 'end') return;
+    const full = sec === 'chorus' || sec === 'final';
+    if (s16 % 4 === 0 && sec !== 'break') kick(t);
+    if (sec === 'break' && s16 === 0) kick(t);
+    if ((s16 === 4 || s16 === 12) && sec !== 'intro' && sec !== 'break') noise(t, 'bandpass', 1900, 0.5, 0.16);
+    if (s16 % 2 === 0 && sec !== 'break') noise(t, 'highpass', 7500, s16 % 4 === 2 ? 0.22 : 0.1, 0.05);
+    if (sec === 'build' && bar >= 16) noise(t, 'highpass', 5000, 0.08 + (step % 32) / 32 * 0.12, 0.04);
+    if (s16 % 2 === 0 && sec !== 'intro') tone(t, mtof(BASS[chordI] + (s16 % 4 === 2 ? 12 : 0)), 'sawtooth', full ? 0.32 : 0.24, BEAT * 0.45, 420);
+    if (full || sec === 'build') { const c = CHORD[chordI]; tone(t, mtof(c[s16 % 3] + 12 + (s16 >= 8 && full ? 12 : 0)), 'square', full ? 0.07 : 0.045, BEAT * 0.22, 2400); }
+    if (sec === 'break' && s16 % 4 === 0) { const c = CHORD[chordI]; c.forEach((m) => tone(t, mtof(m + 12), 'triangle', 0.08, BEAT * 1.6, 1800)); }
+  }
+  let nextStep = 0;
+  function scheduler() {
+    const ahead = ac.currentTime + 0.15;
+    while (songStart + nextStep * BEAT / 4 < ahead) {
+      if (nextStep < BARS * 16) scheduleStep(nextStep, songStart + nextStep * BEAT / 4);
+      nextStep++;
+    }
+  }
+  const songTime = () => (ac ? ac.currentTime - songStart : 0);
+
+  // ---------- renderer and the stage ----------
+  const canvas = $('gl');
+  let renderer;
+  try { renderer = new THREE.WebGLRenderer({ canvas, antialias: true }); } catch (e) { $('fallback').hidden = false; return; }
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.outputEncoding = THREE.sRGBEncoding;
+  renderer.xr.enabled = true;
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x07060d);
+  scene.fog = new THREE.Fog(0x07060d, 14, 46);
+  const camera = new THREE.PerspectiveCamera(70, 1, 0.05, 80);
+  // the rig is where the player stands; in a headset the head moves inside it
+  const rig = new THREE.Group(); rig.add(camera); scene.add(rig);
+  function deskCamera() { rig.position.set(0, 0, 0); camera.position.set(0, 1.45, 1.5); camera.quaternion.identity(); camera.lookAt(0, 1.15, -8); }
+  deskCamera();
+  scene.add(new THREE.HemisphereLight(0x8070ff, 0x100818, 0.3));
+  const keyL = new THREE.DirectionalLight(0xffffff, 0.8); keyL.position.set(0, 4, 3); scene.add(keyL);
+
+  const RED = new THREE.Color(0xff3b5c), BLUE = new THREE.Color(0x2fa8ff);
+  // floor grid and side light strips
+  const grid = new THREE.GridHelper(80, 80, 0x3b2a7a, 0x1b1636); grid.position.set(0, 0, -30); scene.add(grid);
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(6, 80), new THREE.MeshStandardMaterial({ color: 0x07060e, roughness: 0.45, metalness: 0.5 }));
+  floor.rotation.x = -Math.PI / 2; floor.position.set(0, -0.001, -30); scene.add(floor);
+  const strips = [];
+  for (const [x, c] of [[-3, RED], [3, BLUE]]) {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.06, 80), new THREE.MeshBasicMaterial({ color: c.clone() }));
+    m.position.set(x, 0.05, -30); scene.add(m); strips.push(m);
+    const m2 = m.clone(); m2.material = m.material; m2.position.y = 4.2; scene.add(m2); strips.push(m2);
+  }
+  // frames that rush past to sell the speed
+  const frames = [];
+  const frameMat = new THREE.MeshBasicMaterial({ color: 0x6b4cff, transparent: true, opacity: 0.5 });
+  for (let i = 0; i < 14; i++) {
+    const g = new THREE.Group();
+    for (const [w, h, x, y] of [[6.2, 0.05, 0, 0.05], [6.2, 0.05, 0, 4.2], [0.05, 4.2, -3.1, 2.1], [0.05, 4.2, 3.1, 2.1]]) { const b = new THREE.Mesh(new THREE.BoxGeometry(w, h, 0.05), frameMat); b.position.set(x, y, 0); g.add(b); }
+    g.position.z = -i * 5; scene.add(g); frames.push(g);
+  }
+  // a few drifting specks far away
+  {
+    const n = 400, pos = new Float32Array(n * 3);
+    for (let i = 0; i < n; i++) { pos[3 * i] = (Math.random() - 0.5) * 60; pos[3 * i + 1] = Math.random() * 20 + 4; pos[3 * i + 2] = -20 - Math.random() * 50; }
+    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    scene.add(new THREE.Points(g, new THREE.PointsMaterial({ color: 0x9a8cff, size: 0.12, transparent: true, opacity: 0.7 })));
+  }
+
+  // ---------- boxes ----------
+  const BOX = 0.46;
+  const boxGeo = new THREE.BoxGeometry(BOX, BOX, BOX);
+  const edgeGeo = new THREE.EdgesGeometry(boxGeo);
+  const arrowShape = new THREE.Shape(); arrowShape.moveTo(-0.15, 0.07); arrowShape.lineTo(0.15, 0.07); arrowShape.lineTo(0, -0.1); arrowShape.closePath();
+  const arrowGeo = new THREE.ShapeGeometry(arrowShape);
+  const dotGeo = new THREE.CircleGeometry(0.07, 24);
+  const whiteMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+  const bodyMat = { l: new THREE.MeshStandardMaterial({ color: 0x5a0d1c, emissive: RED, emissiveIntensity: 0.55, roughness: 0.3, metalness: 0.2 }), r: new THREE.MeshStandardMaterial({ color: 0x0b2c5a, emissive: BLUE, emissiveIntensity: 0.55, roughness: 0.3, metalness: 0.2 }) };
+  const edgeMat = { l: new THREE.LineBasicMaterial({ color: 0xffb3c0 }), r: new THREE.LineBasicMaterial({ color: 0xb8e2ff }) };
+  const pool = [];
+  function makeBox(note) {
+    const g = new THREE.Group();
+    g.add(new THREE.Mesh(boxGeo, bodyMat[note.hand]));
+    g.add(new THREE.LineSegments(edgeGeo, edgeMat[note.hand]));
+    const mark = new THREE.Mesh(note.dir === 'any' ? dotGeo : arrowGeo, whiteMat);
+    mark.position.z = BOX / 2 + 0.002;
+    g.add(mark);
+    if (note.dir !== 'any') g.rotation.z = DIRS[note.dir];
+    scene.add(g);
+    return g;
+  }
+
+  // flying halves and sparks
+  const debris = [];
+  const sparkGeo = new THREE.BufferGeometry();
+  const SPARKS = 600, sparkPos = new Float32Array(SPARKS * 3), sparkVel = new Float32Array(SPARKS * 3), sparkLife = new Float32Array(SPARKS), sparkCol = new Float32Array(SPARKS * 3);
+  sparkGeo.setAttribute('position', new THREE.BufferAttribute(sparkPos, 3));
+  sparkGeo.setAttribute('color', new THREE.BufferAttribute(sparkCol, 3));
+  const sparks = new THREE.Points(sparkGeo, new THREE.PointsMaterial({ size: 0.05, vertexColors: true, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }));
+  sparks.frustumCulled = false; scene.add(sparks);
+  let sparkHead = 0;
+  function burst(p, color, n) {
+    for (let k = 0; k < n; k++) {
+      const i = sparkHead = (sparkHead + 1) % SPARKS;
+      sparkPos[3 * i] = p.x; sparkPos[3 * i + 1] = p.y; sparkPos[3 * i + 2] = p.z;
+      const a = Math.random() * Math.PI * 2, e = (Math.random() - 0.3) * Math.PI, sp = 2 + Math.random() * 4;
+      sparkVel[3 * i] = Math.cos(a) * Math.cos(e) * sp; sparkVel[3 * i + 1] = Math.sin(e) * sp + 1; sparkVel[3 * i + 2] = Math.sin(a) * Math.cos(e) * sp * 0.6;
+      sparkLife[i] = 0.5 + Math.random() * 0.4;
+      sparkCol[3 * i] = color.r; sparkCol[3 * i + 1] = color.g; sparkCol[3 * i + 2] = color.b;
+    }
+  }
+  const halfGeo = new THREE.BoxGeometry(BOX, BOX / 2, BOX);
+  function sliceBox(b, cutDir) {
+    // two halves fly apart across the cut
+    const n = new THREE.Vector3(-cutDir.y, cutDir.x, 0).normalize();
+    const color = b.note.hand === 'l' ? RED : BLUE;
+    for (const s of [1, -1]) {
+      const m = new THREE.Mesh(halfGeo, bodyMat[b.note.hand]);
+      m.position.copy(b.mesh.position).addScaledVector(n, s * BOX / 4);
+      m.rotation.z = Math.atan2(n.y, n.x) - Math.PI / 2;
+      scene.add(m);
+      debris.push({ m, v: n.clone().multiplyScalar(s * 2.4).add(new THREE.Vector3(cutDir.x * 1.2, cutDir.y * 1.2, 0.6)), spin: (Math.random() - 0.5) * 10, life: 0.6 });
+    }
+    burst(b.mesh.position, color, 40);
+  }
+
+  // ---------- sabers ----------
+  const sabers = {};
+  function makeSaber(side) {
+    const color = side === 'l' ? RED : BLUE;
+    const g = new THREE.Group();
+    const hilt = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.26, 12), new THREE.MeshStandardMaterial({ color: 0x2a2838, metalness: 0.8, roughness: 0.3 }));
+    hilt.position.y = -0.13;
+    const core = new THREE.Mesh(new THREE.CylinderGeometry(0.014, 0.014, 1.15, 10), new THREE.MeshBasicMaterial({ color: 0xffffff }));
+    core.position.y = 0.575;
+    const glow = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.035, 1.18, 14), new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.45, blending: THREE.AdditiveBlending, depthWrite: false }));
+    glow.position.y = 0.575;
+    g.add(hilt, core, glow);
+    g.visible = false;
+    scene.add(g);
+    // fading ribbon behind the blade
+    const N = 14, tpos = new Float32Array(N * 2 * 3), tcol = new Float32Array(N * 2 * 3), idx = [];
+    for (let i = 0; i < N - 1; i++) { const a = 2 * i; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
+    const tg = new THREE.BufferGeometry();
+    tg.setAttribute('position', new THREE.BufferAttribute(tpos, 3)); tg.setAttribute('color', new THREE.BufferAttribute(tcol, 3)); tg.setIndex(idx);
+    const trail = new THREE.Mesh(tg, new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
+    trail.frustumCulled = false; trail.visible = false; scene.add(trail);
+    sabers[side] = {
+      side, color, g, trail, hist: [], N,
+      pivot: new THREE.Vector3(side === 'l' ? -0.38 : 0.38, 1.0, 0.35),
+      dir: new THREE.Vector3(0, 1, 0), target: new THREE.Vector3(0, 1, 0), raw: null, ref: null,
+      base: new THREE.Vector3(), tip: new THREE.Vector3(), prevBase: new THREE.Vector3(), prevTip: new THREE.Vector3(),
+      tipVel: new THREE.Vector3(), connected: false, lastPose: 0, primed: false,
+      netV: new THREE.Vector3(0, 1, 0), netW: new THREE.Vector3(), netT: 0, stale: false,
+    };
+  }
+  makeSaber('l'); makeSaber('r');
+  const BLADE = 1.15;
+
+  const qTmp = new THREE.Quaternion(), UP = new THREE.Vector3(0, 1, 0);
+  function updateSaber(s, dt) {
+    if (mode === 'vr') {
+      // the blade comes straight out of the fist, along the controller's grip
+      const gr = s.grip;
+      s.connected = !!(gr && gr.visible && renderer.xr.isPresenting);
+      if (!s.connected) { s.g.visible = false; s.trail.visible = false; s.primed = false; return; }
+      gr.getWorldQuaternion(qTmp);
+      s.dir.set(0, 0, -1).applyQuaternion(qTmp);
+      gr.getWorldPosition(s.pivot).addScaledVector(s.dir, 0.08);
+    } else {
+      if (!s.connected) { s.g.visible = false; s.trail.visible = false; return; }
+      const now = performance.now(), gap = now - s.lastPose;
+      // a short network gap keeps the saber where it was; only a long silence counts as gone
+      if (gap > 10000) { s.connected = false; s.stale = false; renderPairs(); return; }
+      if (gap > 1500 && !s.stale) { s.stale = true; renderPairs(); }
+      if (gap < 400) predict(s, now); else s.target.copy(s.netV);
+      // follow the phone closely; a little smoothing hides network jitter
+      s.dir.lerp(s.target, Math.min(1, dt * 30)).normalize();
+    }
+    s.prevBase.copy(s.base); s.prevTip.copy(s.tip);
+    s.base.copy(s.pivot);
+    s.tip.copy(s.pivot).addScaledVector(s.dir, BLADE);
+    if (!s.primed) { s.prevBase.copy(s.base); s.prevTip.copy(s.tip); s.primed = true; }
+    s.tipVel.subVectors(s.tip, s.prevTip).divideScalar(Math.max(dt, 1e-3));
+    s.g.visible = true;
+    s.g.position.copy(s.pivot);
+    s.g.quaternion.copy(qTmp.setFromUnitVectors(UP, s.dir));
+    // ribbon
+    s.hist.unshift([s.pivot.clone().addScaledVector(s.dir, BLADE * 0.35), s.tip.clone()]);
+    if (s.hist.length > s.N) s.hist.pop();
+    const P = s.trail.geometry.attributes.position.array, C = s.trail.geometry.attributes.color.array;
+    for (let i = 0; i < s.N; i++) {
+      const h = s.hist[Math.min(i, s.hist.length - 1)], fade = Math.max(0, 1 - i / (s.N - 1)) * 0.7;
+      for (let k = 0; k < 2; k++) { const o = 3 * (2 * i + k); P[o] = h[k].x; P[o + 1] = h[k].y; P[o + 2] = h[k].z; C[o] = s.color.r * fade; C[o + 1] = s.color.g * fade; C[o + 2] = s.color.b * fade; }
+    }
+    s.trail.geometry.attributes.position.needsUpdate = true; s.trail.geometry.attributes.color.needsUpdate = true;
+    s.trail.visible = true;
+  }
+
+  // ---------- phones over Supabase realtime ----------
+  const SB_URL = 'https://txohigzxsieqwgycektl.supabase.co';
+  const SB_KEY = 'sb_publishable_P4PAITc5FyR7ulPbnqJ2uA_4ju0fiDz';
+  const net = { channels: null, client: null, room: '', hello: 0 };
+  const loadScript = (src) => new Promise((res, rej) => { const el = document.createElement('script'); el.src = src; el.onload = res; el.onerror = () => rej(new Error(src)); document.head.appendChild(el); });
+  function renderPairs() {
+    for (const k of ['l', 'r']) {
+      const on = sabers[k].connected;
+      $(k === 'l' ? 'pairL' : 'pairR').classList.toggle('on', on);
+      const st = $(k === 'l' ? 'stateL' : 'stateR');
+      st.textContent = on ? (sabers[k].stale ? 'Reconnecting…' : sabers[k].ref ? 'Connected · centred' : 'Connected · calibrating') : 'Waiting…';
+      st.classList.toggle('on', on);
+    }
+    $('playBtn').disabled = !(sabers.l.connected || sabers.r.connected);
+  }
+  // one channel per saber: a phone's 20 updates a second go only to this screen, never to the other phone
+  async function openRoom() {
+    if (net.channels) return;
+    if (!window.supabase) await loadScript('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js');
+    if (!window.QRCode) await loadScript('https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js');
+    const b = new Uint8Array(6); crypto.getRandomValues(b);
+    net.room = Array.from(b, (x) => (x % 36).toString(36)).join('') + Date.now().toString(36).slice(-3);
+    net.client = window.supabase.createClient(SB_URL, SB_KEY, { realtime: { params: { eventsPerSecond: 20 }, heartbeatIntervalMs: 10000 } });
+    net.channels = {};
+    await Promise.all(['l', 'r'].map((k) => joinSide(k, true)));
+    for (const k of ['l', 'r']) {
+      const url = new URL('saber.html', location.href); url.hash = net.room + '.' + k;
+      const el = $(k === 'l' ? 'qrL' : 'qrR'); el.textContent = '';
+      new window.QRCode(el, { text: url.href, width: 300, height: 300, correctLevel: window.QRCode.CorrectLevel.M });
+      el.title = url.href;
+    }
+    net.hello = setInterval(() => { hello('l'); hello('r'); }, 2000);
+  }
+  function joinSide(k, first) {
+    return new Promise((res, rej) => {
+      const old = net.channels[k];
+      if (old) { try { net.client.removeChannel(old); } catch (e) {} }
+      const ch = net.client.channel('beat-' + net.room + '-' + k, { config: { broadcast: { self: false, ack: false } } });
+      net.channels[k] = ch;
+      ch.on('broadcast', { event: 'pose' }, ({ payload }) => onPose(payload));
+      ch.on('broadcast', { event: 'recenter' }, ({ payload }) => onRecenter(payload));
+      ch.on('broadcast', { event: 'join' }, () => hello(k));
+      const to = setTimeout(() => (first ? rej(new Error('timeout')) : res()), 10000);
+      ch.subscribe((st) => {
+        if (net.channels[k] !== ch) return;
+        if (st === 'SUBSCRIBED') { clearTimeout(to); res(); hello(k); }
+        else if (st === 'CHANNEL_ERROR' || st === 'TIMED_OUT' || st === 'CLOSED') {
+          clearTimeout(to);
+          if (first) { first = false; rej(new Error(st)); return; }
+          // heal the link quietly
+          setTimeout(() => { if (net.channels[k] === ch) joinSide(k, false); }, 1500);
+        }
+      });
+    });
+  }
+  function hello(k) { const ch = net.channels && net.channels[k]; if (ch) ch.send({ type: 'broadcast', event: 'hello', payload: {} }); }
+  function tellPhone(side, bad) { if (mode === 'vr') { buzz(side, bad); return; } const ch = net.channels && net.channels[side]; if (ch) ch.send({ type: 'broadcast', event: 'hit', payload: { s: side, bad: !!bad } }); }
+  const valid3 = (f) => Array.isArray(f) && f.length === 3 && f.every((v) => typeof v === 'number' && isFinite(v));
+  // the phone sends its blade direction already in screen space (x right, y up, z toward you),
+  // calibrated to however it is held, plus its gyro spin; lean ahead by the spin to hide network delay
+  const LEAD_S = 0.06;
+  function onPose(p) {
+    if (!p || (p.s !== 'l' && p.s !== 'r') || !valid3(p.v)) return;
+    const s = sabers[p.s];
+    s.lastPose = performance.now();
+    if (!s.connected) { s.connected = true; s.primed = false; renderPairs(); }
+    s.netV.set(p.v[0], p.v[1], p.v[2]);
+    if (s.netV.lengthSq() < 1e-6) return;
+    s.netV.normalize();
+    s.netW.set(0, 0, 0);
+    if (valid3(p.w)) s.netW.set(p.w[0], p.w[1], p.w[2]);
+    s.netT = s.lastPose;
+    if (s.stale) { s.stale = false; renderPairs(); }
+  }
+  // between updates, keep turning the blade at the spin the phone last reported (plus a small lead)
+  const axisTmp = new THREE.Vector3();
+  function predict(s, now) {
+    const w = s.netW.length();
+    const dt = Math.min(0.15, (now - s.netT) / 1000 + LEAD_S);
+    if (w < 1e-4) return s.target.copy(s.netV);
+    axisTmp.copy(s.netW).divideScalar(w);
+    return s.target.copy(s.netV).applyAxisAngle(axisTmp, w * dt).normalize();
+  }
+  function onRecenter(p) {
+    if (!p || (p.s !== 'l' && p.s !== 'r')) return;
+    const s = sabers[p.s];
+    s.ref = true;
+    renderPairs();
+    judge(p.s === 'l' ? 'Red centred' : 'Blue centred', p.s === 'l' ? '#ff3b5c' : '#2fa8ff');
+  }
+
+  // ---------- mouse slicing ----------
+  const mouse = { pts: [], last: null };
+  const trailEl = $('trail');
+  canvas.addEventListener('pointermove', (e) => {
+    const now = performance.now();
+    const p = { x: e.clientX, y: e.clientY, t: now };
+    if (mouse.last) mouseSwipe(mouse.last, p);
+    mouse.last = p;
+    mouse.pts.push(p);
+  });
+  canvas.addEventListener('pointerleave', () => { mouse.last = null; });
+  const proj = new THREE.Vector3();
+  function toScreen(v) { proj.copy(v).project(camera); const r = canvas.getBoundingClientRect(); return [r.left + (proj.x * 0.5 + 0.5) * r.width, r.top + (-proj.y * 0.5 + 0.5) * r.height]; }
+  function mouseSwipe(a, b) {
+    if (state !== 'play') return;
+    const dx = b.x - a.x, dy = b.y - a.y, len = Math.hypot(dx, dy), dt = Math.max(1, b.t - a.t);
+    if (len / dt < 0.5 || len < 4) return;
+    for (const box of live) {
+      if (box.done || !inZone(box)) continue;
+      const [cx, cy] = toScreen(box.mesh.position);
+      const [ex] = toScreen(box.mesh.position.clone().add(new THREE.Vector3(BOX / 2, 0, 0)));
+      const rad = Math.abs(ex - cx) * 1.25 + 6;
+      // closest point of the swipe segment to the box centre
+      const t = Math.max(0, Math.min(1, ((cx - a.x) * dx + (cy - a.y) * dy) / (len * len)));
+      if (Math.hypot(a.x + dx * t - cx, a.y + dy * t - cy) >= rad) continue;
+      const cut = new THREE.Vector2(dx / len, -dy / len);
+      // with a mouse, a swipe the wrong way is just the hand moving back, so it is ignored rather than punished
+      if (box.note.dir !== 'any') { const ang = DIRS[box.note.dir]; if (cut.dot(new THREE.Vector2(Math.sin(ang), -Math.cos(ang))) < 0.35) continue; }
+      hit(box, cut, null);
+    }
+  }
+
+  // ---------- game state ----------
+  let state = 'menu', mode = 'mouse', chart = [], nextNote = 0, live = [];
+  const stats = { score: 0, combo: 0, best: 0, mult: 1, prog: 0, hits: 0, miss: 0, health: 70 };
+  const MULT_STEPS = { 1: 2, 2: 4, 4: 8 };
+  const inZone = (b) => b.mesh.position.z > HIT_Z - 1.6 && b.mesh.position.z < HIT_Z + 1.1;
+  function judge(text, color) {
+    vrMsg(text, color || '#fff', '', 0.38);
+    const j = $('judge'); j.textContent = text; j.style.color = color || '#fff';
+    j.classList.remove('on'); void j.offsetWidth; j.classList.add('on');
+    clearTimeout(judge.t); judge.t = setTimeout(() => j.classList.remove('on'), 380);
+  }
+  function renderHud() {
+    $('score').textContent = stats.score.toLocaleString('en-US');
+    $('combo').textContent = stats.combo;
+    $('mult').textContent = '×' + stats.mult;
+    $('multFill').style.width = stats.mult === 8 ? '100%' : (100 * stats.prog / MULT_STEPS[stats.mult]) + '%';
+    $('health').style.width = stats.health + '%';
+    vr.dirty = true;
+  }
+  function hit(box, cut2d, side) {
+    const need = box.note.dir;
+    if (side && side !== box.note.hand) {
+      // wrong saber: counts as a miss
+      box.done = true; sliceBox(box, cut2d); removeBox(box); miss(box, true); tellPhone(side, true); return;
+    }
+    if (need !== 'any') {
+      const ang = DIRS[need], a = new THREE.Vector2(Math.sin(ang), -Math.cos(ang));
+      if (cut2d.dot(a) < 0.35) { box.done = true; sliceBox(box, cut2d); removeBox(box); miss(box, true); if (side) tellPhone(side, true); return; }
+    }
+    box.done = true;
+    const timing = 1 - Math.min(1, Math.abs(box.mesh.position.z - HIT_Z) / 1.2);
+    const pts = Math.round(85 + 30 * timing);
+    stats.score += pts * stats.mult;
+    stats.combo++; stats.best = Math.max(stats.best, stats.combo); stats.hits++;
+    if (stats.mult < 8 && ++stats.prog >= MULT_STEPS[stats.mult]) { stats.mult *= 2; stats.prog = 0; }
+    stats.health = Math.min(100, stats.health + 3);
+    sliceBox(box, cut2d);
+    removeBox(box);
+    judge(timing > 0.75 ? 'Perfect' : timing > 0.4 ? 'Great' : 'Good', box.note.hand === 'l' ? '#ff6b84' : '#6cc4ff');
+    if (side) tellPhone(side, false);
+    renderHud();
+  }
+  function miss(box, wrong) {
+    stats.miss++; stats.combo = 0;
+    if (stats.mult > 1) stats.mult /= 2;
+    stats.prog = 0;
+    stats.health = Math.max(0, stats.health - (wrong ? 5 : 7));
+    judge(wrong ? 'Wrong way' : 'Miss', '#ff8a3d');
+    renderHud();
+    if (stats.health <= 0) endSong(false);
+  }
+  function removeBox(b) { scene.remove(b.mesh); live = live.filter((x) => x !== b); }
+
+  function sabersCut() {
+    for (const k of ['l', 'r']) {
+      const s = sabers[k];
+      if (!s.connected || !s.primed) continue;
+      const speed = Math.hypot(s.tipVel.x, s.tipVel.y);
+      if (speed < 1.4) continue;
+      for (const box of live.slice()) {
+        if (box.done || !inZone(box)) continue;
+        // sample the blade now and halfway back to its last position
+        // in a headset the blade really is in the room, so depth has to match too
+        const c = box.mesh.position, r = BOX * 0.75, depth = mode === 'vr' ? BOX * 0.9 : 1.4;
+        let touched = false;
+        for (const f of [0, 0.5, 1]) for (let q = 0.25; q <= 1.0001 && !touched; q += 0.125) {
+          const bx = s.prevBase.x + (s.base.x - s.prevBase.x) * f, by = s.prevBase.y + (s.base.y - s.prevBase.y) * f, bz = s.prevBase.z + (s.base.z - s.prevBase.z) * f;
+          const tx = s.prevTip.x + (s.tip.x - s.prevTip.x) * f, ty = s.prevTip.y + (s.tip.y - s.prevTip.y) * f, tz = s.prevTip.z + (s.tip.z - s.prevTip.z) * f;
+          const px = bx + (tx - bx) * q, py = by + (ty - by) * q, pz = bz + (tz - bz) * q;
+          // boxes are judged in the plane of the screen; depth only needs to be close
+          if (Math.abs(px - c.x) < r && Math.abs(py - c.y) < r && Math.abs(pz - c.z) < depth) touched = true;
+        }
+        if (touched) hit(box, new THREE.Vector2(s.tipVel.x, s.tipVel.y).normalize(), k);
+      }
+    }
+  }
+
+  // ---------- flow ----------
+  function resetStats() { Object.assign(stats, { score: 0, combo: 0, best: 0, mult: 1, prog: 0, hits: 0, miss: 0, health: 70 }); renderHud(); }
+  function showOnly(id) { for (const p of ['menu', 'pairPanel', 'results']) $(p).hidden = p !== id; }
+  function startSong() {
+    audioInit();
+    if (ac.state === 'suspended') ac.resume();
+    for (const b of live) scene.remove(b.mesh);
+    live = []; chart = makeChart(); nextNote = 0; resetStats();
+    showOnly(null);
+    // 3-2-1, then the music starts exactly on the audio clock
+    songStart = ac.currentTime + 3.2; nextStep = 0;
+    state = 'count';
+    clearInterval(schedTimer); schedTimer = setInterval(scheduler, 25);
+  }
+  function endSong(cleared) {
+    if (state === 'results') return;
+    state = 'results';
+    clearInterval(schedTimer);
+    if (master) { master.gain.setTargetAtTime(0.0001, ac.currentTime, 0.3); setTimeout(() => { if (master) master.gain.value = 0.7; }, 1500); }
+    for (const b of live) scene.remove(b.mesh);
+    live = [];
+    const total = stats.hits + stats.miss, acc = total ? stats.hits / total : 0;
+    $('resLabel').textContent = cleared ? 'Song complete' : 'Out of energy';
+    $('rank').textContent = !cleared ? 'F' : acc > 0.95 ? 'S' : acc > 0.85 ? 'A' : acc > 0.7 ? 'B' : acc > 0.5 ? 'C' : 'D';
+    $('resScore').textContent = stats.score.toLocaleString('en-US');
+    $('rHits').textContent = stats.hits; $('rMiss').textContent = stats.miss; $('rCombo').textContent = stats.best; $('rAcc').textContent = Math.round(acc * 100) + '%';
+    setTimeout(() => showOnly('results'), cleared ? 900 : 300);
+    vr.resultsAt = performance.now();
+    vrMsg((cleared ? 'Song complete · ' : 'Out of energy · ') + $('rank').textContent, cleared ? '#ffd166' : '#ff8a3d',
+      stats.score.toLocaleString('en-US') + ' points · ' + Math.round(acc * 100) + '% · pull a trigger to play again', 1e9);
+    $('count').hidden = true;
+  }
+
+  $('mouseBtn').addEventListener('click', () => { mode = 'mouse'; startSong(); });
+  $('phonesBtn').addEventListener('click', async () => {
+    mode = 'phones';
+    showOnly('pairPanel');
+    renderPairs();
+    try { await openRoom(); }
+    catch (e) { $('stateL').textContent = $('stateR').textContent = 'Could not open the link. Check your connection.'; }
+  });
+  $('playBtn').addEventListener('click', startSong);
+  $('backBtn').addEventListener('click', () => showOnly('menu'));
+  $('againBtn').addEventListener('click', startSong);
+  $('menuBtn').addEventListener('click', () => { state = 'menu'; showOnly(mode === 'phones' ? 'pairPanel' : 'menu'); });
+  document.addEventListener('visibilitychange', () => { if (!ac) return; if (document.hidden) ac.suspend(); else if (state === 'play' || state === 'count') ac.resume(); });
+
+  // ---------- VR: WebXR headset, the controllers are the sabers ----------
+  const vr = { on: false, session: null, dirty: true, hudAt: 0, msgText: '', msgSub: '', msgColor: '#fff', msgAt: 0, msgHold: 0, msgDirty: false, resultsAt: 0 };
+  const FONT = '"Chakra Petch", "Arial Narrow", sans-serif', MONO = '"IBM Plex Mono", monospace';
+  function makePanel(w, h, px, x, y, z, ry) {
+    const c = document.createElement('canvas'); c.width = px; c.height = Math.round(px * h / w);
+    const tex = new THREE.CanvasTexture(c); tex.encoding = THREE.sRGBEncoding; tex.anisotropy = 4;
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false, fog: false }));
+    m.position.set(x, y, z); m.rotation.y = ry; m.renderOrder = 5; m.visible = false; scene.add(m);
+    return { c, ctx: c.getContext('2d'), tex, m };
+  }
+  // score on the left of the track, multiplier and energy on the right, messages above it
+  const panL = makePanel(1.0, 0.56, 512, -1.85, 1.2, -2.4, 0.5);
+  const panR = makePanel(1.0, 0.56, 512, 1.85, 1.2, -2.4, -0.5);
+  const panM = makePanel(2.6, 0.62, 1024, 0, 2.45, -3.4, 0);
+  function plate(ctx, w, h) {
+    ctx.clearRect(0, 0, w, h);
+    ctx.fillStyle = 'rgba(12, 9, 26, 0.62)'; ctx.strokeStyle = 'rgba(155, 140, 255, 0.35)'; ctx.lineWidth = 3;
+    ctx.beginPath(); if (ctx.roundRect) ctx.roundRect(4, 4, w - 8, h - 8, 26); else ctx.rect(4, 4, w - 8, h - 8); ctx.fill(); ctx.stroke();
+  }
+  function bar(ctx, x, y, w, h, f, color) {
+    ctx.fillStyle = 'rgba(255,255,255,0.12)'; ctx.fillRect(x, y, w, h);
+    ctx.fillStyle = color; ctx.fillRect(x, y, w * Math.max(0, Math.min(1, f)), h);
+  }
+  function drawHudPanels() {
+    let { ctx, c } = panL; const W = c.width, H = c.height;
+    plate(ctx, W, H);
+    ctx.fillStyle = '#b9b0d8'; ctx.font = `500 26px ${MONO}`; ctx.fillText('SCORE', 40, 66);
+    ctx.fillStyle = '#ffffff'; ctx.font = `700 112px ${FONT}`; ctx.fillText(stats.score.toLocaleString('en-US'), 36, 180);
+    ctx.fillStyle = '#e8e4ff'; ctx.font = `500 34px ${MONO}`; ctx.fillText(stats.combo + ' combo', 40, 244);
+    panL.tex.needsUpdate = true;
+    ({ ctx, c } = panR);
+    plate(ctx, W, H);
+    ctx.fillStyle = '#ffd166'; ctx.font = `700 96px ${FONT}`; ctx.fillText('×' + stats.mult, 40, 120);
+    bar(ctx, 220, 80, 250, 16, stats.mult === 8 ? 1 : stats.prog / MULT_STEPS[stats.mult], '#ffd166');
+    ctx.fillStyle = '#b9b0d8'; ctx.font = `500 24px ${MONO}`; ctx.fillText('ENERGY', 40, 170);
+    bar(ctx, 40, 184, 432, 20, stats.health / 100, stats.health < 30 ? '#ff5b5b' : '#7dffb0');
+    ctx.fillStyle = '#b9b0d8'; ctx.fillText('SONG', 40, 236);
+    const t = songTime();
+    bar(ctx, 40, 248, 432, 8, state === 'play' ? t / SONG_LEN : state === 'results' ? 1 : 0, '#9b8cff');
+    panR.tex.needsUpdate = true;
+  }
+  function drawMsg() {
+    const { ctx, c } = panM; const W = c.width, H = c.height;
+    ctx.clearRect(0, 0, W, H);
+    if (!vr.msgText) { panM.tex.needsUpdate = true; return; }
+    ctx.textAlign = 'center';
+    ctx.shadowColor = vr.msgColor; ctx.shadowBlur = 24;
+    ctx.fillStyle = vr.msgColor; ctx.font = `700 ${vr.msgSub ? 92 : 130}px ${FONT}`;
+    ctx.fillText(vr.msgText, W / 2, vr.msgSub ? 110 : 170);
+    if (vr.msgSub) { ctx.shadowBlur = 0; ctx.fillStyle = '#e8e4ff'; ctx.font = `500 34px ${MONO}`; ctx.fillText(vr.msgSub, W / 2, 190); }
+    ctx.textAlign = 'start'; ctx.shadowBlur = 0;
+    panM.tex.needsUpdate = true;
+  }
+  function vrMsg(text, color, sub, hold) {
+    vr.msgText = text; vr.msgColor = color; vr.msgSub = sub || ''; vr.msgHold = hold * 1000; vr.msgAt = performance.now(); vr.msgDirty = true;
+  }
+  function drawVr(now) {
+    if (vr.dirty || now - vr.hudAt > 120) { drawHudPanels(); vr.dirty = false; vr.hudAt = now; }
+    if (vr.msgDirty) { drawMsg(); vr.msgDirty = false; }
+    // messages pop in and fade out
+    const age = performance.now() - vr.msgAt;
+    panM.m.material.opacity = age < vr.msgHold ? 1 : Math.max(0, 1 - (age - vr.msgHold) / 250);
+    const pop = 1 + 0.25 * Math.exp(-age / 60);
+    panM.m.scale.setScalar(pop);
+  }
+  function buzz(side, bad) {
+    const src = sabers[side].source, gp = src && src.gamepad;
+    const h = gp && gp.hapticActuators && gp.hapticActuators[0];
+    try { if (h && h.pulse) h.pulse(bad ? 0.25 : 0.9, bad ? 40 : 60); } catch (e) {}
+  }
+  // the two controllers: whichever reports "left" gets the red saber
+  for (let i = 0; i < 2; i++) {
+    const grip = renderer.xr.getControllerGrip(i);
+    rig.add(grip);
+    grip.addEventListener('connected', (e) => {
+      const side = e.data.handedness === 'left' ? 'l' : e.data.handedness === 'right' ? 'r' : (i === 0 ? 'l' : 'r');
+      grip.userData.side = side;
+      sabers[side].grip = grip; sabers[side].source = e.data;
+    });
+    grip.addEventListener('disconnected', () => {
+      const s = sabers[grip.userData.side];
+      if (s && s.grip === grip) { s.grip = null; s.source = null; }
+    });
+    grip.addEventListener('selectstart', () => {
+      if (vr.on && (state === 'results' || state === 'menu') && performance.now() - vr.resultsAt > 1200) startSong();
+    });
+  }
+  function stopSong() {
+    clearInterval(schedTimer);
+    if (master) { master.gain.setTargetAtTime(0.0001, ac.currentTime, 0.1); setTimeout(() => { if (master) master.gain.value = 0.7; }, 600); }
+    for (const b of live) scene.remove(b.mesh);
+    live = [];
+    state = 'menu';
+    $('count').hidden = true;
+  }
+  async function enterVR() {
+    audioInit();
+    if (ac.state === 'suspended') ac.resume();
+    let session;
+    try { session = await navigator.xr.requestSession('immersive-vr', { optionalFeatures: ['local-floor', 'bounded-floor'] }); }
+    catch (e) { $('vrNote').hidden = false; $('vrNote').textContent = 'Could not start VR: ' + (e.message || e); return; }
+    try {
+      renderer.xr.setReferenceSpaceType('local-floor');
+      await renderer.xr.setSession(session);
+    } catch (e) { session.end().catch(() => {}); $('vrNote').hidden = false; $('vrNote').textContent = 'This headset did not give a floor-level space.'; return; }
+    vr.on = true; vr.session = session; mode = 'vr'; rows = ROWS_VR;
+    if (renderer.xr.setFoveation) renderer.xr.setFoveation(1);
+    // stand a little over a metre behind the line where boxes are on the beat
+    rig.position.set(0, 0, 0.25);
+    for (const p of [panL, panR, panM]) p.m.visible = true;
+    session.addEventListener('end', () => {
+      vr.on = false; vr.session = null; mode = 'mouse'; rows = ROWS;
+      for (const p of [panL, panR, panM]) p.m.visible = false;
+      for (const k of ['l', 'r']) { const s = sabers[k]; s.connected = false; s.primed = false; s.g.visible = false; s.trail.visible = false; s.pivot.set(k === 'l' ? -0.38 : 0.38, 1.0, 0.35); }
+      if (state === 'play' || state === 'count') { stopSong(); showOnly('menu'); }
+      deskCamera(); resize();
+    });
+    startSong();
+  }
+  $('vrBtn').addEventListener('click', enterVR);
+  if (navigator.xr && navigator.xr.isSessionSupported) {
+    navigator.xr.isSessionSupported('immersive-vr').then((ok) => {
+      if (!ok) return;
+      $('vrBtn').hidden = false; $('vrNote').hidden = true;
+      $('phonesBtn').classList.remove('primary');
+    }).catch(() => {});
+  }
+
+  // ---------- loop ----------
+  function resize() {
+    if (renderer.xr.isPresenting) return;
+    const w = window.innerWidth, h = window.innerHeight;
+    renderer.setSize(w, h, false);
+    camera.aspect = w / h;
+    camera.fov = w / h < 0.8 ? 86 : 70;
+    camera.updateProjectionMatrix();
+  }
+  window.addEventListener('resize', resize);
+  resize();
+
+  let last = performance.now(), pulse = 0;
+  function frame(now) {
+    const dt = Math.min(0.05, (now - last) / 1000); last = now;
+    const t = songTime();
+    if (state === 'count') {
+      const left = -t;
+      $('count').hidden = left <= 0;
+      $('count').textContent = Math.max(1, Math.ceil(left - 0.2));
+      if (left > 0 && vr.msgText !== $('count').textContent) vrMsg($('count').textContent, '#ffffff', '', 0.9);
+      if (left <= 0) state = 'play';
+    }
+    if (state === 'play' || state === 'count') {
+      // spawn upcoming boxes
+      while (nextNote < chart.length && chart[nextNote].t - t < LEAD) {
+        const n = chart[nextNote++];
+        live.push({ note: n, mesh: makeBox(n), done: false });
+      }
+      for (const b of live.slice()) {
+        b.mesh.position.set(LANES[b.note.lane], rows[b.note.row], HIT_Z - (b.note.t - t) * SPEED);
+        if (!b.done && b.mesh.position.z > HIT_Z + 1.1) { b.done = true; removeBox(b); miss(b, false); }
+      }
+      if (state === 'play' && t > SONG_LEN + 0.5) endSong(true);
+      $('prog').style.width = Math.max(0, Math.min(100, 100 * t / SONG_LEN)) + '%';
+      // the stage breathes with the kick
+      const beatPhase = ((t % BEAT) + BEAT) % BEAT;
+      pulse = t > 0 && section(Math.floor(t / (4 * BEAT))) !== 'break' ? Math.exp(-beatPhase * 9) : pulse * 0.9;
+    } else pulse *= 0.92;
+    for (const s of strips) s.material.color.copy(s.position.x < 0 ? RED : BLUE).multiplyScalar(0.45 + (reduceMotion ? 0 : pulse) * 0.9);
+    frameMat.opacity = 0.25 + pulse * 0.45;
+    const flow = (state === 'play' || state === 'count') ? SPEED : 2;
+    for (const f of frames) { f.position.z += flow * dt; if (f.position.z > -1.5) f.position.z -= 70; }
+
+    updateSaber(sabers.l, dt); updateSaber(sabers.r, dt);
+    if (state === 'play') sabersCut();
+
+    // debris and sparks
+    for (let i = debris.length - 1; i >= 0; i--) {
+      const d = debris[i];
+      d.life -= dt; d.v.y -= 9 * dt;
+      d.m.position.addScaledVector(d.v, dt); d.m.rotation.x += d.spin * dt;
+      d.m.scale.setScalar(Math.max(0.01, d.life / 0.6));
+      if (d.life <= 0 || d.m.position.z > 0.6) { scene.remove(d.m); debris.splice(i, 1); }
+    }
+    for (let i = 0; i < SPARKS; i++) {
+      if (sparkLife[i] <= 0) continue;
+      sparkLife[i] -= dt;
+      sparkVel[3 * i + 1] -= 6 * dt;
+      sparkPos[3 * i] += sparkVel[3 * i] * dt; sparkPos[3 * i + 1] += sparkVel[3 * i + 1] * dt; sparkPos[3 * i + 2] += sparkVel[3 * i + 2] * dt;
+      if (sparkLife[i] <= 0) { sparkPos[3 * i + 1] = -99; }
+    }
+    sparkGeo.attributes.position.needsUpdate = true;
+
+    // mouse trail
+    mouse.pts = mouse.pts.filter((p) => now - p.t < 140);
+    trailEl.setAttribute('points', state === 'play' ? mouse.pts.map((p) => p.x + ',' + p.y).join(' ') : '');
+
+    if (vr.on) drawVr(now);
+    renderer.render(scene, camera);
+  }
+  renderHud();
+  renderer.setAnimationLoop(frame);
+})();
+</script>
+</body></html>
