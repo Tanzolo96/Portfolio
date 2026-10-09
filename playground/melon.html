@@ -1,0 +1,1723 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="robots" content="noindex"></head><body>
+<title>Melon Jelly Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=IBM+Plex+Sans:wght@400;500&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  /* Layout: full-bleed specimen stage; masthead top-left, specimen panel top-right,
+     live readouts bottom-left, method notes bottom-right. Stacks into one column on phones.
+     Deliberately single-theme: a lab-bench paper grey that the jelly is lit against. */
+  :root {
+    --bg: #e3dfd8;
+    --ink: #1d1b18;
+    --muted: #6b665e;
+    --faint: #9b958b;
+    --line: rgba(29, 27, 24, 0.16);
+    --line-strong: rgba(29, 27, 24, 0.44);
+    --live: #2e6b45;
+    --cut: #a3202f;
+    --serif: "Instrument Serif", "Iowan Old Style", Palatino, Georgia, serif;
+    --sans: "IBM Plex Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+    --gutter: clamp(18px, 3vw, 40px);
+    color-scheme: light;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 13px/1.45 var(--sans); overflow: hidden; -webkit-font-smoothing: antialiased; }
+  button, input { font: inherit; color: inherit; }
+
+  .stage { position: fixed; inset: 0; }
+  canvas { display: block; width: 100%; height: 100%; touch-action: none; outline: none; }
+  canvas[data-cursor="grab"] { cursor: grab; }
+  canvas[data-cursor="grabbing"] { cursor: grabbing; }
+  canvas[data-cursor="orbit"] { cursor: move; }
+  canvas[data-cursor="knife"] { cursor: crosshair; }
+  .stroke { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+  .stroke line { stroke: var(--ink); stroke-width: 1.5; stroke-linecap: round; stroke-dasharray: 2 6; }
+  .toast { position: absolute; left: 50%; bottom: 20%; transform: translate(-50%, 6px); padding: 8px 14px; border: 1px solid var(--line-strong);
+    background: var(--bg); font: italic 17px/1.25 var(--serif); opacity: 0; transition: opacity .25s, transform .25s; pointer-events: none; white-space: nowrap; }
+  .toast.on { opacity: 1; transform: translate(-50%, 0); }
+  .fallback { position: absolute; inset: 0; display: grid; place-items: center; padding: var(--gutter); }
+  .fallback[hidden] { display: none; }
+  .fallback > div { max-width: 420px; border: 1px solid var(--line-strong); padding: 26px; background: var(--bg); }
+  .fallback h2 { font: italic 400 32px/1.1 var(--serif); margin: 10px 0 12px; }
+  .fallback p { margin: 0; color: var(--muted); }
+
+  .label { font: 500 10.5px/1 var(--sans); letter-spacing: .18em; text-transform: uppercase; color: var(--muted); }
+
+  .masthead { position: fixed; top: var(--gutter); left: var(--gutter); pointer-events: none; }
+  .masthead h1 { font: italic 400 clamp(60px, 7.6vw, 120px)/.82 var(--serif); letter-spacing: -.02em; margin: 16px 0 18px; }
+  .masthead h1 span { display: block; }
+  .masthead h1 span + span { padding-left: .45em; }
+  .caption { font: 400 17px/1.4 var(--serif); color: var(--muted); margin: 0; }
+
+  .status { position: fixed; top: var(--gutter); right: var(--gutter); display: flex; align-items: center; gap: 9px;
+    font: 500 10.5px/1 var(--mono); letter-spacing: .14em; color: var(--ink); border: 1px solid var(--line); padding: 7px 10px; }
+  .status .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--live); animation: breathe 2.4s ease-in-out infinite; }
+  .status[data-state="paused"] .dot { background: transparent; border: 1px solid var(--ink); animation: none; }
+  .status[data-state="off"] .dot { background: var(--cut); animation: none; }
+  @keyframes breathe { 50% { opacity: .3; } }
+
+  .panel { position: fixed; right: var(--gutter); top: calc(var(--gutter) + 56px); width: 258px;
+    border: 1px solid var(--line); background: rgba(227, 223, 216, .8); padding: 18px 18px 16px; }
+  .panel header { display: flex; justify-content: space-between; align-items: baseline; padding-bottom: 12px; border-bottom: 1px solid var(--line); }
+  .panel header i { font: italic 15px/1 var(--serif); color: var(--muted); }
+  .group { padding: 14px 0; border-bottom: 1px solid var(--line); }
+  .group:last-child { border-bottom: 0; padding-bottom: 0; }
+  .handbtn { width: 100%; margin-top: 6px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+  .handbtn svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.3; stroke-linecap: round; stroke-linejoin: round; }
+  .handbtn[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+  .handview { position: fixed; top: var(--gutter); left: 50%; transform: translateX(-50%); width: 184px; border: 1px solid var(--line-strong); aspect-ratio: 4 / 3; max-width: 100%; overflow: hidden; background: var(--ink); z-index: 2; }
+  .handview video, .handview canvas { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
+  .handview video { opacity: .55; }
+  .hcursor { position: absolute; left: 0; top: 0; width: 34px; height: 34px; margin: -17px 0 0 -17px; border: 1.5px solid var(--ink); border-radius: 50%; pointer-events: none; transition: width .12s, height .12s, margin .12s, background .12s, border-radius .12s; }
+  .hcursor[data-pose="pinch"] { width: 16px; height: 16px; margin: -8px 0 0 -8px; background: var(--cut); border-color: var(--cut); }
+  .hcursor[data-pose="blade"] { width: 44px; height: 6px; margin: -3px 0 0 -22px; border-radius: 3px; background: var(--ink); }
+  .stroke polyline { fill: none; stroke: var(--cut); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; opacity: .75; }
+  .tools { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 10px; }
+  .tool, .btn { border: 1px solid var(--line-strong); background: transparent; padding: 8px 10px; min-height: 36px; cursor: pointer; font-size: 12.5px; }
+  .tool { display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+  .tool svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.3; stroke-linecap: round; stroke-linejoin: round; }
+  .tool[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+  .btn:hover { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+  .tool:focus-visible, .btn:focus-visible, .swatch:focus-visible, input[type=range]:focus-visible, input:focus-visible + .box, summary:focus-visible { outline: 1px solid var(--ink); outline-offset: 2px; }
+
+  .swatches { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 10px; }
+  .swatch { background: none; border: 1px solid transparent; padding: 5px 5px 6px; cursor: pointer; text-align: left; }
+  .swatch .chip { display: flex; flex-direction: column; height: 28px; border: 1px solid var(--line); }
+  .swatch .chip i { display: block; }
+  .swatch .chip i:nth-child(1), .swatch .chip i:nth-child(2) { flex: 0 0 5px; }
+  .swatch .chip i:nth-child(3) { flex: 1; }
+  .swname { display: block; margin-top: 6px; font: italic 14px/1 var(--serif); color: var(--muted); }
+  .swatch[aria-checked="true"] { border-color: var(--line-strong); }
+  .swatch[aria-checked="true"] .swname { color: var(--ink); }
+
+  .slider + .slider { margin-top: 12px; }
+  .slider .row { display: flex; justify-content: space-between; align-items: baseline; }
+  .slider output { font: 12px/1 var(--mono); font-variant-numeric: tabular-nums; }
+  .slider .ends { display: flex; justify-content: space-between; font: italic 13px/1 var(--serif); color: var(--faint); margin-top: 1px; }
+  input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 22px; margin: 5px 0 0; background: transparent; cursor: pointer; }
+  input[type=range]::-webkit-slider-runnable-track { height: 1px; background: var(--line-strong); }
+  input[type=range]::-moz-range-track { height: 1px; background: var(--line-strong); }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 13px; height: 13px; margin-top: -6px; border-radius: 50%; background: var(--bg); border: 1px solid var(--ink); }
+  input[type=range]::-moz-range-thumb { width: 11px; height: 11px; border-radius: 50%; background: var(--bg); border: 1px solid var(--ink); }
+
+  .buttons { display: grid; grid-template-columns: 1fr auto; gap: 6px; }
+  .btn.wide { width: 100%; margin-top: 10px; }
+  .checks { display: flex; gap: 20px; margin-top: 12px; }
+  .check { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; font-size: 12.5px; position: relative; }
+  .check input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+  .check .box { width: 12px; height: 12px; border: 1px solid var(--ink); display: inline-block; position: relative; }
+  .check input:checked + .box::after { content: ""; position: absolute; inset: 2px; background: var(--ink); }
+
+  .readouts { position: fixed; left: var(--gutter); bottom: var(--gutter); max-width: 460px; }
+  .hint { font: italic 18px/1.35 var(--serif); margin: 0 0 14px; max-width: 380px; }
+  .hint b { font: 500 10.5px/1 var(--sans); font-style: normal; letter-spacing: .16em; text-transform: uppercase; margin-right: 8px; color: var(--muted); }
+  .stats { display: grid; grid-template-columns: repeat(4, auto); margin: 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); width: max-content; max-width: 100%; }
+  .stats > div { padding: 10px 20px 10px 0; min-width: 0; }
+  .stats > div + div { padding-left: 16px; border-left: 1px solid var(--line); }
+  .stats dt { margin-bottom: 7px; }
+  .stats dd { margin: 0; font: 20px/1 var(--mono); font-variant-numeric: tabular-nums; letter-spacing: -.02em; white-space: nowrap; }
+  .stats dd small { font: 11px/1 var(--sans); color: var(--muted); letter-spacing: .02em; margin-left: 3px; }
+  .footnote { margin: 9px 0 0; font-size: 11px; color: var(--faint); max-width: 420px; }
+
+  .notes { position: fixed; right: var(--gutter); bottom: var(--gutter); width: 300px; border: 1px solid var(--line); background: rgba(227, 223, 216, .92); }
+  .notes summary { list-style: none; cursor: pointer; padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; }
+  .notes summary::-webkit-details-marker { display: none; }
+  .notes summary::after { content: "+"; font: 300 16px/1 var(--sans); color: var(--muted); }
+  .notes[open] summary::after { content: "–"; }
+  .notes .body { padding: 2px 14px 14px; max-height: min(50vh, 420px); overflow: auto; border-top: 1px solid var(--line); }
+  .notes h3 { font: italic 400 19px/1.2 var(--serif); margin: 14px 0 6px; }
+  .notes p { margin: 0 0 8px; color: #3c3a36; font-size: 12.5px; }
+  .num { font-family: var(--mono); font-size: 11.5px; }
+
+  @media (max-width: 860px), (max-height: 560px) and (max-width: 1000px) {
+    body { overflow: auto; display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "head status" "stage stage" "read read" "panel panel" "notes notes"; column-gap: 12px; padding-bottom: var(--gutter); height: auto; }
+    .masthead, .status, .panel, .readouts, .notes, .stage { position: static; }
+    .masthead { grid-area: head; padding: var(--gutter) 0 12px var(--gutter); }
+    .masthead h1 { font-size: clamp(48px, 14vw, 78px); margin: 12px 0; }
+    .caption { font-size: 16px; }
+    .status { grid-area: status; align-self: start; margin: var(--gutter) var(--gutter) 0 0; font-size: 9.5px; padding: 5px 8px; }
+    .stage { grid-area: stage; height: clamp(320px, 58vh, 600px); position: relative; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+    .readouts { grid-area: read; padding: 16px var(--gutter) 4px; max-width: none; }
+    .stats { width: 100%; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .stats dd { font-size: 17px; }
+    .stats dd small { display: block; margin: 4px 0 0; }
+    .stats > div { padding-right: 6px; }
+    .stats > div + div { padding-left: 10px; }
+    .panel { grid-area: panel; width: auto; margin: 14px var(--gutter) 0; background: transparent; }
+    .handview { position: relative; top: auto; left: auto; transform: none; width: 100%; margin-top: 8px; }
+    .notes { grid-area: notes; width: auto; margin: 14px var(--gutter) 0; background: transparent; }
+    .notes .body { max-height: none; }
+    .btn, .tool { min-height: 44px; font-size: 14px; }
+    .toast { white-space: normal; width: max-content; max-width: 86%; text-align: center; }
+  }
+  @media (max-height: 760px) and (min-width: 861px) {
+    .panel { padding: 13px 15px 12px; top: calc(var(--gutter) + 46px); }
+    .group { padding: 10px 0; }
+    .swatch .chip { height: 20px; }
+    .masthead h1 { font-size: clamp(52px, 6.2vw, 96px); margin: 10px 0 12px; }
+    .hint { font-size: 16px; margin-bottom: 10px; }
+  }
+  @media (prefers-reduced-motion: reduce) { .status .dot { animation: none; } }
+</style>
+
+<div class="stage" id="stage">
+  <canvas id="gl" role="img" aria-label="A 3D slice of watermelon jelly. Drag it to stretch it, or pick the knife and draw across it to cut it."></canvas>
+  <svg class="stroke" id="stroke" aria-hidden="true"><line id="strokeLine" x1="0" y1="0" x2="0" y2="0" visibility="hidden"/><polyline id="trailLine" points=""/></svg>
+  <div class="hcursor" id="handCursor" data-pose="none" hidden></div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <div class="fallback" id="fallback" hidden>
+    <div>
+      <span class="label">Renderer offline</span>
+      <h2>This jelly needs WebGL&nbsp;2.</h2>
+      <p>Your browser didn't give the page a 3D context. Try a current Chrome, Safari, Firefox or Edge with hardware acceleration on.</p>
+    </div>
+  </div>
+</div>
+
+<header class="masthead">
+  <div class="label">Soft Matter Bench / Trial 12</div>
+  <h1><span>Melon</span><span>Jelly.</span></h1>
+  <p class="caption">Watermelon, set in gelatin.<br>Pull it. Slice it.<br>Watch it settle.</p>
+</header>
+
+<div class="status" id="status" data-state="live" role="status" aria-live="polite"><span class="dot" aria-hidden="true"></span><span id="statusText">WEBGL · LIVE</span></div>
+
+<aside class="panel" aria-label="Specimen controls">
+  <header><span class="label">The Specimen</span><i>plate 12</i></header>
+  <div class="group">
+    <span class="label">Tool</span>
+    <div class="tools" role="group" aria-label="Tool">
+      <button class="tool" type="button" data-tool="hand" aria-pressed="true"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M6 10V5.5a1.2 1.2 0 0 1 2.4 0V9m0-4.8V3.8a1.2 1.2 0 0 1 2.4 0V9m0-4.2a1.2 1.2 0 0 1 2.4 0V9.5m0-3a1.2 1.2 0 0 1 2.4 0V12c0 3.3-2.4 5.5-5.4 5.5-2.2 0-3.6-1-4.8-2.8L3.3 11.6a1.3 1.3 0 0 1 2-1.6L6 11"/></svg>Hand</button>
+      <button class="tool" type="button" data-tool="knife" aria-pressed="false"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 17l9.2-9.2M12.2 7.8l3.6-4.3c.8 1.6.3 4-1.4 5.7L12.6 11 9 7.4"/><path d="M3 17l2.6-.6"/></svg>Knife</button>
+    </div>
+    <button class="btn handbtn" id="handBtn" type="button" aria-pressed="false"><svg viewBox="0 0 20 20" aria-hidden="true"><rect x="2.5" y="5.5" width="11" height="9" rx="1.5"/><path d="M13.5 9l4-2.5v7l-4-2.5"/></svg>Use my hands</button>
+    <div class="handview" id="handView" hidden>
+      <video id="handVideo" playsinline muted></video>
+      <canvas id="handCanvas" aria-hidden="true"></canvas>
+    </div>
+
+  </div>
+  <div class="group">
+    <span class="label">Variety</span>
+    <div class="swatches" id="swatches" role="radiogroup" aria-label="Melon variety"></div>
+  </div>
+  <div class="group">
+    <div class="slider">
+      <div class="row"><label class="label" for="firmness">Firmness</label><output id="firmnessOut" for="firmness">0.40</output></div>
+      <input type="range" id="firmness" min="0" max="100" step="1" value="40">
+      <div class="ends"><span>quivering</span><span>set</span></div>
+    </div>
+    <div class="slider">
+      <div class="row"><label class="label" for="damping">Internal damping</label><output id="dampingOut" for="damping">0.45</output></div>
+      <input type="range" id="damping" min="0" max="100" step="1" value="45">
+      <div class="ends"><span>bouncy</span><span>gloopy</span></div>
+    </div>
+  </div>
+  <div class="group">
+    <div class="buttons">
+      <button class="btn" id="nudge" type="button">Bump the bench</button>
+      <button class="btn" id="reset" type="button">Reset</button>
+    </div>
+    <div class="checks">
+      <label class="check"><input type="checkbox" id="slow"><span class="box" aria-hidden="true"></span>¼ speed</label>
+      <label class="check"><input type="checkbox" id="mesh"><span class="box" aria-hidden="true"></span>Show mesh</label>
+    </div>
+    <button class="btn wide" id="pause" type="button" aria-pressed="false">Pause</button>
+  </div>
+</aside>
+
+<section class="readouts" aria-label="Live readouts">
+  <p class="hint" id="hint"><b>Hand</b>Grab the slice anywhere, flesh or rind, and pull.</p>
+  <dl class="stats">
+    <div><dt class="label">Mass</dt><dd>≈<span id="massOut">—</span><small>g</small></dd></div>
+    <div><dt class="label">Volume</dt><dd><span id="volOut">—</span><small>% of rest</small></dd></div>
+    <div><dt class="label">Kinetic</dt><dd><span id="keOut">—</span><small>µJ</small></dd></div>
+    <div><dt class="label">Pieces</dt><dd><span id="piecesOut">1</span></dd></div>
+  </dl>
+  <p class="footnote">Bench scale: 1 sim unit ≈ 3.5 cm, gummy at 1.3 g/cm³. Every number is summed live over each tetrahedron and particle.</p>
+</section>
+
+<details class="notes">
+  <summary><span class="label">How the jelly works</span></summary>
+  <div class="body">
+    <h3>Tetrahedra all the way down</h3>
+    <p>The slice is a volume mesh of <span class="num" id="nParticles">—</span> particles joined into <span class="num" id="nTets">—</span> tetrahedra, run with XPBD (extended position-based dynamics) at 60&nbsp;Hz with 10 substeps. Every frame, each tetrahedron finds the rotation that best matches its current shape and is pulled softly toward its rest shape turned by that rotation. That is what lets the slice bend and twist like jelly without collapsing. Each tet also holds its volume, so a stretched slice thins in the middle.</p>
+    <p>The rind is up to three times stiffer than the flesh. Damping only slows the speed difference along each edge, so the slice falls and tumbles naturally while the wobble dies out, and once it is almost still the last tremor fades away. The bench pushes back with friction. When you grab it, a patch of particles is pulled toward your cursor, and pressing down near the bench gives way instead of crushing it.</p>
+    <h3>The knife</h3>
+    <p>Each piece remembers its outline in the flat, uncut shape. Your stroke sets a vertical blade plane. For each piece it crosses, the piece's current pose is fitted to a best rotation, and the plane is carried back into the rest shape, where it becomes a straight line. The outline is split along that line, and each half is rebuilt as a new tet mesh. Every new particle copies the position and velocity of the jelly it was cut from, so the halves carry on moving the way the whole was. Then the blade pushes them apart. Pieces bump into each other instead of passing through.</p>
+    <h3>The skin you see</h3>
+    <p>The smooth surface, seeds and air bubbles are separate meshes. Each of their vertices is pinned inside one tetrahedron by barycentric weights, so seeds stretch, turn and travel with the flesh around them. Colour comes from where a point sat in the original melon, so a fresh cut shows the right rind, pith and flesh.</p>
+    <h3>Using your hands</h3>
+    <p>“Use my hands” turns on your webcam and tracks 21 points on your hand with Google’s MediaPipe hand model, running entirely in your browser; no video leaves your device. Pinch your thumb and index finger to grab the jelly under the cursor, move to pull it, and open your fingers to let go. Hold your index and middle fingers out like a blade and swipe fast across the slice to cut along the swipe. The camera needs a normal web page; the claude.ai preview does not allow it.</p>
+    <h3>Light through jelly</h3>
+    <p>Each frame is drawn in three passes. First everything behind the jelly, then the depth of the jelly's back faces, which tells every pixel how much jelly its view ray crosses. The visible surface bends the background through that thickness, tints it by how much colour the flesh absorbs over that distance, adds a milky glow in the pale rind and at thin edges, and finishes with wet reflections of a soft studio.</p>
+  </div>
+</details>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/delaunator@5.0.1/delaunator.min.js"></script>
+<script>
+(() => {
+  'use strict';
+  const $ = (id) => document.getElementById(id);
+  const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // ---------- specimen geometry (rest space: x/z is the slice plane, y is up, floor at y = 0) ----------
+  const HALF_ANGLE = 32 * Math.PI / 180;
+  const R_INNER = 1.62;          // sharp sector radius before rounding
+  const ROUND = 0.17;            // every outline is the inner polygon grown by this radius
+  const R_OUT = R_INNER + ROUND;
+  const THICK = 0.58;
+  const BEVEL = 0.13;
+  const SKIN = 0.075, PALE = 0.25;
+  const SPACING = 0.15, LAYERS = 3;
+
+  // ---------- physics ----------
+  const GRAVITY = 9.81, SUBSTEPS = 10, STEP = 1 / 60;
+  const FRICTION = 0.55, MAX_SPEED = 12, COLLIDE = 0.13;
+  const MAX_PIECES = 24, MIN_INNER_AREA = 0.004;
+
+  // ---------- readout scale ----------
+  const SCALE_CM = 3.5, DENSITY_G = 1.3;
+
+  // linear-RGB palettes for the shader
+  const VARIETIES = [
+    { name: 'Crimson', flesh: [0.92, 0.08, 0.12], deep: [0.44, 0.02, 0.04], pale: [0.8, 0.86, 0.62], skin: [0.03, 0.12, 0.035], stripe: [0.006, 0.035, 0.012], seed: [0.01, 0.007, 0.005], shadow: '#5a3b3a' },
+    { name: 'Sunburst', flesh: [0.96, 0.5, 0.06], deep: [0.58, 0.23, 0.015], pale: [0.84, 0.88, 0.64], skin: [0.04, 0.14, 0.03], stripe: [0.008, 0.04, 0.01], seed: [0.012, 0.008, 0.005], shadow: '#5e4a33' },
+    { name: 'Honeydew', flesh: [0.55, 0.86, 0.26], deep: [0.24, 0.5, 0.08], pale: [0.86, 0.9, 0.7], skin: [0.36, 0.43, 0.16], stripe: [0.25, 0.33, 0.1], seed: [0.62, 0.56, 0.36], shadow: '#4a5236' },
+  ];
+  let variety = VARIETIES[0];
+
+  // ---------- renderer ----------
+  const canvas = $('gl');
+  let renderer;
+  try {
+    renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+    if (!renderer.capabilities.isWebGL2) throw new Error('webgl1');
+  } catch (e) {
+    $('fallback').hidden = false;
+    $('status').dataset.state = 'off';
+    $('statusText').textContent = 'WEBGL · OFFLINE';
+    return;
+  }
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.outputEncoding = THREE.sRGBEncoding;
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.autoClear = true;
+
+  // Khronos PBR Neutral tone mapping keeps the fruit colours saturated
+  THREE.ShaderChunk.tonemapping_pars_fragment = THREE.ShaderChunk.tonemapping_pars_fragment.replace(
+    'vec3 CustomToneMapping( vec3 color ) { return color; }',
+    `vec3 CustomToneMapping( vec3 color ) {
+      color *= toneMappingExposure;
+      const float start = 0.76; const float desat = 0.15;
+      float x = min( color.r, min( color.g, color.b ) );
+      float off = x < 0.08 ? x - 6.25 * x * x : 0.04;
+      color -= off;
+      float peak = max( color.r, max( color.g, color.b ) );
+      if ( peak < start ) return color;
+      float d = 1.0 - start;
+      float np = 1.0 - d * d / ( peak + d - start );
+      color *= np / peak;
+      float g = 1.0 - 1.0 / ( desat * ( peak - np ) + 1.0 );
+      return mix( color, vec3( np ), g );
+    }`);
+  renderer.toneMapping = THREE.CustomToneMapping;
+  renderer.toneMappingExposure = 1.0;
+
+  const BG_HEX = '#e3dfd8';
+  const bgLin = new THREE.Color(BG_HEX).convertSRGBToLinear();
+  const bgRaw = new THREE.Color(BG_HEX);
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(27, 1, 0.1, 60);
+
+  // a soft studio for the steel and the seeds to reflect
+  const pmrem = new THREE.PMREMGenerator(renderer);
+  const envScene = new THREE.Scene();
+  envScene.add(new THREE.Mesh(new THREE.SphereGeometry(10, 32, 16), new THREE.MeshBasicMaterial({ color: bgLin.clone().multiplyScalar(0.8), side: THREE.BackSide })));
+  for (const [w, h, x, y, z, s] of [[6, 3, -1, 8, 1, 3.2], [7, 1, -4, 3, -7, 3], [1, 7, -8, 3, -2, 4], [5, 5, 7, 3, 5, 1.2]]) {
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ color: new THREE.Color(s, s * 0.98, s * 0.95), side: THREE.DoubleSide }));
+    m.position.set(x, y, z); m.lookAt(0, 0, 0); envScene.add(m);
+  }
+  scene.environment = pmrem.fromScene(envScene, 0.02).texture;
+
+  const KEY_DIR = new THREE.Vector3(-0.45, 0.86, -0.36).normalize();
+  scene.add(new THREE.HemisphereLight(0xfffaf2, 0x9c948a, 0.55));
+  const key = new THREE.DirectionalLight(0xfff6ea, 1.5);
+  key.position.copy(KEY_DIR).multiplyScalar(8);
+  key.castShadow = true;
+  key.shadow.mapSize.set(2048, 2048);
+  Object.assign(key.shadow.camera, { left: -3.2, right: 3.2, top: 3.2, bottom: -3.2, near: 1, far: 18 });
+  key.shadow.radius = 6;
+  key.shadow.bias = -0.0006;
+  scene.add(key);
+
+  const floorMat = new THREE.ShadowMaterial({ color: new THREE.Color(variety.shadow), opacity: 0.3 });
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(60, 60), floorMat);
+  floor.rotation.x = -Math.PI / 2;
+  floor.receiveShadow = true;
+  scene.add(floor);
+
+  // ---------- offscreen passes: what is behind the jelly, and how deep its back faces are ----------
+  const sceneRT = new THREE.WebGLRenderTarget(4, 4, { type: THREE.HalfFloatType });
+  sceneRT.depthTexture = new THREE.DepthTexture(4, 4, THREE.FloatType);
+  const backRT = new THREE.WebGLRenderTarget(4, 4, { type: THREE.FloatType, minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter });
+
+  const camFwd = new THREE.Vector3();
+  const projView = new THREE.Matrix4();
+
+  const backMat = new THREE.ShaderMaterial({
+    side: THREE.BackSide,
+    uniforms: { uCamFwd: { value: camFwd } },
+    vertexShader: `varying vec3 vW; void main() { vec4 w = modelMatrix * vec4(position, 1.0); vW = w.xyz; gl_Position = projectionMatrix * viewMatrix * w; }`,
+    fragmentShader: `uniform vec3 uCamFwd; varying vec3 vW; void main() { gl_FragColor = vec4(dot(vW - cameraPosition, uCamFwd), 0.0, 0.0, 1.0); }`,
+  });
+  const hiddenMat = new THREE.MeshBasicMaterial({ colorWrite: false, depthWrite: false });
+
+  const jellyUniforms = {
+    uScene: { value: sceneRT.texture },
+    uSceneDepth: { value: sceneRT.depthTexture },
+    uBack: { value: backRT.texture },
+    uRes: { value: new THREE.Vector2(1, 1) },
+    uNear: { value: camera.near }, uFar: { value: camera.far },
+    uCamFwd: { value: camFwd },
+    uProjView: { value: projView },
+    uKey: { value: KEY_DIR }, uKeyI: { value: 2.6 },
+    uBg: { value: bgLin },
+    uFlesh: { value: new THREE.Vector3() }, uDeep: { value: new THREE.Vector3() }, uPale: { value: new THREE.Vector3() },
+    uSkin: { value: new THREE.Vector3() }, uStripe: { value: new THREE.Vector3() },
+    uShape: { value: new THREE.Vector4(THICK, R_OUT, SKIN, PALE) },
+  };
+  const jellyMat = new THREE.ShaderMaterial({
+    uniforms: jellyUniforms,
+    vertexShader: `
+      attribute vec3 rest;
+      varying vec3 vW; varying vec3 vN; varying vec3 vRest;
+      void main() {
+        vec4 w = modelMatrix * vec4(position, 1.0);
+        vW = w.xyz; vN = normalize(mat3(modelMatrix) * normal); vRest = rest;
+        gl_Position = projectionMatrix * viewMatrix * w;
+      }`,
+    fragmentShader: `
+      uniform sampler2D uScene; uniform sampler2D uSceneDepth; uniform sampler2D uBack;
+      uniform vec2 uRes; uniform float uNear; uniform float uFar;
+      uniform vec3 uCamFwd; uniform mat4 uProjView;
+      uniform vec3 uKey; uniform float uKeyI; uniform vec3 uBg;
+      uniform vec3 uFlesh; uniform vec3 uDeep; uniform vec3 uPale; uniform vec3 uSkin; uniform vec3 uStripe;
+      uniform vec4 uShape;
+      varying vec3 vW; varying vec3 vN; varying vec3 vRest;
+
+      float hash(vec3 p) { p = fract(p * 0.3183099 + 0.1); p *= 17.0; return fract(p.x * p.y * p.z * (p.x + p.y + p.z)); }
+      float vnoise(vec3 x) {
+        vec3 i = floor(x), f = fract(x); f = f * f * (3.0 - 2.0 * f);
+        return mix(mix(mix(hash(i), hash(i + vec3(1,0,0)), f.x), mix(hash(i + vec3(0,1,0)), hash(i + vec3(1,1,0)), f.x), f.y),
+                   mix(mix(hash(i + vec3(0,0,1)), hash(i + vec3(1,0,1)), f.x), mix(hash(i + vec3(0,1,1)), hash(i + vec3(1,1,1)), f.x), f.y), f.z);
+      }
+      float fbm(vec3 p) { float a = 0.5, s = 0.0; for (int i = 0; i < 4; i++) { s += a * vnoise(p); p = p * 2.03 + 0.7; a *= 0.5; } return s; }
+      float linDepth(float d) { float z = d * 2.0 - 1.0; return 2.0 * uNear * uFar / (uFar + uNear - z * (uFar - uNear)); }
+      vec2 toUV(vec3 p) { vec4 c = uProjView * vec4(p, 1.0); return c.xy / c.w * 0.5 + 0.5; }
+      float lobe(vec3 d, vec3 c, float size, float blur) { return 1.0 - smoothstep(size, size + blur, acos(clamp(dot(d, c), -1.0, 1.0))); }
+      vec3 studio(vec3 d, float rough) {
+        float b = 0.02 + rough * 0.6;
+        vec3 col = mix(uBg * 0.6, uBg * 1.05, smoothstep(-0.35, 0.25, d.y));
+        col += uBg * 0.5 * (1.0 - smoothstep(0.0, 0.3, abs(d.y + 0.08)));
+        col = mix(col, uBg * 0.8, smoothstep(0.3, 1.0, d.y));
+        col += vec3(1.0, 0.98, 0.96) * 3.0 * lobe(d, normalize(vec3(0.05, 1.0, -0.15)), 0.4, b);
+        col += vec3(1.0, 0.98, 0.95) * 2.6 * lobe(d, normalize(vec3(-0.42, 0.34, -0.8)), 0.25, b);
+        col += vec3(1.0, 0.97, 0.93) * 3.4 * lobe(d, normalize(vec3(-0.8, 0.38, -0.2)), 0.18, b);
+        col += vec3(0.95, 0.97, 1.0) * 1.1 * lobe(d, normalize(vec3(0.85, 0.3, 0.55)), 0.35, b * 1.3);
+        return col;
+      }
+      float ggx(vec3 N, vec3 V, vec3 L, float rough) {
+        vec3 H = normalize(V + L);
+        float a = max(rough * rough, 0.002), a2 = a * a;
+        float NdH = max(dot(N, H), 0.0), NdL = max(dot(N, L), 0.0), NdV = max(dot(N, V), 1e-3);
+        float dd = NdH * NdH * (a2 - 1.0) + 1.0;
+        float D = a2 / (3.14159265 * dd * dd);
+        float k = a * 0.5;
+        float G = NdL / (NdL * (1.0 - k) + k) * NdV / (NdV * (1.0 - k) + k);
+        return D * G / (4.0 * NdV + 1e-4) ;
+      }
+
+      void main() {
+        vec3 N = normalize(vN);
+        if (!gl_FrontFacing) N = -N;
+        vec3 V = normalize(cameraPosition - vW);
+        vec3 L = normalize(uKey);
+        float NdV = max(dot(N, V), 1e-3);
+
+        // material bands come from where this point sat in the uncut melon
+        vec3 Q = vRest;
+        float r = length(Q.xz);
+        float th = atan(Q.z, Q.x);
+        float wob = fbm(vec3(th * 9.0, Q.y * 3.0, 1.7)) - 0.5;
+        float depth = uShape.y - r + wob * 0.018;
+        float skinW = 1.0 - smoothstep(uShape.z - 0.008, uShape.z + 0.01, depth);
+        float paleEdge = uShape.w + wob * 0.035;
+        float paleW = (1.0 - smoothstep(paleEdge - 0.035, paleEdge + 0.035, depth)) * (1.0 - skinW);
+        float fleshW = 1.0 - skinW - paleW;
+        float sn = fbm(vec3(th * 5.0, Q.y * 2.2, 3.0));
+        float stripeF = sin(th * 34.0 + sn * 7.0 + fbm(vec3(th * 22.0, Q.y * 7.0, 9.0)) * 2.5);
+        float stripe = smoothstep(-0.05, 0.35, stripeF) * smoothstep(0.1, 0.02, depth);
+        float speck = smoothstep(0.62, 0.8, vnoise(vec3(th * 160.0, Q.y * 40.0, 2.0)));
+        vec3 skinCol = mix(uSkin, uStripe, clamp(stripe + speck * 0.35, 0.0, 1.0));
+        skinCol = mix(skinCol, mix(uSkin, uPale, 0.35), smoothstep(0.02, 0.07, depth) * 0.6);
+
+        // how much jelly the view ray crosses
+        vec2 uv = gl_FragCoord.xy / uRes;
+        float fz = dot(vW - cameraPosition, uCamFwd);
+        float bz = texture2D(uBack, uv).r;
+        float sz = linDepth(texture2D(uSceneDepth, uv).r);
+        float cosv = max(dot(-V, uCamFwd), 0.35);
+        float thick = clamp((min(bz, sz) - fz) / cosv, 0.0, 3.0);
+        float thickBack = clamp((bz - fz) / cosv, 0.0, 3.0);
+
+        float grain = fbm(vec3(r * 26.0, th * 18.0, Q.y * 14.0));
+        float dens = 1.0 + (grain - 0.5) * 0.5 + (vnoise(Q * 55.0) - 0.5) * 0.18;
+
+        // Beer-Lambert absorption and scattering per band
+        vec3 sigF = -log(clamp(uFlesh, vec3(0.002), vec3(0.999))) * 3.4 * dens;
+        vec3 sigP = -log(clamp(uPale, vec3(0.01), vec3(0.999))) * 2.0 + vec3(0.5);
+        vec3 sigS = -log(clamp(uSkin, vec3(0.002), vec3(0.99))) * 3.5 + vec3(2.0);
+        vec3 sigma = sigF * fleshW + sigP * paleW + sigS * skinW;
+        float scatK = 1.7 * fleshW + 4.5 * paleW + 26.0 * skinW;
+        float rough = mix(mix(0.1, 0.2, paleW), 0.14 + stripe * 0.04, skinW);
+
+        // bend the view ray into the jelly and read what lies behind, slightly diffused
+        vec3 Rr = refract(-V, N, 1.0 / 1.42);
+        vec3 exitP = vW + Rr * min(thickBack, 0.9) * 0.55;
+        vec2 ruv = mix(uv, toUV(exitP), 0.85);
+        float blurR = (0.001 + 0.007 * min(thick, 1.0)) * (0.6 + scatK * 0.02);
+        vec3 transmitted = vec3(0.0);
+        float pathL = 0.0;
+        for (int k = 0; k < 7; k++) {
+          float a = float(k) * 0.8976 + 0.3;
+          vec2 o = k == 6 ? vec2(0.0) : vec2(cos(a), sin(a)) * blurR;
+          vec2 tuv = clamp(ruv + o, vec2(0.001), vec2(0.999));
+          vec3 s = texture2D(uScene, tuv).rgb;
+          float sd = linDepth(texture2D(uSceneDepth, tuv).r);
+          float pl = clamp(min(thickBack, max(sd - fz, 0.0) / cosv + 0.03), 0.0, 3.0);
+          transmitted += s * exp(-sigma * pl);
+          pathL += pl;
+        }
+        transmitted /= 7.0; pathL /= 7.0;
+        float scat = 1.0 - exp(-scatK * pathL * 0.5 - scatK * 0.02);
+
+        // light inside the body
+        float NdL = dot(N, L);
+        float wrap = clamp((NdL + 0.6) / 1.6, 0.0, 1.0);
+        vec3 amb = uBg * mix(0.3, 0.75, N.y * 0.5 + 0.5);
+        float nearPale = 1.0 - smoothstep(uShape.w, uShape.w + 0.3, depth);
+        vec3 fleshAlb = mix(uDeep, uFlesh * 0.9, nearPale * 0.45);
+        vec3 albedo = fleshAlb * fleshW + uPale * 0.7 * paleW + skinCol * skinW;
+        vec3 inner = albedo * (amb + vec3(1.0, 0.97, 0.92) * uKeyI * 0.45 * wrap);
+
+        // thin edges glow with the key light behind them
+        float backL = pow(clamp(dot(V, -L), 0.0, 1.0), 3.0) * 1.4 + 0.25;
+        vec3 thinK = exp(-sigma * (pathL * 0.6 + 0.05));
+        vec3 glowTint = uFlesh * fleshW + vec3(0.9, 0.95, 0.78) * paleW + skinCol * 0.6 * skinW;
+        vec3 glow = glowTint * thinK * backL * uKeyI * 0.42 * (1.0 - skinW * 0.7) * clamp(1.0 - NdL * 0.6, 0.0, 1.0);
+
+        vec3 body = transmitted * (1.0 - scat) + inner * scat + glow;
+
+        // sugar glints
+        vec3 Rf = reflect(-V, N);
+        float spark = step(0.985, hash(floor(Q * 70.0))) * pow(max(dot(Rf, L), 0.0), 40.0) * fleshW;
+        body += vec3(1.0, 0.85, 0.8) * spark * 0.2;
+
+        // wet surface: Fresnel reflection of the studio plus the key highlight
+        float F0 = mix(0.034, 0.045, skinW);
+        float F = F0 + (1.0 - F0) * pow(1.0 - NdV, 5.0);
+        vec3 env = studio(Rf, rough);
+        float spec = ggx(N, V, L, rough) * uKeyI;
+        vec3 col = body * (1.0 - F) + env * F + vec3(1.0, 0.97, 0.93) * spec * mix(0.9, 1.1, skinW) * (F0 / 0.04);
+
+        gl_FragColor = vec4(col, 1.0);
+        #include <tonemapping_fragment>
+        #include <encodings_fragment>
+      }`,
+  });
+
+  const seedMat = new THREE.MeshPhysicalMaterial({ roughness: 0.22, clearcoat: 0.6, clearcoatRoughness: 0.1 });
+  const bubbleMat = new THREE.MeshPhysicalMaterial({ color: 0xffffff, roughness: 0.05, transparent: true, opacity: 0.35, depthWrite: false, clearcoat: 1 });
+  const lineMat = new THREE.LineBasicMaterial({ color: 0x0b0d0f, transparent: true, opacity: 0.32, depthTest: false });
+
+  function applyVariety() {
+    const u = jellyUniforms;
+    u.uFlesh.value.fromArray(variety.flesh); u.uDeep.value.fromArray(variety.deep); u.uPale.value.fromArray(variety.pale);
+    u.uSkin.value.fromArray(variety.skin); u.uStripe.value.fromArray(variety.stripe);
+    seedMat.color.setRGB(variety.seed[0], variety.seed[1], variety.seed[2]);
+    floorMat.color.set(variety.shadow);
+  }
+  applyVariety();
+
+  // ---------- 2D helpers (polygons are CCW in x/z; outward edge normal is (dz, -dx)) ----------
+  function edgeNormal(a, b) { const dx = b[0] - a[0], dz = b[1] - a[1], l = Math.hypot(dx, dz) || 1; return [dz / l, -dx / l]; }
+  function polyArea(p) { let s = 0; for (let i = 0; i < p.length; i++) { const a = p[i], b = p[(i + 1) % p.length]; s += a[0] * b[1] - b[0] * a[1]; } return s / 2; }
+  // signed distance to a convex polygon (negative inside)
+  function sdConvex(p, x, z) {
+    let inside = -Infinity, out = Infinity, anyOut = false;
+    for (let i = 0; i < p.length; i++) {
+      const a = p[i], b = p[(i + 1) % p.length];
+      const ex = b[0] - a[0], ez = b[1] - a[1], l2 = ex * ex + ez * ez;
+      if (l2 < 1e-12) continue;
+      const n = edgeNormal(a, b), s = (x - a[0]) * n[0] + (z - a[1]) * n[1];
+      inside = Math.max(inside, s);
+      if (s > 0) anyOut = true;
+      const t = Math.max(0, Math.min(1, ((x - a[0]) * ex + (z - a[1]) * ez) / l2));
+      out = Math.min(out, Math.hypot(x - a[0] - ex * t, z - a[1] - ez * t));
+    }
+    return anyOut ? out : inside;
+  }
+  const sdPiece = (I, x, z) => sdConvex(I, x, z) - ROUND;
+  function clipPoly(p, nx, nz, k, sign) {
+    const out = [];
+    for (let i = 0; i < p.length; i++) {
+      const a = p[i], b = p[(i + 1) % p.length];
+      const da = sign * (nx * a[0] + nz * a[1] - k), db = sign * (nx * b[0] + nz * b[1] - k);
+      if (da >= 0) out.push(a);
+      if ((da >= 0) !== (db >= 0)) { const t = da / (da - db); out.push([a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t]); }
+    }
+    const clean = [];
+    for (const q of out) { const l = clean[clean.length - 1]; if (!l || Math.hypot(q[0] - l[0], q[1] - l[1]) > 1e-4) clean.push(q); }
+    if (clean.length > 1 && Math.hypot(clean[0][0] - clean[clean.length - 1][0], clean[0][1] - clean[clean.length - 1][1]) < 1e-4) clean.pop();
+    return clean;
+  }
+  // outline of (polygon grown by `grow`), sampled evenly, with outward normals
+  function grownOutline(I, grow, step) {
+    const n = I.length, pts = [], nrm = [];
+    const en = [];
+    for (let i = 0; i < n; i++) en.push(edgeNormal(I[i], I[(i + 1) % n]));
+    for (let i = 0; i < n; i++) {
+      const v = I[i], n0 = en[(i + n - 1) % n], n1 = en[i];
+      let da = Math.atan2(n1[1], n1[0]) - Math.atan2(n0[1], n0[0]);
+      while (da < 0) da += Math.PI * 2;
+      if (da > Math.PI * 1.5) da = 0;
+      const a0 = Math.atan2(n0[1], n0[0]);
+      const na = da < 1e-4 ? 0 : Math.max(1, Math.ceil(grow * da / step), Math.ceil(da / 0.3));
+      for (let k = 0; k < na; k++) {
+        const a = a0 + da * k / na;
+        pts.push([v[0] + Math.cos(a) * grow, v[1] + Math.sin(a) * grow]); nrm.push([Math.cos(a), Math.sin(a)]);
+      }
+      const q = I[(i + 1) % n], len = Math.hypot(q[0] - v[0], q[1] - v[1]);
+      if (len < 1e-6) continue;
+      const nl = Math.max(1, Math.ceil(len / step));
+      for (let k = 0; k < nl; k++) {
+        const t = k / nl;
+        pts.push([v[0] + (q[0] - v[0]) * t + n1[0] * grow, v[1] + (q[1] - v[1]) * t + n1[1] * grow]); nrm.push(n1);
+      }
+    }
+    return { pts, nrm };
+  }
+  function hexLattice(I, step, keep) {
+    let x0 = Infinity, x1 = -Infinity, z0 = Infinity, z1 = -Infinity;
+    for (const q of I) { x0 = Math.min(x0, q[0]); x1 = Math.max(x1, q[0]); z0 = Math.min(z0, q[1]); z1 = Math.max(z1, q[1]); }
+    x0 -= ROUND; x1 += ROUND; z0 -= ROUND; z1 += ROUND;
+    const pts = [], dz = step * Math.sqrt(3) / 2;
+    let row = 0;
+    for (let z = z0; z <= z1; z += dz, row++) for (let x = x0 + (row % 2) * step / 2; x <= x1; x += step) if (keep(x, z)) pts.push([x, z]);
+    return pts;
+  }
+  function triangulate(pts) {
+    const del = Delaunator.from(pts), out = [];
+    for (let t = 0; t < del.triangles.length; t += 3) {
+      const a = del.triangles[t], b = del.triangles[t + 1], c = del.triangles[t + 2];
+      const ar = (pts[b][0] - pts[a][0]) * (pts[c][1] - pts[a][1]) - (pts[c][0] - pts[a][0]) * (pts[b][1] - pts[a][1]);
+      if (Math.abs(ar) > 1e-7) out.push([a, b, c, ar]);
+    }
+    return out;
+  }
+
+  // ---------- seeds and bubbles, fixed in rest space ----------
+  function rng(seed) { let s = seed >>> 0; return () => { s = (s + 0x6d2b79f5) >>> 0; let t = s; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+  function makeInclusions() {
+    const R = rng(12), list = [];
+    const tpl = new THREE.SphereGeometry(1, 14, 10), tp = tpl.attributes.position.array, ti = Array.from(tpl.index.array);
+    const rows = [{ r: 0.7, n: 3 }, { r: 1.0, n: 5 }, { r: 1.28, n: 6 }];
+    for (const row of rows) for (const face of [1, 0, -1]) {
+      if (face === 0 && row.r < 0.9) continue;
+      const maxTh = HALF_ANGLE - 0.2 / row.r;
+      for (let i = 0; i < row.n; i++) {
+        const t = row.n === 1 ? 0 : (i / (row.n - 1)) * 2 - 1;
+        const th = t * maxTh * 0.86 + (R() - 0.5) * 0.06 + face * 0.04;
+        const rr = row.r + (R() - 0.5) * 0.08, s = 0.8 + R() * 0.3;
+        const Lh = 0.075 * s, Wh = 0.044 * s, Hh = 0.021 * s;
+        const dir = [Math.cos(th), Math.sin(th)], lat = [-Math.sin(th), Math.cos(th)];
+        const cy = face > 0 ? THICK - Hh * 1.3 - 0.01 : face < 0 ? Hh * 1.3 + 0.01 : THICK * (0.4 + R() * 0.2);
+        const c = [rr * dir[0], cy, rr * dir[1]], tilt = (R() - 0.5) * 0.25;
+        const v = new Float32Array(tp.length);
+        for (let k = 0; k < tp.length; k += 3) {
+          const lx = tp[k + 1], ly = tp[k], lz = tp[k + 2];          // lx runs along the seed
+          const wide = 0.42 + 0.58 * Math.pow((lx + 1) / 2, 0.7);     // narrow toward the melon heart
+          const al = lx * Lh, la = ly * Wh * wide, up = lz * Hh * wide;
+          v[k] = c[0] + dir[0] * al + lat[0] * la;
+          v[k + 1] = c[1] + up + al * tilt * 0.3;
+          v[k + 2] = c[2] + dir[1] * al + lat[1] * la;
+        }
+        list.push({ kind: 'seed', c, v, idx: ti });
+      }
+    }
+    const bub = new THREE.SphereGeometry(1, 10, 8), bp = bub.attributes.position.array, bi = Array.from(bub.index.array);
+    for (let i = 0; i < 18; i++) {
+      const r = 0.45 + R() * 0.95, th = (R() * 2 - 1) * (HALF_ANGLE - 0.14 / r) * 0.9;
+      const rad = 0.009 + R() * R() * 0.02;
+      const y = R() < 0.6 ? THICK - 0.035 - R() * 0.16 : 0.05 + R() * 0.14;
+      const c = [r * Math.cos(th), y, r * Math.sin(th)], v = new Float32Array(bp.length);
+      for (let k = 0; k < bp.length; k += 3) { v[k] = c[0] + bp[k] * rad; v[k + 1] = c[1] + bp[k + 1] * rad; v[k + 2] = c[2] + bp[k + 2] * rad; }
+      list.push({ kind: 'bubble', c, v, idx: bi });
+    }
+    tpl.dispose(); bub.dispose();
+    return list;
+  }
+
+  // ---------- pieces: each one a tetrahedral soft body ----------
+  let pieces = [];
+  let showMesh = false;
+  let firmness = 0.4, damping = 0.45;
+  const shapeCompliance = () => Math.exp(Math.log(3.0) + (Math.log(0.05) - Math.log(3.0)) * firmness);
+  const volCompliance = () => 1e-4 * (1 - 0.7 * firmness);
+  const dampRate = () => 2 + 40 * damping * damping;
+
+  function tetVolume(P, a, b, c, d) {
+    const ax = P[3 * b] - P[3 * a], ay = P[3 * b + 1] - P[3 * a + 1], az = P[3 * b + 2] - P[3 * a + 2];
+    const bx = P[3 * c] - P[3 * a], by = P[3 * c + 1] - P[3 * a + 1], bz = P[3 * c + 2] - P[3 * a + 2];
+    const cx = P[3 * d] - P[3 * a], cy = P[3 * d + 1] - P[3 * a + 1], cz = P[3 * d + 2] - P[3 * a + 2];
+    return ((ay * bz - az * by) * cx + (az * bx - ax * bz) * cy + (ax * by - ay * bx) * cz) / 6;
+  }
+
+  class Piece {
+    constructor(I, inclusions, place) {
+      this.I = I;
+      this.inclusions = inclusions;
+      this.buildSim();
+      this.pos = new Float32Array(3 * this.N);
+      this.prev = new Float32Array(3 * this.N);
+      this.vel = new Float32Array(3 * this.N);
+      const q0 = place(this) || new THREE.Quaternion();
+      this.prev.set(this.pos);
+      for (let t = 0; t < this.T; t++) { this.rot[4 * t] = q0.x; this.rot[4 * t + 1] = q0.y; this.rot[4 * t + 2] = q0.z; this.rot[4 * t + 3] = q0.w; }
+      this.buildSurface();
+      this.buildInclusions();
+      this.lines = new THREE.LineSegments(new THREE.BufferGeometry(), lineMat);
+      this.lines.geometry.setAttribute('position', new THREE.BufferAttribute(this.pos, 3));
+      this.lines.geometry.setIndex(new THREE.BufferAttribute(this.edges, 1));
+      this.lines.frustumCulled = false;
+      this.lines.renderOrder = 10;
+      this.lines.visible = showMesh;
+      scene.add(this.lines);
+    }
+
+    buildSim() {
+      const I = this.I, h = SPACING;
+      const pts = grownOutline(I, ROUND, h).pts;
+      for (const q of hexLattice(I, h, (x, z) => sdPiece(I, x, z) < -h * 0.55)) pts.push(q);
+      const tris = triangulate(pts).map(([a, b, c]) => [a, b, c].sort((x, y) => x - y));
+      const n2 = pts.length, NL = LAYERS + 1, N = n2 * NL;
+      const rest = new Float32Array(3 * N);
+      for (let l = 0; l < NL; l++) for (let i = 0; i < n2; i++) {
+        const k = 3 * (l * n2 + i);
+        rest[k] = pts[i][0]; rest[k + 1] = THICK * l / LAYERS; rest[k + 2] = pts[i][1];
+      }
+      const tets = [];
+      for (const [a, b, c] of tris) for (let l = 0; l < LAYERS; l++) {
+        const o0 = l * n2, o1 = o0 + n2;
+        // splitting by global index keeps the shared faces of neighbouring prisms conforming
+        for (const t of [[a + o0, b + o0, c + o0, c + o1], [a + o0, b + o0, b + o1, c + o1], [a + o0, a + o1, b + o1, c + o1]]) {
+          if (tetVolume(rest, t[0], t[1], t[2], t[3]) < 0) { const s = t[2]; t[2] = t[3]; t[3] = s; }
+          tets.push(t);
+        }
+      }
+      this.N = N; this.rest = rest; this.T = tets.length;
+      this.tets = new Int32Array(this.T * 4);
+      this.restVol = new Float32Array(this.T);
+      this.mass = new Float32Array(N);
+      for (let t = 0; t < this.T; t++) {
+        this.tets.set(tets[t], 4 * t);
+        const v = tetVolume(rest, ...tets[t]);
+        this.restVol[t] = v;
+        for (const i of tets[t]) this.mass[i] += v / 4;
+      }
+      this.w = this.mass.map((m) => (m > 0 ? 1 / m : 0));
+      this.totalMass = this.mass.reduce((s, m) => s + m, 0);
+      this.totalRestVol = this.restVol.reduce((s, v) => s + v, 0);
+
+      // rind region per particle: 2 skin, 1 pale, 0 flesh
+      const region = new Uint8Array(N);
+      for (let i = 0; i < N; i++) { const d = R_OUT - Math.hypot(rest[3 * i], rest[3 * i + 2]); region[i] = d < SKIN + 0.02 ? 2 : d < PALE ? 1 : 0; }
+
+      // co-rotational elements: rest corners about the mass centre, warm-started rotation, stiffness by region
+      this.tq = new Float32Array(this.T * 12);
+      this.rot = new Float32Array(this.T * 4);
+      this.tetM = new Float32Array(this.T);
+      this.firm = new Float32Array(this.T);
+      const m3 = new THREE.Matrix3();
+      this.invRest = new Float32Array(this.T * 9);
+      for (let t = 0; t < this.T; t++) {
+        const id = tets[t];
+        let cx = 0, cy = 0, cz = 0, M = 0;
+        for (const v of id) { const m = this.mass[v]; M += m; cx += rest[3 * v] * m; cy += rest[3 * v + 1] * m; cz += rest[3 * v + 2] * m; }
+        cx /= M; cy /= M; cz /= M;
+        this.tetM[t] = M;
+        for (let k = 0; k < 4; k++) { const v = id[k]; this.tq[12 * t + 3 * k] = rest[3 * v] - cx; this.tq[12 * t + 3 * k + 1] = rest[3 * v + 1] - cy; this.tq[12 * t + 3 * k + 2] = rest[3 * v + 2] - cz; }
+        let rg = 0; for (const v of id) rg += region[v];
+        this.firm[t] = rg >= 6 ? 0.3 : rg >= 3 ? 0.5 : rg >= 1 ? 0.75 : 1.0;
+        const [a, b, c, d] = id;
+        m3.set(rest[3 * b] - rest[3 * a], rest[3 * c] - rest[3 * a], rest[3 * d] - rest[3 * a],
+          rest[3 * b + 1] - rest[3 * a + 1], rest[3 * c + 1] - rest[3 * a + 1], rest[3 * d + 1] - rest[3 * a + 1],
+          rest[3 * b + 2] - rest[3 * a + 2], rest[3 * c + 2] - rest[3 * a + 2], rest[3 * d + 2] - rest[3 * a + 2]).invert();
+        this.invRest.set(m3.elements, 9 * t);
+      }
+      const seen = new Set(), E = [];
+      for (const t of tets) for (let i = 0; i < 4; i++) for (let j = i + 1; j < 4; j++) {
+        const a = Math.min(t[i], t[j]), b = Math.max(t[i], t[j]), key = a * N + b;
+        if (!seen.has(key)) { seen.add(key); E.push(a, b); }
+      }
+      this.edges = Int32Array.from(E);
+    }
+
+    // barycentric embedding of rest-space points into this piece's tets
+    embed(points) {
+      const n = points.length / 3, tet = new Int32Array(n), bw = new Float32Array(4 * n);
+      const { rest, tets, invRest, T } = this;
+      for (let i = 0; i < n; i++) {
+        const px = points[3 * i], py = points[3 * i + 1], pz = points[3 * i + 2];
+        let best = 0, bestMin = -Infinity, B = [0.25, 0.25, 0.25];
+        for (let pass = 0; pass < 2 && bestMin < -1e-4; pass++) {
+          const lim = pass === 0 ? 0.16 : Infinity;
+          for (let t = 0; t < T; t++) {
+            const a = tets[4 * t];
+            const dx = px - rest[3 * a], dy = py - rest[3 * a + 1], dz = pz - rest[3 * a + 2];
+            if (dx * dx + dy * dy + dz * dz > lim) continue;
+            const e = 9 * t;
+            const b1 = invRest[e] * dx + invRest[e + 3] * dy + invRest[e + 6] * dz;
+            const b2 = invRest[e + 1] * dx + invRest[e + 4] * dy + invRest[e + 7] * dz;
+            const b3 = invRest[e + 2] * dx + invRest[e + 5] * dy + invRest[e + 8] * dz;
+            const mn = Math.min(b1, b2, b3, 1 - b1 - b2 - b3);
+            if (mn > bestMin) { bestMin = mn; best = t; B = [b1, b2, b3]; if (mn >= 0) break; }
+          }
+        }
+        tet[i] = best;
+        bw[4 * i] = 1 - B[0] - B[1] - B[2]; bw[4 * i + 1] = B[0]; bw[4 * i + 2] = B[1]; bw[4 * i + 3] = B[2];
+      }
+      return { tet, bw };
+    }
+    interpolate(emb, out, src) {
+      const { tet, bw } = emb, T4 = this.tets;
+      for (let i = 0, n = tet.length; i < n; i++) {
+        const t = 4 * tet[i];
+        let x = 0, y = 0, z = 0;
+        for (let k = 0; k < 4; k++) { const p = 3 * T4[t + k], w = bw[4 * i + k]; x += src[p] * w; y += src[p + 1] * w; z += src[p + 2] * w; }
+        out[3 * i] = x; out[3 * i + 1] = y; out[3 * i + 2] = z;
+      }
+    }
+
+    buildSurface() {
+      const I = this.I, b = BEVEL;
+      const ol = grownOutline(I, ROUND, 0.028);
+      const M = ol.pts.length;
+      const rings = [];
+      const qb = 6;
+      for (let j = 0; j <= qb; j++) { const ph = -Math.PI / 2 + (Math.PI / 2) * j / qb; rings.push([b + b * Math.sin(ph), b * (1 - Math.cos(ph))]); }
+      for (let j = 1; j <= 2; j++) rings.push([b + (THICK - 2 * b) * j / 3, 0]);
+      for (let j = 0; j <= qb; j++) { const ph = (Math.PI / 2) * j / qb; rings.push([THICK - b + b * Math.sin(ph), b * (1 - Math.cos(ph))]); }
+      const verts = [], idx = [];
+      for (const [y, inset] of rings) for (let k = 0; k < M; k++) verts.push(ol.pts[k][0] - ol.nrm[k][0] * inset, y, ol.pts[k][1] - ol.nrm[k][1] * inset);
+      const nR = rings.length;
+      for (let r = 0; r < nR - 1; r++) for (let k = 0; k < M; k++) {
+        const a = r * M + k, b2 = r * M + (k + 1) % M, c = (r + 1) * M + k, d = (r + 1) * M + (k + 1) % M;
+        idx.push(a, c, b2, b2, c, d); // tangent x up points inward, so this order faces out
+      }
+      // caps: the innermost ring plus a fine lattice
+      const sp = 0.045;
+      for (const [r, y, up] of [[0, 0, false], [nR - 1, THICK, true]]) {
+        const ring = [];
+        for (let k = 0; k < M; k++) ring.push([verts[3 * (r * M + k)], verts[3 * (r * M + k) + 2]]);
+        const inner = hexLattice(I, sp, (x, z) => sdPiece(I, x, z) < -(b + sp * 0.6));
+        const all = ring.concat(inner), base = verts.length / 3;
+        for (const q of inner) verts.push(q[0], y, q[1]);
+        const map = (i) => (i < M ? r * M + i : base + i - M);
+        for (const [a, b2, c, ar] of triangulate(all)) {
+          // in x/z a positive area here faces -y
+          if ((ar < 0) === up) idx.push(map(a), map(b2), map(c)); else idx.push(map(a), map(c), map(b2));
+        }
+      }
+      this.surfRest = new Float32Array(verts);
+      this.surfEmb = this.embed(this.surfRest);
+      this.surfPos = new Float32Array(verts.length);
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.BufferAttribute(this.surfPos, 3));
+      geo.setAttribute('rest', new THREE.BufferAttribute(this.surfRest, 3));
+      geo.setIndex(idx);
+      this.surfGeo = geo;
+      this.updateSurface();
+      this.mesh = new THREE.Mesh(geo, jellyMat);
+      this.mesh.castShadow = true;
+      this.mesh.frustumCulled = false;
+      this.mesh.userData.piece = this;
+      scene.add(this.mesh);
+    }
+    buildInclusions() {
+      this.incl = [];
+      for (const kind of ['seed', 'bubble']) {
+        const items = this.inclusions.filter((q) => q.kind === kind);
+        if (!items.length) continue;
+        let nv = 0;
+        for (const q of items) nv += q.v.length;
+        const restV = new Float32Array(nv), idx = [];
+        let o = 0;
+        for (const q of items) { restV.set(q.v, o); const base = o / 3; for (const i of q.idx) idx.push(base + i); o += q.v.length; }
+        const geo = new THREE.BufferGeometry(), pos = new Float32Array(nv);
+        geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+        geo.setIndex(idx);
+        const mesh = new THREE.Mesh(geo, kind === 'seed' ? seedMat : bubbleMat);
+        mesh.frustumCulled = false;
+        mesh.userData.prop = true;
+        scene.add(mesh);
+        this.incl.push({ mesh, geo, pos, emb: this.embed(restV) });
+      }
+    }
+    updateSurface() {
+      this.interpolate(this.surfEmb, this.surfPos, this.pos);
+      this.surfGeo.attributes.position.needsUpdate = true;
+      this.surfGeo.computeVertexNormals();
+      this.surfGeo.computeBoundingSphere();
+    }
+    updateRender() {
+      this.updateSurface();
+      for (const inc of this.incl) {
+        this.interpolate(inc.emb, inc.pos, this.pos);
+        inc.geo.attributes.position.needsUpdate = true;
+        inc.geo.computeVertexNormals();
+      }
+      if (showMesh) this.lines.geometry.attributes.position.needsUpdate = true;
+    }
+    dispose() {
+      scene.remove(this.mesh); this.surfGeo.dispose();
+      for (const inc of this.incl) { scene.remove(inc.mesh); inc.geo.dispose(); }
+      scene.remove(this.lines); this.lines.geometry.dispose();
+    }
+    centroid(out) {
+      let x = 0, y = 0, z = 0;
+      for (let i = 0; i < this.N; i++) { const m = this.mass[i]; x += this.pos[3 * i] * m; y += this.pos[3 * i + 1] * m; z += this.pos[3 * i + 2] * m; }
+      return out.set(x / this.totalMass, y / this.totalMass, z / this.totalMass);
+    }
+    kinetic() {
+      let e = 0;
+      for (let i = 0; i < this.N; i++) e += 0.5 * this.mass[i] * (this.vel[3 * i] ** 2 + this.vel[3 * i + 1] ** 2 + this.vel[3 * i + 2] ** 2);
+      return e;
+    }
+  }
+
+  // ---------- solver ----------
+  let grab = null;
+
+  // each tet is pulled toward its rest shape, turned by the rotation that best fits its current corners
+  function solveShapes(p, dt) {
+    const x = p.pos, T4 = p.tets, tq = p.tq, Q = p.rot, mass = p.mass;
+    const base = shapeCompliance() / (dt * dt);
+    for (let t = 0; t < p.T; t++) {
+      const ia = 3 * T4[4 * t], ib = 3 * T4[4 * t + 1], ic = 3 * T4[4 * t + 2], id = 3 * T4[4 * t + 3];
+      const ma = mass[ia / 3], mb = mass[ib / 3], mc = mass[ic / 3], md = mass[id / 3], M = p.tetM[t];
+      const cx = (x[ia] * ma + x[ib] * mb + x[ic] * mc + x[id] * md) / M;
+      const cy = (x[ia + 1] * ma + x[ib + 1] * mb + x[ic + 1] * mc + x[id + 1] * md) / M;
+      const cz = (x[ia + 2] * ma + x[ib + 2] * mb + x[ic + 2] * mc + x[id + 2] * md) / M;
+      // A = sum m (x - c)(q)^T, row-major a_rc
+      let a00 = 0, a01 = 0, a02 = 0, a10 = 0, a11 = 0, a12 = 0, a20 = 0, a21 = 0, a22 = 0;
+      const o = 12 * t;
+      const acc = (i, m, k) => {
+        const px = (x[i] - cx) * m, py = (x[i + 1] - cy) * m, pz = (x[i + 2] - cz) * m;
+        const q0 = tq[o + k], q1 = tq[o + k + 1], q2 = tq[o + k + 2];
+        a00 += px * q0; a01 += px * q1; a02 += px * q2;
+        a10 += py * q0; a11 += py * q1; a12 += py * q2;
+        a20 += pz * q0; a21 += pz * q1; a22 += pz * q2;
+      };
+      acc(ia, ma, 0); acc(ib, mb, 3); acc(ic, mc, 6); acc(id, md, 9);
+      let qx = Q[4 * t], qy = Q[4 * t + 1], qz = Q[4 * t + 2], qw = Q[4 * t + 3];
+      let r00, r01, r02, r10, r11, r12, r20, r21, r22;
+      for (let it = 0; it < 3; it++) {
+        r00 = 1 - 2 * (qy * qy + qz * qz); r01 = 2 * (qx * qy - qw * qz); r02 = 2 * (qx * qz + qw * qy);
+        r10 = 2 * (qx * qy + qw * qz); r11 = 1 - 2 * (qx * qx + qz * qz); r12 = 2 * (qy * qz - qw * qx);
+        r20 = 2 * (qx * qz - qw * qy); r21 = 2 * (qy * qz + qw * qx); r22 = 1 - 2 * (qx * qx + qy * qy);
+        // omega = sum over columns of r_i x a_i, normalised by |sum r_i . a_i|
+        const wx = (r10 * a20 - r20 * a10) + (r11 * a21 - r21 * a11) + (r12 * a22 - r22 * a12);
+        const wy = (r20 * a00 - r00 * a20) + (r21 * a01 - r01 * a21) + (r22 * a02 - r02 * a22);
+        const wz = (r00 * a10 - r10 * a00) + (r01 * a11 - r11 * a01) + (r02 * a12 - r12 * a02);
+        const den = Math.abs(r00 * a00 + r10 * a10 + r20 * a20 + r01 * a01 + r11 * a11 + r21 * a21 + r02 * a02 + r12 * a12 + r22 * a22) + 1e-12;
+        const ox = wx / den, oy = wy / den, oz = wz / den, ang = Math.sqrt(ox * ox + oy * oy + oz * oz);
+        if (ang < 1e-7) break;
+        const h = Math.min(ang, 1) * 0.5, s = Math.sin(h) / ang, cw = Math.cos(h);
+        const dx = ox * s, dy = oy * s, dz = oz * s;
+        const nx = cw * qx + dx * qw + dy * qz - dz * qy;
+        const ny = cw * qy - dx * qz + dy * qw + dz * qx;
+        const nz = cw * qz + dx * qy - dy * qx + dz * qw;
+        const nw = cw * qw - dx * qx - dy * qy - dz * qz;
+        const nl = 1 / Math.sqrt(nx * nx + ny * ny + nz * nz + nw * nw);
+        qx = nx * nl; qy = ny * nl; qz = nz * nl; qw = nw * nl;
+      }
+      r00 = 1 - 2 * (qy * qy + qz * qz); r01 = 2 * (qx * qy - qw * qz); r02 = 2 * (qx * qz + qw * qy);
+      r10 = 2 * (qx * qy + qw * qz); r11 = 1 - 2 * (qx * qx + qz * qz); r12 = 2 * (qy * qz - qw * qx);
+      r20 = 2 * (qx * qz - qw * qy); r21 = 2 * (qy * qz + qw * qx); r22 = 1 - 2 * (qx * qx + qy * qy);
+      Q[4 * t] = qx; Q[4 * t + 1] = qy; Q[4 * t + 2] = qz; Q[4 * t + 3] = qw;
+      // XPBD goal constraint; one shared fraction for all corners conserves momentum
+      const f = 1 / (1 + base * p.firm[t] * M * 0.25);
+      const pull = (i, k) => {
+        const q0 = tq[o + k], q1 = tq[o + k + 1], q2 = tq[o + k + 2];
+        x[i] += (cx + r00 * q0 + r01 * q1 + r02 * q2 - x[i]) * f;
+        x[i + 1] += (cy + r10 * q0 + r11 * q1 + r12 * q2 - x[i + 1]) * f;
+        x[i + 2] += (cz + r20 * q0 + r21 * q1 + r22 * q2 - x[i + 2]) * f;
+      };
+      pull(ia, 0); pull(ib, 3); pull(ic, 6); pull(id, 9);
+    }
+  }
+
+  const VOL_ORDER = [[1, 3, 2], [0, 2, 3], [0, 3, 1], [0, 1, 2]];
+  const grads = new Float32Array(12);
+  function solveVolumes(p, dt) {
+    const x = p.pos, w = p.w, T4 = p.tets;
+    const alpha0 = volCompliance() / (dt * dt);
+    for (let t = 0; t < p.T; t++) {
+      let ws = 0;
+      for (let j = 0; j < 4; j++) {
+        const o = VOL_ORDER[j];
+        const i0 = 3 * T4[4 * t + o[0]], i1 = 3 * T4[4 * t + o[1]], i2 = 3 * T4[4 * t + o[2]];
+        const ax = x[i1] - x[i0], ay = x[i1 + 1] - x[i0 + 1], az = x[i1 + 2] - x[i0 + 2];
+        const bx = x[i2] - x[i0], by = x[i2 + 1] - x[i0 + 1], bz = x[i2 + 2] - x[i0 + 2];
+        const gx = ay * bz - az * by, gy = az * bx - ax * bz, gz = ax * by - ay * bx;
+        grads[3 * j] = gx; grads[3 * j + 1] = gy; grads[3 * j + 2] = gz;
+        ws += w[T4[4 * t + j]] * (gx * gx + gy * gy + gz * gz);
+      }
+      if (ws < 1e-12) continue;
+      const V = tetVolume(x, T4[4 * t], T4[4 * t + 1], T4[4 * t + 2], T4[4 * t + 3]), r0 = p.restVol[t];
+      // badly squashed elements get a stiff correction so nothing turns inside out
+      const alpha = V < 0.25 * r0 ? 0 : alpha0;
+      const s = -6 * (V - r0) / (ws + alpha);
+      for (let j = 0; j < 4; j++) {
+        const i = T4[4 * t + j], k = s * w[i];
+        x[3 * i] += grads[3 * j] * k; x[3 * i + 1] += grads[3 * j + 1] * k; x[3 * i + 2] += grads[3 * j + 2] * k;
+      }
+    }
+  }
+
+  function solveGrab(dt) {
+    if (!grab) return;
+    const p = grab.piece, x = p.pos, a = 2e-6 / (dt * dt);
+    for (let k = 0; k < grab.ids.length; k++) {
+      const i = grab.ids[k], wi = p.w[i];
+      const tx = grab.target.x + grab.off[3 * k];
+      const ty = Math.max(grab.target.y + grab.off[3 * k + 1], 0.005);
+      const tz = grab.target.z + grab.off[3 * k + 2];
+      let f = grab.wt[k] * wi / (wi + a);
+      // pressing down near the table yields instead of crushing the jelly
+      if (ty < x[3 * i + 1] && ty < 0.45) f *= Math.max(0.12, ty / 0.45);
+      x[3 * i] += (tx - x[3 * i]) * f; x[3 * i + 1] += (ty - x[3 * i + 1]) * f; x[3 * i + 2] += (tz - x[3 * i + 2]) * f;
+    }
+  }
+
+  function solveFloor(p) {
+    const x = p.pos, prev = p.prev;
+    for (let i = 0; i < p.N; i++) {
+      const k = 3 * i, pen = -x[k + 1];
+      if (pen > 0) {
+        x[k + 1] = 0;
+        const dx = x[k] - prev[k], dz = x[k + 2] - prev[k + 2], dl = Math.hypot(dx, dz);
+        if (dl > 1e-12) { const f = dl < FRICTION * pen ? 1 : FRICTION * pen / dl; x[k] -= dx * f; x[k + 2] -= dz * f; }
+      }
+      const rr = Math.hypot(x[k], x[k + 2]);
+      if (rr > 6) { x[k] *= 6 / rr; x[k + 2] *= 6 / rr; }
+    }
+  }
+
+  function dampEdges(p, dt) {
+    const x = p.pos, v = p.vel, w = p.w, E = p.edges;
+    const k = 1 - Math.exp(-dampRate() * dt);
+    for (let e = 0, nE = E.length / 2; e < nE; e++) {
+      const i = 3 * E[2 * e], j = 3 * E[2 * e + 1];
+      let nx = x[j] - x[i], ny = x[j + 1] - x[i + 1], nz = x[j + 2] - x[i + 2];
+      const l = Math.sqrt(nx * nx + ny * ny + nz * nz);
+      if (l < 1e-9) continue;
+      nx /= l; ny /= l; nz /= l;
+      const rv = (v[j] - v[i]) * nx + (v[j + 1] - v[i + 1]) * ny + (v[j + 2] - v[i + 2]) * nz;
+      const wi = w[i / 3], wj = w[j / 3], imp = rv * k / (wi + wj);
+      v[i] += nx * imp * wi; v[i + 1] += ny * imp * wi; v[i + 2] += nz * imp * wi;
+      v[j] -= nx * imp * wj; v[j + 1] -= ny * imp * wj; v[j + 2] -= nz * imp * wj;
+    }
+  }
+
+  // spatial hash so pieces push each other apart
+  let hashSize = 0, cellStart, cellEntry, entryPiece, entryIdx;
+  const hashCoord = (x, y, z) => Math.abs((x * 92837111) ^ (y * 689287499) ^ (z * 283923481)) % hashSize;
+  function collidePieces() {
+    if (pieces.length < 2) return;
+    let total = 0;
+    for (const p of pieces) total += p.N;
+    if (!cellEntry || cellEntry.length < total) {
+      hashSize = 2 * total;
+      cellStart = new Int32Array(hashSize + 1);
+      cellEntry = new Int32Array(total); entryPiece = new Int32Array(total); entryIdx = new Int32Array(total);
+    }
+    cellStart.fill(0);
+    const inv = 1 / COLLIDE;
+    const cellOf = (p, i) => hashCoord(Math.floor(p.pos[3 * i] * inv), Math.floor(p.pos[3 * i + 1] * inv), Math.floor(p.pos[3 * i + 2] * inv));
+    let g = 0;
+    pieces.forEach((p, pi) => { for (let i = 0; i < p.N; i++, g++) { entryPiece[g] = pi; entryIdx[g] = i; cellStart[cellOf(p, i)]++; } });
+    let acc = 0;
+    for (let i = 0; i < hashSize; i++) { acc += cellStart[i]; cellStart[i] = acc; }
+    cellStart[hashSize] = acc;
+    g = 0;
+    pieces.forEach((p) => { for (let i = 0; i < p.N; i++, g++) cellEntry[--cellStart[cellOf(p, i)]] = g; });
+    const r2 = COLLIDE * COLLIDE;
+    g = 0;
+    pieces.forEach((p, pi) => {
+      for (let i = 0; i < p.N; i++, g++) {
+        const px = p.pos[3 * i], py = p.pos[3 * i + 1], pz = p.pos[3 * i + 2];
+        const cx = Math.floor(px * inv), cy = Math.floor(py * inv), cz = Math.floor(pz * inv);
+        for (let X = cx - 1; X <= cx + 1; X++) for (let Y = cy - 1; Y <= cy + 1; Y++) for (let Z = cz - 1; Z <= cz + 1; Z++) {
+          const h = hashCoord(X, Y, Z);
+          for (let e = cellStart[h]; e < cellStart[h + 1]; e++) {
+            const o = cellEntry[e];
+            if (o <= g || entryPiece[o] === pi) continue;
+            const q = pieces[entryPiece[o]], j = entryIdx[o];
+            const dx = q.pos[3 * j] - px, dy = q.pos[3 * j + 1] - py, dz = q.pos[3 * j + 2] - pz;
+            const d2 = dx * dx + dy * dy + dz * dz;
+            if (d2 >= r2 || d2 < 1e-12) continue;
+            const d = Math.sqrt(d2), wa = p.w[i], wb = q.w[j], s = (COLLIDE - d) / d / (wa + wb);
+            p.pos[3 * i] -= dx * s * wa; p.pos[3 * i + 1] -= dy * s * wa; p.pos[3 * i + 2] -= dz * s * wa;
+            q.pos[3 * j] += dx * s * wb; q.pos[3 * j + 1] += dy * s * wb; q.pos[3 * j + 2] += dz * s * wb;
+          }
+        }
+      }
+    });
+  }
+
+  let subIndex = 0;
+  function substep(dt) {
+    for (const p of pieces) {
+      const x = p.pos, prev = p.prev, v = p.vel;
+      const air = Math.exp(-(grab && grab.piece === p ? 2.5 : 0.08) * dt);
+      for (let k = 0; k < 3 * p.N; k += 3) {
+        v[k + 1] -= GRAVITY * dt;
+        v[k] *= air; v[k + 1] *= air; v[k + 2] *= air;
+        prev[k] = x[k]; prev[k + 1] = x[k + 1]; prev[k + 2] = x[k + 2];
+        x[k] += v[k] * dt; x[k + 1] += v[k + 1] * dt; x[k + 2] += v[k + 2] * dt;
+      }
+    }
+    solveGrab(dt);
+    for (const p of pieces) { solveShapes(p, dt); solveVolumes(p, dt); }
+    if ((subIndex++ & 1) === 0) collidePieces();
+    for (const p of pieces) solveFloor(p);
+    const inv = 1 / dt;
+    for (const p of pieces) {
+      const x = p.pos, prev = p.prev, v = p.vel;
+      for (let k = 0; k < 3 * p.N; k += 3) {
+        let vx = (x[k] - prev[k]) * inv, vy = (x[k + 1] - prev[k + 1]) * inv, vz = (x[k + 2] - prev[k + 2]) * inv;
+        const sp = Math.hypot(vx, vy, vz);
+        if (sp > MAX_SPEED) { const f = MAX_SPEED / sp; vx *= f; vy *= f; vz *= f; }
+        v[k] = vx; v[k + 1] = vy; v[k + 2] = vz;
+      }
+      dampEdges(p, dt);
+    }
+  }
+  function step() {
+    const dt = STEP / SUBSTEPS;
+    for (let s = 0; s < SUBSTEPS; s++) substep(dt);
+    // once a piece is nearly still, bleed off the last tremor so it comes to rest
+    for (const p of pieces) {
+      if (grab && grab.piece === p) continue;
+      const ke = p.kinetic() / p.totalMass;
+      if (ke < 2e-3) { const f = Math.max(0.86, 1 - 0.14 * (1 - ke / 2e-3)); for (let k = 0; k < p.vel.length; k++) p.vel[k] *= f; }
+      if (!Number.isFinite(p.pos[0])) { reset(); return; }
+    }
+  }
+
+  // ---------- setup ----------
+  function wedgeInner() {
+    const I = [[0, 0]], n = 40;
+    for (let i = 0; i <= n; i++) { const a = -HALF_ANGLE + 2 * HALF_ANGLE * i / n; I.push([R_INNER * Math.cos(a), R_INNER * Math.sin(a)]); }
+    return I;
+  }
+  function reset() {
+    grab = null;
+    for (const p of pieces) p.dispose();
+    const q = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), 0.55 + Math.PI);
+    const xf = new THREE.Matrix4().makeTranslation(0, 0.35, 0).multiply(new THREE.Matrix4().makeRotationFromQuaternion(q)).multiply(new THREE.Matrix4().makeTranslation(-R_OUT * 0.6, 0, 0));
+    const v = new THREE.Vector3();
+    pieces = [new Piece(wedgeInner(), makeInclusions(), (p) => {
+      for (let i = 0; i < p.N; i++) { v.set(p.rest[3 * i], p.rest[3 * i + 1], p.rest[3 * i + 2]).applyMatrix4(xf); p.pos[3 * i] = v.x; p.pos[3 * i + 1] = v.y; p.pos[3 * i + 2] = v.z; }
+      return q;
+    })];
+    $('nParticles').textContent = pieces[0].N;
+    $('nTets').textContent = pieces[0].T;
+    updateReadouts();
+  }
+
+  // ---------- cutting ----------
+  function bestFrame(p) {
+    const c = p.centroid(new THREE.Vector3());
+    let rx = 0, ry = 0, rz = 0;
+    for (let i = 0; i < p.N; i++) { const m = p.mass[i]; rx += p.rest[3 * i] * m; ry += p.rest[3 * i + 1] * m; rz += p.rest[3 * i + 2] * m; }
+    const c0 = new THREE.Vector3(rx / p.totalMass, ry / p.totalMass, rz / p.totalMass);
+    const A = new Float64Array(9); // row-major
+    for (let i = 0; i < p.N; i++) {
+      const m = p.mass[i];
+      const x = [p.pos[3 * i] - c.x, p.pos[3 * i + 1] - c.y, p.pos[3 * i + 2] - c.z];
+      const r = [p.rest[3 * i] - c0.x, p.rest[3 * i + 1] - c0.y, p.rest[3 * i + 2] - c0.z];
+      for (let a = 0; a < 3; a++) for (let b = 0; b < 3; b++) A[3 * a + b] += m * x[a] * r[b];
+    }
+    // start from the average element rotation, then refine
+    const q = new THREE.Quaternion(p.rot[0], p.rot[1], p.rot[2], p.rot[3]).normalize();
+    const R = new THREE.Matrix4(), dq = new THREE.Quaternion(), ax = new THREE.Vector3();
+    for (let it = 0; it < 60; it++) {
+      R.makeRotationFromQuaternion(q);
+      const e = R.elements; // column-major
+      let wx = 0, wy = 0, wz = 0, den = 0;
+      for (let col = 0; col < 3; col++) {
+        const r0 = e[4 * col], r1 = e[4 * col + 1], r2 = e[4 * col + 2];
+        const a0 = A[col], a1 = A[3 + col], a2 = A[6 + col];
+        wx += r1 * a2 - r2 * a1; wy += r2 * a0 - r0 * a2; wz += r0 * a1 - r1 * a0;
+        den += r0 * a0 + r1 * a1 + r2 * a2;
+      }
+      const s = 1 / (Math.abs(den) + 1e-12), ang = Math.hypot(wx, wy, wz) * s;
+      if (ang < 1e-9) break;
+      dq.setFromAxisAngle(ax.set(wx, wy, wz).normalize(), Math.min(ang, 1));
+      q.premultiply(dq).normalize();
+    }
+    return { c, c0, q };
+  }
+
+  function planSplit(p, A, B, n) {
+    const d = n.dot(A), dir = new THREE.Vector3().subVectors(B, A), len2 = dir.lengthSq();
+    let pos = 0, neg = 0, near = false;
+    for (let i = 0; i < p.N; i++) {
+      const x = p.pos[3 * i], y = p.pos[3 * i + 1], z = p.pos[3 * i + 2];
+      const s = n.x * x + n.y * y + n.z * z - d;
+      if (s > 0) pos++; else neg++;
+      if (Math.abs(s) < SPACING) { const t = ((x - A.x) * dir.x + (z - A.z) * dir.z) / len2; if (t > -0.05 && t < 1.05) near = true; }
+    }
+    if (!near || pos < 4 || neg < 4) return null;
+    const fit = bestFrame(p), qi = fit.q.clone().invert();
+    const nr = n.clone().applyQuaternion(qi);
+    const ar = A.clone().sub(fit.c).applyQuaternion(qi).add(fit.c0);
+    const hl = Math.hypot(nr.x, nr.z);
+    if (hl < 0.35) return 'flat';
+    // the blade plane, carried back into rest space, crosses the mid-height as a straight line
+    const nx = nr.x / hl, nz = nr.z / hl, k = (nr.dot(ar) - nr.y * THICK / 2) / hl;
+    const halves = [clipPoly(p.I, nx, nz, k + ROUND, 1), clipPoly(p.I, nx, nz, k - ROUND, -1)];
+    for (const h of halves) if (h.length < 2 || (h.length > 2 && Math.abs(polyArea(h)) < MIN_INNER_AREA)) return 'thin';
+    for (const h of halves) if (h.length < 3) return 'thin';
+    return { halves, nx, nz, k, fit };
+  }
+
+  function performCut(A, B) {
+    const n = new THREE.Vector3().subVectors(B, A).cross(new THREE.Vector3(0, 1, 0)).normalize();
+    let cut = 0, reason = null;
+    const next = [];
+    for (const p of pieces) {
+      const res = pieces.length + cut < MAX_PIECES ? planSplit(p, A, B, n) : null;
+      if (!res || typeof res === 'string') { if (res) reason = res; next.push(p); continue; }
+      if (grab && grab.piece === p) grab = null;
+      const made = res.halves.map((I, side) => {
+        const sgn = side === 0 ? 1 : -1;
+        const incl = p.inclusions.filter((c) => sgn * (res.nx * c.c[0] + res.nz * c.c[2] - res.k) >= 0);
+        return new Piece(I, incl, (np) => {
+          const emb = p.embed(np.rest);
+          p.interpolate(emb, np.pos, p.pos);
+          p.interpolate(emb, np.vel, p.vel);
+          // the blade eases the faces apart
+          for (let i = 0; i < np.N; i++) {
+            np.pos[3 * i] += n.x * sgn * 0.004; np.pos[3 * i + 2] += n.z * sgn * 0.004;
+            np.vel[3 * i] += n.x * sgn * 0.45; np.vel[3 * i + 2] += n.z * sgn * 0.45;
+          }
+          return res.fit.q;
+        });
+      });
+      // keep the world-side sign consistent: the rest normal maps to +n
+      p.dispose();
+      next.push(...made);
+      cut++;
+    }
+    pieces = next;
+    if (cut) toast(cut === 1 ? 'Clean cut. ' + pieces.length + ' pieces.' : cut + ' pieces cut at once.');
+    else if (pieces.length >= MAX_PIECES) toast('That is plenty of pieces. Reset for a fresh slice.');
+    else if (reason === 'thin') toast('Too thin to cut there.');
+    else if (reason === 'flat') toast('That piece is on its side. Try another angle.');
+    else toast('Missed. Draw right across the jelly.');
+    updateReadouts();
+  }
+
+  const blade = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshStandardMaterial({ color: 0xd4d7dc, metalness: 1, roughness: 0.18, envMapIntensity: 1.2 }));
+  blade.castShadow = true;
+  blade.visible = false;
+  blade.userData.prop = true;
+  scene.add(blade);
+  let bladeAnim = null;
+  function startBlade(A, B) {
+    const mid = A.clone().add(B).multiplyScalar(0.5);
+    blade.scale.set(Math.min(4.5, Math.max(1.6, A.distanceTo(B) + 0.8)), 0.8, 0.01);
+    blade.rotation.set(0, -Math.atan2(B.z - A.z, B.x - A.x), 0);
+    blade.position.set(mid.x, THICK + 1.6, mid.z);
+    blade.visible = true;
+    bladeAnim = { A, B, t: 0, cut: false };
+  }
+  function updateBlade(dt) {
+    if (!bladeAnim) return;
+    const b = bladeAnim;
+    b.t += dt;
+    const down = 0.3, hold = 0.14, up = 0.35, low = 0.4, high = THICK + 1.6;
+    let y;
+    if (b.t < down) { const u = b.t / down; y = high + (low - high) * u * u; }
+    else if (b.t < down + hold || !b.cut) { y = low; if (!b.cut) { b.cut = true; b.t = down; performCut(b.A, b.B); } }
+    else if (b.t < down + hold + up) { const u = (b.t - down - hold) / up; y = low + (high + 0.6 - low) * u * u; }
+    else { blade.visible = false; bladeAnim = null; return; }
+    blade.position.y = y;
+  }
+
+  // ---------- interaction ----------
+  let tool = 'hand';
+  const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
+  const orbit = { az: 0.0, el: 0.62, zoom: 1, target: new THREE.Vector3(0, 0.2, 0) };
+  let baseDist = 8;
+  let drag = null;
+  const strokeLine = $('strokeLine');
+
+  function setCamera() {
+    const d = baseDist * orbit.zoom, ce = Math.cos(orbit.el);
+    camera.position.set(orbit.target.x + d * Math.sin(orbit.az) * ce, orbit.target.y + d * Math.sin(orbit.el), orbit.target.z + d * Math.cos(orbit.az) * ce);
+    camera.lookAt(orbit.target);
+    camera.updateMatrixWorld();
+  }
+  function setNdc(x, y) {
+    const r = canvas.getBoundingClientRect();
+    ndc.set(((x - r.left) / r.width) * 2 - 1, -((y - r.top) / r.height) * 2 + 1);
+    ray.setFromCamera(ndc, camera);
+  }
+  const JITTER = [[0, 0], [0.4, 0.2], [-0.3, 0.35], [0.2, -0.4]];
+  function pickPiece(x, y) {
+    const meshes = pieces.map((p) => p.mesh);
+    for (const [jx, jy] of JITTER) {
+      setNdc(x + jx, y + jy);
+      const h = ray.intersectObjects(meshes, false);
+      if (h.length) return h[0];
+    }
+    return null;
+  }
+  function planePoint(x, y, h) {
+    setNdc(x, y);
+    const out = new THREE.Vector3();
+    return ray.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 1, 0), -h), out) ? out : null;
+  }
+
+  // shared by mouse, touch and hand tracking
+  function startGrabAt(cx, cy) {
+    const hit = pickPiece(cx, cy);
+    if (!hit) return false;
+    const p = hit.object.userData.piece, P = hit.point, RG = 0.4;
+    const ids = [], wt = [], off = [];
+    let nearest = -1, nd = Infinity;
+    for (let i = 0; i < p.N; i++) {
+      const dx = p.pos[3 * i] - P.x, dy = p.pos[3 * i + 1] - P.y, dz = p.pos[3 * i + 2] - P.z, d = Math.hypot(dx, dy, dz);
+      if (d < nd) { nd = d; nearest = i; }
+      if (d < RG) { const f = 1 - d / RG; ids.push(i); wt.push(f * f * (3 - 2 * f)); off.push(dx, dy, dz); }
+    }
+    if (!ids.length) { ids.push(nearest); wt.push(1); off.push(p.pos[3 * nearest] - P.x, p.pos[3 * nearest + 1] - P.y, p.pos[3 * nearest + 2] - P.z); }
+    const nrm = new THREE.Vector3();
+    camera.getWorldDirection(nrm);
+    grab = { piece: p, ids: Int32Array.from(ids), wt: Float32Array.from(wt), off: Float32Array.from(off), target: P.clone(), start: P.clone(), plane: new THREE.Plane().setFromNormalAndCoplanarPoint(nrm, P) };
+    return true;
+  }
+  function moveGrabTo(cx, cy) {
+    if (!grab) return;
+    setNdc(cx, cy);
+    const t = new THREE.Vector3();
+    if (!ray.ray.intersectPlane(grab.plane, t)) return;
+    const d = t.sub(grab.start);
+    if (d.length() > 2.2) d.setLength(2.2);
+    grab.target.copy(grab.start).add(d);
+    // never drive the held patch into the floor: lift the patch instead
+    let lowest = Infinity;
+    for (let k = 0; k < grab.ids.length; k++) lowest = Math.min(lowest, grab.off[3 * k + 1]);
+    grab.target.y = Math.max(grab.target.y, 0.004 - lowest);
+  }
+  function cutAlong(x0, y0, x1, y1) {
+    if (bladeAnim || Math.hypot(x1 - x0, y1 - y0) < 24) return false;
+    const A = planePoint(x0, y0, THICK), B = planePoint(x1, y1, THICK);
+    if (!A || !B || A.distanceTo(B) < 0.05) return false;
+    startBlade(A, B);
+    return true;
+  }
+
+  canvas.addEventListener('pointerdown', (e) => {
+    if (e.button === 2) return;
+    canvas.setPointerCapture(e.pointerId);
+    const r = canvas.getBoundingClientRect();
+    if (tool === 'knife') {
+      if (bladeAnim) return;
+      drag = { mode: 'knife', x0: e.clientX, y0: e.clientY };
+      for (const [k, v] of [['x1', e.clientX - r.left], ['y1', e.clientY - r.top], ['x2', e.clientX - r.left], ['y2', e.clientY - r.top]]) strokeLine.setAttribute(k, v);
+      strokeLine.setAttribute('visibility', 'visible');
+      return;
+    }
+    if (startGrabAt(e.clientX, e.clientY)) {
+      drag = { mode: 'grab' };
+      canvas.dataset.cursor = 'grabbing';
+    } else {
+      drag = { mode: 'orbit', x: e.clientX, y: e.clientY };
+      canvas.dataset.cursor = 'orbit';
+    }
+  });
+  canvas.addEventListener('pointermove', (e) => {
+    const r = canvas.getBoundingClientRect();
+    if (!drag) {
+      canvas.dataset.cursor = tool === 'knife' ? 'knife' : (e.pointerType === 'mouse' && pickPiece(e.clientX, e.clientY)) ? 'grab' : 'orbit';
+      return;
+    }
+    if (drag.mode === 'knife') {
+      strokeLine.setAttribute('x2', e.clientX - r.left); strokeLine.setAttribute('y2', e.clientY - r.top);
+    } else if (drag.mode === 'grab') {
+      moveGrabTo(e.clientX, e.clientY);
+    } else if (drag.mode === 'orbit') {
+      orbit.az -= (e.clientX - drag.x) * 0.006;
+      orbit.el = Math.max(0.12, Math.min(1.35, orbit.el + (e.clientY - drag.y) * 0.004));
+      drag.x = e.clientX; drag.y = e.clientY;
+      setCamera();
+    }
+  });
+  function endDrag(e) {
+    if (!drag) return;
+    if (drag.mode === 'knife') {
+      strokeLine.setAttribute('visibility', 'hidden');
+      cutAlong(drag.x0, drag.y0, e.clientX, e.clientY);
+    } else if (drag.mode === 'grab') grab = null;
+    drag = null;
+    canvas.dataset.cursor = tool === 'knife' ? 'knife' : 'grab';
+  }
+  canvas.addEventListener('pointerup', endDrag);
+  canvas.addEventListener('pointercancel', endDrag);
+  canvas.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    orbit.zoom = Math.max(0.55, Math.min(1.8, orbit.zoom * Math.exp(e.deltaY * 0.001)));
+    setCamera();
+  }, { passive: false });
+
+  // ---------- panel ----------
+  const hints = {
+    hand: '<b>Hand</b>Grab the slice anywhere, flesh or rind, and pull.',
+    knife: '<b>Knife</b>Draw a line across the jelly. The blade follows your stroke.',
+  };
+  document.querySelectorAll('.tool').forEach((b) => b.addEventListener('click', () => {
+    tool = b.dataset.tool;
+    document.querySelectorAll('.tool').forEach((o) => o.setAttribute('aria-pressed', String(o === b)));
+    $('hint').innerHTML = hints[tool];
+    canvas.dataset.cursor = tool === 'knife' ? 'knife' : 'grab';
+    grab = null;
+  }));
+  const toCss = (c) => '#' + new THREE.Color(c[0], c[1], c[2]).convertLinearToSRGB().getHexString();
+  const sw = $('swatches');
+  VARIETIES.forEach((v, i) => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'swatch'; b.setAttribute('role', 'radio'); b.setAttribute('aria-checked', String(i === 0));
+    b.innerHTML = `<span class="chip"><i style="background:${toCss(v.skin)}"></i><i style="background:${toCss(v.pale)}"></i><i style="background:linear-gradient(90deg, ${toCss(v.flesh)}, ${toCss(v.deep)})"></i></span><span class="swname">${v.name}</span>`;
+    b.addEventListener('click', () => {
+      variety = v;
+      sw.querySelectorAll('.swatch').forEach((o) => o.setAttribute('aria-checked', String(o === b)));
+      applyVariety();
+    });
+    sw.appendChild(b);
+  });
+  $('firmness').addEventListener('input', (e) => { firmness = e.target.value / 100; $('firmnessOut').textContent = firmness.toFixed(2); });
+  $('damping').addEventListener('input', (e) => { damping = e.target.value / 100; $('dampingOut').textContent = damping.toFixed(2); });
+  if (reduceMotion) { damping = 0.65; $('damping').value = 65; $('dampingOut').textContent = '0.65'; }
+  $('reset').addEventListener('click', reset);
+  $('nudge').addEventListener('click', () => {
+    const c = new THREE.Vector3();
+    for (const p of pieces) {
+      p.centroid(c);
+      const s = 0.9 + Math.random() * 0.3, vy = 2.2 * s, wx = 2.4 * s * (Math.random() < 0.5 ? -1 : 1), wz = -1.5 * s, wy = 1.2 * s;
+      for (let i = 0; i < p.N; i++) {
+        const rx = p.pos[3 * i] - c.x, ry = p.pos[3 * i + 1] - c.y, rz = p.pos[3 * i + 2] - c.z;
+        p.vel[3 * i] += wy * rz - wz * ry;
+        p.vel[3 * i + 1] += vy + wz * rx - wx * rz;
+        p.vel[3 * i + 2] += wx * ry - wy * rx;
+      }
+    }
+  });
+  let paused = false, slow = false;
+  function renderStatus() {
+    if (hand.on) { const p = hand.pose; hand.pose = ''; setHandStatus(p || 'none'); return; }
+    $('status').dataset.state = paused ? 'paused' : 'live';
+    $('statusText').textContent = 'WEBGL · ' + (paused ? 'PAUSED' : slow ? '¼ SPEED' : 'LIVE');
+  }
+  $('pause').addEventListener('click', (e) => {
+    paused = !paused;
+    e.target.textContent = paused ? 'Resume' : 'Pause';
+    e.target.setAttribute('aria-pressed', String(paused));
+    renderStatus();
+  });
+  $('slow').addEventListener('change', (e) => { slow = e.target.checked; renderStatus(); });
+  $('mesh').addEventListener('change', (e) => { showMesh = e.target.checked; for (const p of pieces) p.lines.visible = showMesh; });
+
+  const toastEl = $('toast');
+  let toastTimer = 0;
+  function toast(msg) {
+    toastEl.textContent = msg;
+    toastEl.classList.add('on');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toastEl.classList.remove('on'), 2200);
+  }
+
+  function updateReadouts() {
+    let rest = 0, cur = 0, ke = 0, mass = 0;
+    for (const p of pieces) {
+      rest += p.totalRestVol; mass += p.totalMass;
+      for (let t = 0; t < p.T; t++) cur += tetVolume(p.pos, p.tets[4 * t], p.tets[4 * t + 1], p.tets[4 * t + 2], p.tets[4 * t + 3]);
+      ke += p.kinetic();
+    }
+    const grams = rest * SCALE_CM ** 3 * DENSITY_G;
+    $('massOut').textContent = grams.toFixed(0);
+    $('volOut').textContent = (100 * cur / rest).toFixed(1);
+    const uj = ke / mass * (grams / 1000) * (SCALE_CM / 100) ** 2 * 1e6;
+    $('keOut').textContent = uj < 10 ? uj.toFixed(1) : Math.round(uj).toLocaleString('en-US');
+    $('piecesOut').textContent = pieces.length;
+  }
+
+  // ---------- hand tracking (webcam + MediaPipe hand landmarks) ----------
+  const MP = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14';
+  const HAND_MODEL = 'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task';
+  const BONES = [[0, 1], [1, 2], [2, 3], [3, 4], [0, 5], [5, 6], [6, 7], [7, 8], [5, 9], [9, 10], [10, 11], [11, 12], [9, 13], [13, 14], [14, 15], [15, 16], [13, 17], [17, 18], [18, 19], [19, 20], [0, 17]];
+  const handBtn = $('handBtn'), handView = $('handView'), handVideo = $('handVideo'), handCanvas = $('handCanvas');
+  const handCursor = $('handCursor'), trailLine = $('trailLine');
+  const hctx = handCanvas.getContext('2d');
+  const hand = { on: false, starting: false, lm: null, stream: null, lastVideoTime: -1, seen: 0, sx: 0, sy: 0, init: false, pinch: false, pinchMiss: false, blade: false, trail: [], cooldown: 0, pose: 'none' };
+
+  function setHandStatus(pose) {
+    if (pose === hand.pose) return;
+    hand.pose = pose;
+    handCursor.dataset.pose = pose;
+    handCursor.hidden = pose === 'none';
+    const label = { none: 'NO HAND', open: 'OPEN', pinch: 'PINCH', blade: 'KNIFE' }[pose];
+    $('statusText').textContent = 'HANDS · ' + label;
+  }
+  async function startHands() {
+    if (hand.on || hand.starting) return;
+    hand.starting = true;
+    handBtn.lastChild.textContent = 'Starting camera…';
+    try {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) throw Object.assign(new Error('no camera api'), { name: 'NoCamera' });
+      hand.stream = await navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' }, audio: false });
+      handVideo.srcObject = hand.stream;
+      await handVideo.play();
+      handBtn.lastChild.textContent = 'Loading hand model…';
+      if (!hand.landmarker) {
+        const vision = await import(MP + '/vision_bundle.mjs');
+        const files = await vision.FilesetResolver.forVisionTasks(MP + '/wasm');
+        const opts = (delegate) => ({ baseOptions: { modelAssetPath: HAND_MODEL, delegate }, runningMode: 'VIDEO', numHands: 1, minHandDetectionConfidence: 0.6, minHandPresenceConfidence: 0.6, minTrackingConfidence: 0.5 });
+        try { hand.landmarker = await vision.HandLandmarker.createFromOptions(files, opts('GPU')); }
+        catch (err) { hand.landmarker = await vision.HandLandmarker.createFromOptions(files, opts('CPU')); }
+      }
+      handCanvas.width = handVideo.videoWidth || 640; handCanvas.height = handVideo.videoHeight || 480;
+      hand.on = true;
+      handView.hidden = false;
+      handCursor.hidden = true;
+      handBtn.lastChild.textContent = 'Stop camera';
+      handBtn.setAttribute('aria-pressed', 'true');
+      $('hint').innerHTML = '<b>Hands</b>Pinch to grab and pull. Hold two fingers out and swipe fast to cut.';
+      hand.pose = '';
+      setHandStatus('none');
+      toast('Camera on. Hold your hand up to the camera.');
+    } catch (err) {
+      stopHands(true);
+      const msg = err && err.name === 'NotAllowedError' ? 'Camera access was blocked. Allow it in the browser to use your hands.'
+        : err && (err.name === 'NotFoundError' || err.name === 'OverconstrainedError') ? 'No camera found.'
+        : 'Hand tracking can’t start here. Open the page from your own site or localhost.';
+      toast(msg);
+    }
+    hand.starting = false;
+  }
+  function stopHands(quiet) {
+    if (hand.pinch && grab) grab = null;
+    hand.on = false; hand.pinch = false; hand.blade = false; hand.trail.length = 0; hand.init = false; hand.lm = null;
+    if (hand.stream) { for (const t of hand.stream.getTracks()) t.stop(); hand.stream = null; }
+    handVideo.srcObject = null;
+    handView.hidden = true;
+    handCursor.hidden = true;
+    trailLine.setAttribute('points', '');
+    handBtn.lastChild.textContent = 'Use my hands';
+    handBtn.setAttribute('aria-pressed', 'false');
+    hand.pose = '';
+    if (!quiet) { $('hint').innerHTML = hints[tool]; renderStatus(); }
+  }
+  handBtn.addEventListener('click', () => (hand.on ? stopHands(false) : startHands()));
+
+  const d2 = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+  // a finger counts as straight when its tip is clearly farther from the wrist than its middle joint
+  const straight = (lm, tip, pip) => d2(lm[0], lm[tip]) > d2(lm[0], lm[pip]) * 1.18;
+  function toScreen(p) {
+    // mirror the camera and use its central area, so the hand need not reach the frame edge
+    const r = canvas.getBoundingClientRect();
+    const u = Math.min(1, Math.max(0, ((1 - p.x) - 0.12) / 0.76)), v = Math.min(1, Math.max(0, (p.y - 0.1) / 0.7));
+    return [r.left + u * r.width, r.top + v * r.height];
+  }
+
+  // gesture state machine, fed one landmark set (or null) per camera frame
+  function handFrame(lm, now) {
+    if (!lm) {
+      if (now - hand.seen > 350) {
+        if (hand.pinch) { grab = null; hand.pinch = false; }
+        hand.blade = false; hand.trail.length = 0; hand.init = false;
+        trailLine.setAttribute('points', '');
+        setHandStatus('none');
+      }
+      return;
+    }
+    hand.seen = now;
+    const size = Math.max(1e-3, d2(lm[0], lm[9]));
+    const pinchD = d2(lm[4], lm[8]) / size;
+    const wasPinch = hand.pinch;
+    const pinch = wasPinch ? pinchD < 0.5 : pinchD < 0.32;
+    const indexOut = straight(lm, 8, 6), middleOut = straight(lm, 12, 10);
+    const blade = !pinch && indexOut && middleOut;
+
+    // the cursor sits between thumb and index when pinching, between the two fingertips for the knife
+    const src = pinch || pinchD < 0.6 ? { x: (lm[4].x + lm[8].x) / 2, y: (lm[4].y + lm[8].y) / 2 } : blade ? { x: (lm[8].x + lm[12].x) / 2, y: (lm[8].y + lm[12].y) / 2 } : lm[8];
+    const [rx, ry] = toScreen(src);
+    if (!hand.init) { hand.sx = rx; hand.sy = ry; hand.init = true; }
+    const jump = Math.hypot(rx - hand.sx, ry - hand.sy);
+    // light smoothing that loosens when the hand moves fast, so swipes stay sharp
+    const k = Math.min(0.85, 0.3 + jump * 0.004);
+    hand.sx += (rx - hand.sx) * k; hand.sy += (ry - hand.sy) * k;
+    const r = canvas.getBoundingClientRect();
+    handCursor.style.transform = `translate(${hand.sx - r.left}px, ${hand.sy - r.top}px)`;
+
+    if (pinch && !wasPinch) { hand.pinchMiss = !startGrabAt(hand.sx, hand.sy); hand.trail.length = 0; }
+    else if (pinch && !hand.pinchMiss) moveGrabTo(hand.sx, hand.sy);
+    else if (!pinch && wasPinch) { if (!hand.pinchMiss) grab = null; hand.pinchMiss = false; }
+    hand.pinch = pinch;
+
+    if (blade) {
+      hand.trail.push({ x: hand.sx, y: hand.sy, t: now });
+      while (hand.trail.length && now - hand.trail[0].t > 420) hand.trail.shift();
+      const a = hand.trail[0], b = hand.trail[hand.trail.length - 1];
+      const span = Math.min(r.width, r.height);
+      if (a && now > hand.cooldown && b.t - a.t > 60) {
+        const dist = Math.hypot(b.x - a.x, b.y - a.y), speed = dist / (b.t - a.t);
+        if (dist > span * 0.22 && speed > 0.75) {
+          // extend the swipe a little at both ends so it reaches across the jelly
+          const ex = (b.x - a.x) * 0.15, ey = (b.y - a.y) * 0.15;
+          if (cutAlong(a.x - ex, a.y - ey, b.x + ex, b.y + ey)) hand.cooldown = now + 900;
+          hand.trail.length = 0;
+        }
+      }
+    } else hand.trail.length = 0;
+    hand.blade = blade;
+    trailLine.setAttribute('points', hand.trail.map((p) => `${p.x - r.left},${p.y - r.top}`).join(' '));
+    setHandStatus(pinch ? 'pinch' : blade ? 'blade' : 'open');
+  }
+
+  function drawHandPreview(lm) {
+    const w = handCanvas.width, h = handCanvas.height;
+    hctx.clearRect(0, 0, w, h);
+    if (!lm) return;
+    hctx.lineWidth = Math.max(2, w / 160);
+    hctx.strokeStyle = hand.pinch ? '#a3202f' : hand.blade ? '#1d1b18' : '#2e6b45';
+    hctx.beginPath();
+    for (const [a, b] of BONES) { hctx.moveTo(lm[a].x * w, lm[a].y * h); hctx.lineTo(lm[b].x * w, lm[b].y * h); }
+    hctx.stroke();
+    hctx.fillStyle = '#fff';
+    for (const p of lm) { hctx.beginPath(); hctx.arc(p.x * w, p.y * h, Math.max(2.5, w / 140), 0, Math.PI * 2); hctx.fill(); }
+  }
+
+  function updateHands(now) {
+    if (!hand.on || !hand.landmarker || handVideo.readyState < 2) return;
+    if (handVideo.currentTime === hand.lastVideoTime) return;
+    hand.lastVideoTime = handVideo.currentTime;
+    let lm = null;
+    try {
+      const res = hand.landmarker.detectForVideo(handVideo, now);
+      lm = res.landmarks && res.landmarks.length ? res.landmarks[0] : null;
+    } catch (e) { lm = null; }
+    handFrame(lm, now);
+    drawHandPreview(lm);
+  }
+
+  // ---------- layout ----------
+  const stage = $('stage');
+  function resize() {
+    const w = Math.max(1, stage.clientWidth), h = Math.max(1, stage.clientHeight);
+    renderer.setSize(w, h, false);
+    const pr = renderer.getPixelRatio();
+    sceneRT.setSize(Math.round(w * pr), Math.round(h * pr));
+    backRT.setSize(Math.round(w * pr), Math.round(h * pr));
+    jellyUniforms.uRes.value.set(Math.round(w * pr), Math.round(h * pr));
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+    // fit the slice's footprint
+    const t2 = Math.tan(camera.fov * Math.PI / 360);
+    baseDist = 1.3 * Math.max(1.25 / (t2 * 0.9), (camera.aspect > 1.2 ? 2.3 : 1.65) / (t2 * 0.92 * camera.aspect));
+    setCamera();
+  }
+  new ResizeObserver(resize).observe(stage);
+  resize();
+  reset();
+  canvas.dataset.cursor = 'grab';
+
+  // ---------- render: scene behind the jelly, jelly back depth, then the jelly itself ----------
+  const props = [];
+  function renderFrame() {
+    camera.getWorldDirection(camFwd);
+    projView.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
+    const lineVis = pieces.map((p) => p.lines.visible);
+    for (const p of pieces) p.lines.visible = false;
+
+    // 1: everything except the jelly, linear and untoned; the jelly still casts its shadow
+    for (const p of pieces) p.mesh.material = hiddenMat;
+    renderer.toneMapping = THREE.NoToneMapping;
+    renderer.shadowMap.autoUpdate = true;
+    renderer.setRenderTarget(sceneRT);
+    renderer.setClearColor(bgLin, 1);
+    renderer.render(scene, camera);
+    renderer.shadowMap.autoUpdate = false;
+
+    // 2: depth of the nearest back face
+    props.length = 0;
+    scene.traverse((o) => { if ((o.isMesh || o.isLine) && !o.userData.piece && o.visible) { props.push(o); o.visible = false; } });
+    for (const p of pieces) p.mesh.material = backMat;
+    renderer.setRenderTarget(backRT);
+    renderer.setClearColor(new THREE.Color(1000, 1000, 1000), 1);
+    renderer.render(scene, camera);
+    for (const o of props) o.visible = true;
+
+    // 3: the real frame
+    for (const p of pieces) p.mesh.material = jellyMat;
+    pieces.forEach((p, i) => { p.lines.visible = lineVis[i]; });
+    renderer.toneMapping = THREE.CustomToneMapping;
+    renderer.setRenderTarget(null);
+    renderer.setClearColor(bgRaw, 1);
+    renderer.render(scene, camera);
+  }
+
+  let last = performance.now(), acc = 0, frameNo = 0;
+  function frame(t) {
+    const real = Math.min(0.1, (t - last) / 1000);
+    last = t;
+    if (!paused) {
+      const scaled = real * (slow ? 0.25 : 1);
+      updateBlade(scaled);
+      acc += scaled;
+      let n = 0;
+      while (acc >= STEP && n < 3) { step(); acc -= STEP; n++; }
+      if (n === 3) acc = 0;
+    }
+    updateHands(t);
+    for (const p of pieces) p.updateRender();
+    if (++frameNo % 6 === 0) updateReadouts();
+    renderFrame();
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
+</script>
+</body></html>
