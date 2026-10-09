@@ -2,7 +2,8 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
   <url>
     <loc>https://tanishmaheshwary.com/</loc>
-    <lastmod>2026-10-03</lastmod>
+    <lastmod>2026-10-09</lastmod>
+    <image:image><image:loc>https://tanishmaheshwary.com/tanish-maheshwari.jpg</image:loc></image:image>
     <image:image><image:loc>https://tanishmaheshwary.com/prruf/prruf-privacy-first-note-taker-for-mac.webp</image:loc></image:image>
     <image:image><image:loc>https://tanishmaheshwary.com/fick/fick-hyperlocal-fashion-store-banner.webp</image:loc></image:image>
     <image:image><image:loc>https://tanishmaheshwary.com/obsidian/obsidian-brand-identity-by-tanish-maheshwari.webp</image:loc></image:image>
@@ -14,7 +15,8 @@
   </url>
   <url>
     <loc>https://tanishmaheshwary.com/about</loc>
-    <lastmod>2026-10-03</lastmod>
+    <lastmod>2026-10-09</lastmod>
+    <image:image><image:loc>https://tanishmaheshwary.com/tanish-maheshwari.jpg</image:loc></image:image>
     <image:image><image:loc>https://tanishmaheshwary.com/me.webp</image:loc></image:image>
   </url>
   <url>
