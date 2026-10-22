@@ -492,6 +492,157 @@
   </section>
 
 
+  <!-- SPRINTS start · coursework section. To hide: delete from here to "SPRINTS end", or add the hidden attribute to the section. -->
+  <section id="sprints" class="block" aria-label="Sprints">
+    <style>
+  #sprints .spr-acc{border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+  #sprints .spr-acc + .spr-acc{border-top:0}
+  #sprints summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:18px 0;font-family:var(--display);font-weight:700;font-size:clamp(20px,2.2vw,26px);letter-spacing:-0.02em;color:var(--ink)}
+  #sprints summary::-webkit-details-marker{display:none}
+  #sprints summary .spr-meta{margin-left:auto;font-family:var(--mono);font-weight:400;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--sub)}
+  #sprints summary .spr-plus{flex:none;width:28px;height:28px;border:1px solid var(--line);border-radius:50%;position:relative;transition:transform .25s ease,background-color .2s ease}
+  #sprints summary .spr-plus::before,#sprints summary .spr-plus::after{content:"";position:absolute;left:50%;top:50%;width:11px;height:1.5px;margin:-.75px 0 0 -5.5px;background:var(--ink)}
+  #sprints summary .spr-plus::after{transform:rotate(90deg)}
+  #sprints details[open] summary .spr-plus{transform:rotate(45deg);background:var(--panel)}
+  #sprints summary:hover .spr-plus{background:var(--panel)}
+  #sprints .spr-body{padding:4px 0 clamp(28px,4vw,44px)}
+  #sprints .spr-h{font-family:var(--display);font-weight:700;font-size:clamp(18px,1.8vw,22px);letter-spacing:-0.015em;color:var(--ink)}
+  #sprints .spr-sub{margin-top:6px;max-width:72ch;font-size:15px;line-height:1.55;color:var(--sub)}
+  #sprints .spr-grid{margin-top:clamp(20px,3vw,30px);display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px}
+  #sprints .spr-card{border:1px solid var(--line);border-radius:14px;background:#fff;padding:16px 16px 18px;display:flex;flex-direction:column}
+  #sprints .spr-tag{align-self:flex-start;font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--c);background:var(--cb);border-radius:999px;padding:4px 9px}
+  #sprints .spr-title{margin-top:12px;font-family:var(--display);font-weight:700;font-size:17px;line-height:1.25;letter-spacing:-0.01em;color:var(--ink)}
+  #sprints .spr-role{margin-top:8px;font-size:14px;line-height:1.5;color:var(--body)}
+  #sprints .spr-f{margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}
+  #sprints .spr-f dt{font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);margin-top:10px}
+  #sprints .spr-f dt:first-child{margin-top:0}
+  #sprints .spr-f dd{margin:3px 0 0;font-size:13px;line-height:1.5;color:var(--sub)}
+  #sprints .spr-f ul{list-style:none;margin:0;padding:0}
+  #sprints .spr-f li + li{margin-top:4px}
+  #sprints .spr-f li b{display:block;font-weight:500;color:var(--body)}
+  @media (min-width:1100px){#sprints .spr-grid{grid-template-columns:repeat(5,minmax(0,1fr));grid-template-rows:auto auto;grid-auto-flow:column}}
+  @media (min-width:640px) and (max-width:1099px){#sprints .spr-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+  #sprints .spr-note{margin-top:16px;font-family:var(--mono);font-size:11px;letter-spacing:.04em;color:var(--sub)}
+  @media (prefers-reduced-motion:reduce){#sprints summary .spr-plus{transition:none}}
+  </style>
+    <div class="block__head">
+      <div class="block__num"><b>✷</b> / Sprints</div>
+      <div class="block__aside">Coursework · design sprints</div>
+    </div>
+    <details class="spr-acc">
+      <summary>Sprint 1<span class="spr-meta">PhysicsWallah · 2031</span><span class="spr-plus" aria-hidden="true"></span></summary>
+      <div class="spr-body">
+        <h3 class="spr-h">2031 Concept Specifications</h3>
+        <p class="spr-sub">PhysicsWallah · 10 innovation ideas, 2 per STEEP sector, each backtracked from a real 2026 artifact in our Stage 4 workflows. 2026 → 2031.</p>
+        <div class="spr-grid">
+        <article class="spr-card" style="--c:#B4417A;--cb:#FBEAF2">
+          <div class="spr-tag">Social · Idea 01</div>
+          <h4 class="spr-title">Verified Teacher Handover Live</h4>
+          <p class="spr-role">When a teacher leaves, the outgoing and incoming teacher run a live handover class for the batch inside the app. Students hear the reason first-hand and get a clear plan for the rest of the year.</p>
+          <dl class="spr-f">
+            <dt>2026 friction resolved</dt><dd>Rumour screenshots forwarded in Telegram / WhatsApp batch groups, and PW’s late in-app notice (Workflow 1).</dd>
+            <dt>Cultural ergonomics &amp; interaction</dt><dd>A Hinglish live class in the familiar “bhaiya / didi” style, with both teachers on screen. Students ask questions in chat; the recording is pinned for anyone who missed it.</dd>
+            <dt>Contextual integrity audit</dt><dd><ul><li><b>Sender → Recipient</b>PW app (both teachers) → enrolled batch students</li><li><b>Subject · Info type</b>The batch · faculty-change reason, new timetable, transition plan</li><li><b>Transmission principle</b>Shared only inside the enrolled batch; the leaving teacher agrees to what is said about their exit.</li></ul></dd>
+          </dl>
+        </article>
+        <article class="spr-card" style="--c:#B4417A;--cb:#FBEAF2">
+          <div class="spr-tag">Social · Idea 02</div>
+          <h4 class="spr-title">Family Decision Room</h4>
+          <p class="spr-role">A shared space where the student and parent see progress together and decide on renewal as a family. It replaces one-way reminders with a joint decision.</p>
+          <dl class="spr-f">
+            <dt>2026 friction resolved</dt><dd>CRM renewal reminder that gets ignored; the parent decides without seeing the student’s progress (Workflow 1).</dd>
+            <dt>Cultural ergonomics &amp; interaction</dt><dd>One shared family view on one phone. The parent gets a Hindi voice summary; the student adds a voice note on why they want to stay or switch. Renewal needs both taps.</dd>
+            <dt>Contextual integrity audit</dt><dd><ul><li><b>Sender → Recipient</b>PW app → student + linked parent</li><li><b>Subject · Info type</b>The student · attendance, test trend, teacher-continuity status (no private doubt chats)</li><li><b>Transmission principle</b>Parent consent for minors under DPDP; the student chooses which progress items the parent sees.</li></ul></dd>
+          </dl>
+        </article>
+        <article class="spr-card" style="--c:#2F64C8;--cb:#E8F0FC">
+          <div class="spr-tag">Technological · Idea 03</div>
+          <h4 class="spr-title">Portable Learning Passport</h4>
+          <p class="spr-role">The student’s verified learning record (scores, chapters done, doubt summary) lives in an APAAR-linked wallet and moves with them across batches and platforms. PW reads it with consent instead of asking again.</p>
+          <dl class="spr-f">
+            <dt>2026 friction resolved</dt><dd>Re-confirming batch and enrollment data PW already holds (Workflow 2).</dd>
+            <dt>Cultural ergonomics &amp; interaction</dt><dd>One “Share my progress” tap, protected by a PIN on the shared family phone. Shown as a simple chapter map, not a data dump.</dd>
+            <dt>Contextual integrity audit</dt><dd><ul><li><b>Sender → Recipient</b>Student’s learning wallet (DigiLocker / APAAR) → PW batch system or another platform</li><li><b>Subject · Info type</b>The student · verified progress summary</li><li><b>Transmission principle</b>Student-controlled, purpose-limited consent token that expires when the batch ends.</li></ul></dd>
+          </dl>
+        </article>
+        <article class="spr-card" style="--c:#2F64C8;--cb:#E8F0FC">
+          <div class="spr-tag">Technological · Idea 04</div>
+          <h4 class="spr-title">Continuity AI Tutor</h4>
+          <p class="spr-role">An AI tutor trained on the outgoing teacher’s own lectures and notes covers the gap during a faculty swap. It keeps the same explanations and pace until the new teacher settles in.</p>
+          <dl class="spr-f">
+            <dt>2026 friction resolved</dt><dd>Class gap while the new teacher onboards, and a bare “new faculty assigned” push alert (Workflow 2).</dd>
+            <dt>Cultural ergonomics &amp; interaction</dt><dd>Same Hinglish style and worked examples, clearly labelled “AI, based on Sir’s lectures”. Students ask doubts by voice.</dd>
+            <dt>Contextual integrity audit</dt><dd><ul><li><b>Sender → Recipient</b>PW content system → AI tutor → student</li><li><b>Subject · Info type</b>The teacher’s lecture content · the student’s doubts</li><li><b>Transmission principle</b>Teacher’s contract licenses lectures for AI use with credit and royalty; doubts are used only to answer them.</li></ul></dd>
+          </dl>
+        </article>
+        <article class="spr-card" style="--c:#2E7D4F;--cb:#E6F4EA">
+          <div class="spr-tag">Environmental · Idea 05</div>
+          <h4 class="spr-title">Offline Classroom Box</h4>
+          <p class="spr-role">A small device at each offline centre caches lectures, marks attendance by QR or student card, and syncs with PW when the internet returns. Paper registers and end-of-week retyping disappear.</p>
+          <dl class="spr-f">
+            <dt>2026 friction resolved</dt><dd>Paper attendance register retyped by hand: the manual media break (Workflow 3).</dd>
+            <dt>Cultural ergonomics &amp; interaction</dt><dd>Works with no internet. Students tap their ID card at the door like a metro gate; the centre manager sees a simple daily list in the local language.</dd>
+            <dt>Contextual integrity audit</dt><dd><ul><li><b>Sender → Recipient</b>Centre box → PW central system</li><li><b>Subject · Info type</b>Students at the centre · attendance timestamps</li><li><b>Transmission principle</b>Collected only for attendance and safety; synced encrypted; each parent sees only their own child’s record.</li></ul></dd>
+          </dl>
+        </article>
+        <article class="spr-card" style="--c:#2E7D4F;--cb:#E6F4EA">
+          <div class="spr-tag">Environmental · Idea 06</div>
+          <h4 class="spr-title">Voice &amp; IVR Updates</h4>
+          <p class="spr-role">Families without smartphones or with weak data get timetable and teacher-change updates as a voice call in their language. They press a key to confirm or ask for a callback.</p>
+          <dl class="spr-f">
+            <dt>2026 friction resolved</dt><dd>Printed timetable on the centre notice board that students miss (Workflow 3).</dd>
+            <dt>Cultural ergonomics &amp; interaction</dt><dd>Hindi, Bhojpuri or Marathi voice on any basic phone. Give a missed call to hear it again; no reading needed.</dd>
+            <dt>Contextual integrity audit</dt><dd><ul><li><b>Sender → Recipient</b>PW notification service → parent’s / student’s phone number</li><li><b>Subject · Info type</b>The batch · timetable and teacher change</li><li><b>Transmission principle</b>Only to numbers registered at admission; opt out any time; no marketing in the same call.</li></ul></dd>
+          </dl>
+        </article>
+        <article class="spr-card" style="--c:#9A6A0B;--cb:#FBF1DC">
+          <div class="spr-tag">Economic · Idea 07</div>
+          <h4 class="spr-title">Teacher-Linked Fair Refund</h4>
+          <p class="spr-role">Fees are paid month by month and tied to the promised teacher. If that teacher leaves, the unused amount is refunded automatically, with no ticket needed.</p>
+          <dl class="spr-f">
+            <dt>2026 friction resolved</dt><dd>Refund request ticket + fee receipt screenshot + manual review queue (Workflow 4).</dd>
+            <dt>Cultural ergonomics &amp; interaction</dt><dd>The parent gets a Hindi voice note: “Sir has left. ₹1,200 is coming back to your UPI today.” One tap: stay with the new teacher, or keep the refund.</dd>
+            <dt>Contextual integrity audit</dt><dd><ul><li><b>Sender → Recipient</b>PW billing system → parent’s UPI app</li><li><b>Subject · Info type</b>The parent’s fee · refund amount and reason</li><li><b>Transmission principle</b>Fee terms the parent accepted at purchase; no new data or documents asked for.</li></ul></dd>
+          </dl>
+        </article>
+        <article class="spr-card" style="--c:#9A6A0B;--cb:#FBF1DC">
+          <div class="spr-tag">Economic · Idea 08</div>
+          <h4 class="spr-title">Trust Escrow</h4>
+          <p class="spr-role">Part of the yearly fee sits in escrow and is released to PW month by month only while the promised teacher and timetable hold. Families feel safe paying upfront, and PW still gets steady income.</p>
+          <dl class="spr-f">
+            <dt>2026 friction resolved</dt><dd>One-shot annual UPI autopay mandate, and the fight to claw money back (Workflow 4).</dd>
+            <dt>Cultural ergonomics &amp; interaction</dt><dd>A simple “money safe” meter in the app shows how much is still protected, explained in Hindi like a familiar family savings kitty.</dd>
+            <dt>Contextual integrity audit</dt><dd><ul><li><b>Sender → Recipient</b>Parent’s bank → regulated escrow account → PW</li><li><b>Subject · Info type</b>The parent’s payment · release triggers (teacher continuity, classes held)</li><li><b>Transmission principle</b>RBI-regulated escrow rules; release conditions written into the fee agreement.</li></ul></dd>
+          </dl>
+        </article>
+        <article class="spr-card" style="--c:#6B4BB8;--cb:#EFEAFB">
+          <div class="spr-tag">Political · Idea 09</div>
+          <h4 class="spr-title">One-Tap Consent &amp; Delete</h4>
+          <p class="spr-role">Parents manage what PW can do with their child’s data through a DPDP consent manager, with time-limited, purpose-tagged consent. Withdrawing consent or deleting data takes one tap, not emails and ID photos.</p>
+          <dl class="spr-f">
+            <dt>2026 friction resolved</dt><dd>ID photo sent again + complaint email + grievance-officer wait (Workflow 5).</dd>
+            <dt>Cultural ergonomics &amp; interaction</dt><dd>Plain-language consent cards with icons and a Hindi voice explainer. Shows “who used your child’s data this month”.</dd>
+            <dt>Contextual integrity audit</dt><dd><ul><li><b>Sender → Recipient</b>Parent’s consent manager → PW data system</li><li><b>Subject · Info type</b>The child · consent status and deletion request</li><li><b>Transmission principle</b>DPDP Act consent and erasure rights, verified through the existing DigiLocker login (no new ID upload).</li></ul></dd>
+          </dl>
+        </article>
+        <article class="spr-card" style="--c:#6B4BB8;--cb:#EFEAFB">
+          <div class="spr-tag">Political · Idea 10</div>
+          <h4 class="spr-title">Faculty Change Ledger</h4>
+          <p class="spr-role">A regulator-visible ledger records every teacher promise, change and refund for each batch. Consumer authorities audit it automatically instead of waiting for complaints.</p>
+          <dl class="spr-f">
+            <dt>2026 friction resolved</dt><dd>National Consumer Helpline complaint form, and “star teacher” ads that overpromise (Workflow 5).</dd>
+            <dt>Cultural ergonomics &amp; interaction</dt><dd>Before buying, parents see a public “batch promise card” (teacher, dates, refund rule). A complaint becomes one tap that points to the ledger entry.</dd>
+            <dt>Contextual integrity audit</dt><dd><ul><li><b>Sender → Recipient</b>PW → regulator audit node (e.g. CCPA)</li><li><b>Subject · Info type</b>Batches and faculty · change dates, refunds issued (no student personal data)</li><li><b>Transmission principle</b>Statutory audit mandate; aggregated data only, no individual student records.</li></ul></dd>
+          </dl>
+        </article>
+        </div>
+        <p class="spr-note">Each card names the exact 2026 artifact it removes: a material or digital media break, a redundant request, or a latency gate.</p>
+      </div>
+    </details>
+  </section>
+  <!-- SPRINTS end -->
+
+
   <!-- CAPABILITIES -->
   <section id="capabilities" class="block" aria-label="Capabilities">
     <div class="block__head">
