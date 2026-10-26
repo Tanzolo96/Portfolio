@@ -1,0 +1,12 @@
+# media and generated files stay on your computer, not in git
+Raw Footage/*
+References/*
+Exports/*
+music/*
+!*/.gitkeep
+!References/links.txt
+work/
+remotion/node_modules/
+remotion/public/*
+!remotion/public/fonts/
+remotion/out/
