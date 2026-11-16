@@ -591,6 +591,143 @@
   @media (max-width:700px){#sprints .spr-vn__hd{display:none}#sprints .spr-vn__hd + .spr-vn__row{border-top:0}}
   @media (min-width:1100px){#sprints .spr-grid--sec{grid-template-rows:auto auto;grid-auto-flow:column}}
   @media (prefers-reduced-motion:reduce){#sprints .spr-plus{transition:none}}
+  /* ---- Sprint 3 ---- */
+  #sprints .s3-k-a{--k:#2F5BD3;--kb:#EAF0FD}
+  #sprints .s3-k-b{--k:#C2410C;--kb:#FCEFE6}
+  #sprints .s3-k-c{--k:#1E7D44;--kb:#E7F4EC}
+  #sprints .s3-m-trig{--m:#2F5BD3;--mb:#EAF0FD}
+  #sprints .s3-m-ver{--m:#B45309;--mb:#FDF3E2}
+  #sprints .s3-m-data{--m:#0F766E;--mb:#E3F4F2}
+  #sprints .s3-m-set{--m:#1E7D44;--mb:#E7F4EC}
+  #sprints .s3-brief{margin-top:14px;display:flex;flex-wrap:wrap;gap:6px}
+  #sprints .s3-brief span{font-family:var(--mono);font-size:10.5px;letter-spacing:.04em;color:var(--body);background:var(--panel);border-radius:999px;padding:5px 10px}
+  #sprints .s3-key{margin-top:10px;font-family:var(--mono);font-size:10.5px;letter-spacing:.02em;line-height:1.6;color:var(--sub)}
+  #sprints .s3-letter{flex:none;display:inline-grid;place-items:center;width:26px;height:26px;border-radius:7px;background:var(--k,var(--ink));color:#fff;font-family:var(--display);font-weight:700;font-size:14px;line-height:1}
+  /* downselect table */
+  #sprints .s3-score{border:1px solid var(--line);border-radius:14px;overflow:hidden;background:#fff}
+  #sprints .s3-score table{width:100%;border-collapse:collapse;font-size:14px}
+  #sprints .s3-score th{font-family:var(--mono);font-weight:400;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:#F3F2EE;background:var(--ink);text-align:left;padding:9px 12px}
+  #sprints .s3-score td{padding:9px 12px;border-top:1px solid var(--line);vertical-align:middle}
+  #sprints .s3-score .s3-n{font-family:var(--mono);font-size:12px;color:var(--sub);width:1%}
+  #sprints .s3-score .s3-i{font-weight:500;color:var(--ink)}
+  #sprints .s3-score .s3-i small{display:block;font-weight:400;font-size:12px;color:var(--faint);margin-top:1px}
+  #sprints .s3-score tr.is-out .s3-i{font-weight:400;color:var(--sub)}
+  #sprints .s3-score tr.is-out{background:#FCFCFB}
+  #sprints .s3-score tr.is-in + tr.is-out td{border-top:2px solid var(--line)}
+  #sprints .s3-sc{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:6px;font-style:normal;font-family:var(--mono);font-size:11px;font-weight:500}
+  #sprints .s3-sc--H{background:#DDF1E3;color:#1E7D44}
+  #sprints .s3-sc--M{background:#FDF0D9;color:#9A6A0B}
+  #sprints .s3-sc--L{background:#EEEDE9;color:var(--sub)}
+  #sprints .s3-cn{font-family:var(--mono);font-size:10.5px;letter-spacing:.04em;color:#fff;background:var(--k);border-radius:5px;padding:3px 7px;white-space:nowrap}
+  #sprints .s3-cn--no{background:none;color:var(--faint);padding:0}
+  /* tabs */
+  #sprints .s3-tabs > input{position:absolute;opacity:0;pointer-events:none}
+  #sprints .s3-tabbar{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;padding:4px;background:var(--panel);border-radius:14px}
+  #sprints .s3-tabbar label{cursor:pointer;display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;font-family:var(--display);font-weight:700;font-size:15px;line-height:1.2;color:var(--sub);transition:background-color .2s ease,color .2s ease,box-shadow .2s ease}
+  #sprints .s3-tabbar label small{display:block;font-family:var(--sans);font-weight:400;font-size:12px;color:var(--faint)}
+  #sprints .s3-tabbar label .s3-letter{background:var(--faint)}
+  #sprints .s3-tabbar label:hover{color:var(--ink)}
+  #s3c-a:checked ~ .s3-tabbar label[for="s3c-a"],#s3c-b:checked ~ .s3-tabbar label[for="s3c-b"],#s3c-c:checked ~ .s3-tabbar label[for="s3c-c"]{background:#fff;color:var(--ink);box-shadow:0 0 0 1px var(--line),0 1px 3px rgba(43,42,40,.06)}
+  #s3c-a:checked ~ .s3-tabbar label[for="s3c-a"] .s3-letter,#s3c-b:checked ~ .s3-tabbar label[for="s3c-b"] .s3-letter,#s3c-c:checked ~ .s3-tabbar label[for="s3c-c"] .s3-letter{background:var(--k)}
+  #s3c-a:focus-visible ~ .s3-tabbar label[for="s3c-a"],#s3c-b:focus-visible ~ .s3-tabbar label[for="s3c-b"],#s3c-c:focus-visible ~ .s3-tabbar label[for="s3c-c"]{outline:2px solid var(--accent,#0040ff);outline-offset:2px}
+  #sprints .s3-panel{display:none;padding-top:clamp(20px,3vw,28px)}
+  #s3c-a:checked ~ .s3-panels .s3-panel--a,#s3c-b:checked ~ .s3-panels .s3-panel--b,#s3c-c:checked ~ .s3-panels .s3-panel--c{display:block;animation:s3in .3s ease}
+  @keyframes s3in{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+  /* concept head */
+  #sprints .s3-head{display:flex;gap:14px;align-items:flex-start;padding:18px;border-radius:14px;background:var(--kb);border-left:4px solid var(--k)}
+  #sprints .s3-head .s3-letter{width:38px;height:38px;font-size:20px;border-radius:10px}
+  #sprints .s3-title{font-family:var(--display);font-weight:700;font-size:clamp(19px,2vw,23px);letter-spacing:-0.015em;color:var(--ink);line-height:1.2}
+  #sprints .s3-fix{margin-top:4px;font-size:15px;line-height:1.5;color:var(--body)}
+  #sprints .s3-meta{margin-top:10px;display:flex;flex-wrap:wrap;gap:6px}
+  #sprints .s3-meta span{font-family:var(--mono);font-size:10.5px;letter-spacing:.04em;background:#fff;color:var(--ink);border-radius:999px;padding:3px 9px}
+  #sprints .s3-meta span.is-kill{color:#C8102E}
+  #sprints .s3-sub{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:clamp(24px,3vw,32px) 0 12px}
+  #sprints .s3-sub h5,#sprints .s3-proof h5,#sprints .s3-audit h5{font-family:var(--mono);font-weight:400;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink)}
+  #sprints .s3-legend{display:flex;align-items:center;flex-wrap:wrap;gap:4px 12px;font-family:var(--mono);font-size:10px;letter-spacing:.04em;color:var(--sub)}
+  #sprints .s3-legend i{width:8px;height:8px;border-radius:2px;background:var(--m);margin-right:-6px}
+  /* storyboard */
+  #sprints .s3-board{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;counter-reset:none}
+  #sprints .s3-board--5{grid-template-columns:repeat(5,minmax(0,1fr))}
+  #sprints .s3-scene{position:relative;display:flex;flex-direction:column;background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px 12px 14px;border-top:3px solid var(--m)}
+  #sprints .s3-scene__top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+  #sprints .s3-scene__n{font-family:var(--mono);font-size:11px;color:var(--faint)}
+  #sprints .s3-tag,#sprints .s3-mini{font-family:var(--mono);font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--m);background:var(--mb);border-radius:999px;padding:2px 8px;white-space:nowrap}
+  #sprints .s3-who{margin-top:10px;font-family:var(--display);font-weight:700;font-size:14px;color:var(--ink)}
+  #sprints .s3-scr{margin-top:8px;border-radius:10px;background:#1F1E1C;color:#E9E7E1;padding:9px 10px 10px;font-size:12px;line-height:1.45;display:flex;flex-direction:column;gap:2px;min-height:86px}
+  #sprints .s3-scr b{font-family:var(--mono);font-weight:400;font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--mb);opacity:.9;margin-bottom:3px;padding-bottom:5px;border-bottom:1px solid rgba(255,255,255,.12)}
+  #sprints .s3-say{margin-top:8px;position:relative;background:#FFF6D6;border:1px solid #F0E2A8;border-radius:12px;padding:12px;font-size:13.5px;line-height:1.4;font-weight:500;color:var(--ink);min-height:86px;display:flex;align-items:center}
+  #sprints .s3-flow{margin-top:8px;display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap;min-height:86px;border-radius:10px;background:var(--panel);padding:10px}
+  #sprints .s3-flow span{font-size:12px;font-weight:500;color:var(--ink);background:#fff;border:1px solid var(--line);border-radius:8px;padding:5px 8px}
+  #sprints .s3-flow i{font-style:normal;color:var(--faint)}
+  #sprints .s3-cap{margin-top:10px;font-size:13px;line-height:1.5;color:var(--body)}
+  #sprints .s3-pk{margin-top:auto;padding-top:10px;display:flex;flex-wrap:wrap;gap:4px}
+  #sprints .s3-pk span{font-family:var(--mono);font-size:9.5px;letter-spacing:.02em;color:#0F766E;background:#E3F4F2;border-radius:5px;padding:2px 6px}
+  #sprints .s3-pk span.is-ok{color:#fff;background:#1E7D44}
+  #sprints .s3-ergo{margin-top:12px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+  #sprints .s3-ergo div{border-radius:12px;background:#F4F0FC;padding:12px 14px;font-size:13px;line-height:1.45;color:var(--sub)}
+  #sprints .s3-ergo b{display:block;font-weight:600;color:#5B3FB0;margin-bottom:2px}
+  /* POC image */
+  #sprints .s3-open{font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink);text-decoration:none;border-bottom:1px solid var(--line)}
+  #sprints .s3-open:hover{border-color:var(--ink)}
+  #sprints .s3-poc{margin:0;border-radius:16px;background:#EDEBF4;padding:clamp(12px,2vw,22px)}
+  #sprints .s3-poc__img img{display:block;width:100%;height:auto;border-radius:6px}
+  #sprints .s3-poc figcaption ol{list-style:none;margin:14px 0 0;padding:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+  #sprints .s3-poc figcaption li{background:#fff;border-radius:10px;padding:10px 12px;font-size:12.5px;line-height:1.45;color:var(--sub)}
+  #sprints .s3-poc figcaption li b{display:block;font-weight:600;font-size:13px;color:var(--ink);margin-bottom:4px}
+  #sprints .s3-poc figcaption .s3-mini{display:inline-block;margin-bottom:5px}
+  /* proof + audit */
+  #sprints .s3-two{margin-top:clamp(24px,3vw,32px);display:grid;grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr);gap:12px;align-items:start}
+  #sprints .s3-proof,#sprints .s3-audit{border:1px solid var(--line);border-radius:14px;background:#fff;padding:14px 16px 16px}
+  #sprints .s3-proof h5,#sprints .s3-audit h5{margin-bottom:10px}
+  #sprints .s3-pr{border-radius:10px;padding:10px 12px}
+  #sprints .s3-pr + .s3-pr{margin-top:8px}
+  #sprints .s3-pr--old{background:#FDF0F1}
+  #sprints .s3-pr--new{background:#ECF7EF}
+  #sprints .s3-pr span{display:block;font-family:var(--mono);font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:#C8102E;margin-bottom:6px}
+  #sprints .s3-pr--new span{color:#1E7D44}
+  #sprints .s3-pr ol{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;align-items:center;gap:4px 6px;font-size:13px;line-height:1.4;color:var(--ink)}
+  #sprints .s3-pr li + li::before{content:"→";margin-right:6px;color:var(--faint)}
+  #sprints .s3-pr--old li:last-child{color:#C8102E;font-weight:500}
+  #sprints .s3-pr--new li:last-child{color:#1E7D44;font-weight:500}
+  #sprints .s3-why{margin-top:10px;font-size:13.5px;line-height:1.5;color:var(--body)}
+  #sprints .s3-why b{color:var(--ink);font-weight:600}
+  #sprints .s3-tbl{overflow-x:auto}
+  #sprints .s3-tbl table{width:100%;border-collapse:collapse;font-size:12.5px;line-height:1.45;min-width:540px}
+  #sprints .s3-tbl th{text-align:left;vertical-align:top;padding:7px 8px}
+  #sprints .s3-tbl thead th{font-family:var(--mono);font-weight:400;font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);border-bottom:1px solid var(--line)}
+  #sprints .s3-tbl tbody th{font-weight:600;color:var(--ink)}
+  #sprints .s3-tbl td{vertical-align:top;padding:7px 8px;color:var(--sub)}
+  #sprints .s3-tbl td:last-child{color:var(--body)}
+  #sprints .s3-tbl tbody tr + tr > *{border-top:1px solid var(--line)}
+  /* summary */
+  #sprints .s3-sums{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+  #sprints .s3-sum{border-radius:14px;background:var(--kb);border-top:3px solid var(--k);padding:14px 16px 16px}
+  #sprints .s3-sum__h{display:flex;align-items:center;gap:10px;font-family:var(--display);font-weight:700;font-size:16px;color:var(--ink)}
+  #sprints .s3-sum dl{margin:12px 0 0}
+  #sprints .s3-sum dt{font-family:var(--mono);font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--k);margin-top:10px}
+  #sprints .s3-sum dt:first-child{margin-top:0}
+  #sprints .s3-sum dd{margin:2px 0 0;font-size:13.5px;line-height:1.45;color:var(--body)}
+  @media (max-width:1099px){
+    #sprints .s3-board,#sprints .s3-board--5{grid-template-columns:repeat(2,minmax(0,1fr))}
+    #sprints .s3-poc figcaption ol,#sprints .s3-ergo{grid-template-columns:repeat(2,minmax(0,1fr))}
+    #sprints .s3-two,#sprints .s3-sums{grid-template-columns:minmax(0,1fr)}
+    #sprints .s3-two > *{min-width:0}
+  }
+  @media (max-width:700px){
+    #sprints .s3-tabbar{grid-template-columns:1fr}
+    #sprints .s3-tabbar label{padding:9px 10px}
+    #sprints .s3-board,#sprints .s3-board--5{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:10px;margin:0 calc(-1 * var(--pad,16px));padding:0 var(--pad,16px) 6px;scrollbar-width:thin}
+    #sprints .s3-scene{flex:0 0 78%;scroll-snap-align:start}
+    #sprints .s3-poc__img{overflow-x:auto;-webkit-overflow-scrolling:touch}
+    #sprints .s3-poc__img img{width:auto;height:300px;max-width:none}
+    #sprints .s3-poc figcaption ol,#sprints .s3-ergo{grid-template-columns:1fr}
+    #sprints .s3-score th:nth-child(1),#sprints .s3-score td:nth-child(1){display:none}
+    #sprints .s3-score th,#sprints .s3-score td{padding:8px 7px}
+    #sprints .s3-score .s3-cn{font-size:9.5px;padding:2px 5px}
+    #sprints .s3-score .s3-cn--no{font-size:0}
+    #sprints .s3-score .s3-cn--no::after{content:"–";font-size:12px}
+  }
+  @media (prefers-reduced-motion:reduce){#s3c-a:checked ~ .s3-panels .s3-panel--a,#s3c-b:checked ~ .s3-panels .s3-panel--b,#s3c-c:checked ~ .s3-panels .s3-panel--c{animation:none}#sprints .s3-tabbar label{transition:none}}
   </style>
     <div class="block__head">
       <div class="block__num"><b>✷</b> / Sprints</div>
@@ -849,6 +986,246 @@
   <p class="spr-shift">Records every change and refund; audits without complaints.</p>
 </article>
 </div>
+      </div>
+    </details>
+    <details class="spr-acc">
+      <summary>Sprint 3<span class="spr-meta">Downselect · storyboards · POC</span><span class="spr-plus" aria-hidden="true"></span></summary>
+      <div class="spr-body">
+<p class="spr-lede">From 10 ideas to 3 proven concepts. A star teacher leaves mid-year, the student’s loyalty was to the teacher and not to PW, and the renewal is abandoned. Sprint 3 downselects, proves, audits and resolves.</p>
+<div class="s3-brief"><span>1 · Downselect 3 ideas</span><span>2 · Storyboard or POC</span><span>3 · Contextual integrity audit</span><span>4 · 2026 friction proof</span></div>
+
+<div class="spr-part"><span class="spr-part__n">01</span><h3 class="spr-h">Downselect: 10 ideas → 3 concepts</h3></div>
+<p class="spr-sub">Scored on three criteria. The strongest ideas merged with their closest partner, one concept per Sprint 2 cluster.</p>
+<div class="s3-score"><table>
+<thead><tr><th>#</th><th>Idea</th><th title="PW could build it by 2031">Viable</th><th title="Fixes the Sprint 1 failure">Transf.</th><th title="Fits how Indian families and Tier 2/3 students behave">Cultural</th><th>Outcome</th></tr></thead>
+<tbody><tr class="is-in"><td class="s3-n">01</td><td class="s3-i">Verified Teacher Handover Live<small>Continuity</small></td><td><i class="s3-sc s3-sc--H">H</i></td><td><i class="s3-sc s3-sc--H">H</i></td><td><i class="s3-sc s3-sc--H">H</i></td><td><span class="s3-cn s3-k-a">Concept A</span></td></tr><tr class="is-in"><td class="s3-n">04</td><td class="s3-i">Continuity AI Tutor<small>Continuity</small></td><td><i class="s3-sc s3-sc--H">H</i></td><td><i class="s3-sc s3-sc--M">M</i></td><td><i class="s3-sc s3-sc--M">M</i></td><td><span class="s3-cn s3-k-a">Concept A</span></td></tr><tr class="is-in"><td class="s3-n">07</td><td class="s3-i">Teacher-Linked Fair Refund<small>Continuity</small></td><td><i class="s3-sc s3-sc--H">H</i></td><td><i class="s3-sc s3-sc--H">H</i></td><td><i class="s3-sc s3-sc--H">H</i></td><td><span class="s3-cn s3-k-b">Concept B</span></td></tr><tr class="is-in"><td class="s3-n">08</td><td class="s3-i">Trust Escrow<small>Family trust</small></td><td><i class="s3-sc s3-sc--M">M</i></td><td><i class="s3-sc s3-sc--H">H</i></td><td><i class="s3-sc s3-sc--M">M</i></td><td><span class="s3-cn s3-k-b">Concept B</span></td></tr><tr class="is-in"><td class="s3-n">05</td><td class="s3-i">Offline Classroom Box<small>Learning everywhere</small></td><td><i class="s3-sc s3-sc--H">H</i></td><td><i class="s3-sc s3-sc--M">M</i></td><td><i class="s3-sc s3-sc--H">H</i></td><td><span class="s3-cn s3-k-c">Concept C</span></td></tr><tr class="is-in"><td class="s3-n">06</td><td class="s3-i">Voice &amp; IVR Updates<small>Learning everywhere</small></td><td><i class="s3-sc s3-sc--H">H</i></td><td><i class="s3-sc s3-sc--L">L</i></td><td><i class="s3-sc s3-sc--H">H</i></td><td><span class="s3-cn s3-k-c">Concept C</span></td></tr><tr class="is-out"><td class="s3-n">02</td><td class="s3-i">Family Decision Room<small>Family trust</small></td><td><i class="s3-sc s3-sc--H">H</i></td><td><i class="s3-sc s3-sc--M">M</i></td><td><i class="s3-sc s3-sc--H">H</i></td><td><span class="s3-cn s3-cn--no">Not taken forward</span></td></tr><tr class="is-out"><td class="s3-n">03</td><td class="s3-i">Portable Learning Passport<small>Learning everywhere</small></td><td><i class="s3-sc s3-sc--M">M</i></td><td><i class="s3-sc s3-sc--M">M</i></td><td><i class="s3-sc s3-sc--M">M</i></td><td><span class="s3-cn s3-cn--no">Not taken forward</span></td></tr><tr class="is-out"><td class="s3-n">09</td><td class="s3-i">One-Tap Consent &amp; Delete<small>Family trust</small></td><td><i class="s3-sc s3-sc--M">M</i></td><td><i class="s3-sc s3-sc--M">M</i></td><td><i class="s3-sc s3-sc--M">M</i></td><td><span class="s3-cn s3-cn--no">Not taken forward</span></td></tr><tr class="is-out"><td class="s3-n">10</td><td class="s3-i">Faculty Change Ledger<small>Continuity</small></td><td><i class="s3-sc s3-sc--L">L</i></td><td><i class="s3-sc s3-sc--M">M</i></td><td><i class="s3-sc s3-sc--L">L</i></td><td><span class="s3-cn s3-cn--no">Not taken forward</span></td></tr></tbody></table></div>
+<p class="s3-key">H high · M medium · L low &nbsp;·&nbsp; Viable: PW could build it by 2031 · Transformative: fixes the Sprint 1 failure · Cultural: fits how Indian families behave</p>
+
+<div class="spr-part"><span class="spr-part__n">02</span><h3 class="spr-h">The three concepts</h3></div>
+<div class="s3-tabs">
+<input type="radio" name="s3c" id="s3c-a" checked><input type="radio" name="s3c" id="s3c-b"><input type="radio" name="s3c" id="s3c-c">
+<div class="s3-tabbar" role="tablist">
+  <label for="s3c-a" id="s3l-a" class="s3-k-a"><span class="s3-letter">A</span><span>Verified Handover<small>+ AI Cover</small></span></label>
+  <label for="s3c-b" id="s3l-b" class="s3-k-b"><span class="s3-letter">B</span><span>Trust Escrow<small>+ Fair Refund</small></span></label>
+  <label for="s3c-c" id="s3l-c" class="s3-k-c"><span class="s3-letter">C</span><span>Offline Classroom Box<small>+ Voice Alerts</small></span></label>
+</div>
+<div class="s3-panels">
+<div class="s3-panel s3-panel--a" role="tabpanel" aria-labelledby="s3l-a">
+  <div class="s3-head s3-k-a">
+    <span class="s3-letter">A</span>
+    <div><h4 class="s3-title">Verified Handover + AI Cover</h4>
+    <p class="s3-fix">The teacher leaves, but trust and learning stay with the batch.</p>
+    <div class="s3-meta"><span>Continuity</span><span>Ideas 01 + 04</span><span class="is-kill">Kills: Latency gate · W1</span></div></div>
+  </div>
+  <div class="s3-sub"><h5>Storyboard · 8 scenes</h5><div class="s3-legend"><i class="s3-m-trig"></i>Trigger<i class="s3-m-ver"></i>Verification<i class="s3-m-data"></i>Data packet<i class="s3-m-set"></i>Settlement</div></div>
+  <ol class="s3-board s3-board--8">
+<li class="s3-scene s3-m-trig">
+  <div class="s3-scene__top"><span class="s3-scene__n">01</span><span class="s3-tag">Trigger</span></div>
+  <div class="s3-who">Arjun Sir · star physics teacher</div><div class="s3-say">“I’m moving on at month end. Handover first.”</div>
+  <p class="s3-cap">He gives notice. In 2031 his contract requires a public handover before he leaves.</p>
+  <div class="s3-pk"><span class="">D · faculty-change event</span></div>
+</li>
+<li class="s3-scene s3-m-trig">
+  <div class="s3-scene__top"><span class="s3-scene__n">02</span><span class="s3-tag">Trigger</span></div>
+  <div class="s3-who">PW batch system</div><div class="s3-scr"><b>Continuity plan started</b><span>Faculty change logged ✓</span><span>Handover class: Sat 7 PM</span><span>AI cover: ready</span><span>New teacher: Neha Ma’am</span></div>
+  <p class="s3-cap">The change is logged in the Regulator Ledger and a handover class is set within 48 hours.</p>
+  <div class="s3-pk"><span class="">D · ledger entry</span><span class="">D · handover invite</span></div>
+</li>
+<li class="s3-scene s3-m-data">
+  <div class="s3-scene__top"><span class="s3-scene__n">03</span><span class="s3-tag">Data packet</span></div>
+  <div class="s3-who">Riya, 17</div><div class="s3-scr"><b>PW · Hindi voice note</b><span>“Arjun Sir aur Neha Ma’am ki handover class, Sat 7 PM. Aapka progress safe hai.”</span><span>▶ 0:24</span></div>
+  <p class="s3-cap">Riya hears it from PW first, with a plan, before any rumour reaches her Telegram group.</p>
+  <div class="s3-pk"><span class="">D · invite + voice note</span></div>
+</li>
+<li class="s3-scene s3-m-ver">
+  <div class="s3-scene__top"><span class="s3-scene__n">04</span><span class="s3-tag">Verification handoff</span></div>
+  <div class="s3-who">Arjun Sir + Neha Ma’am</div><div class="s3-scr"><b>Live · 1,240 students</b><span>Q: Will the notes change?</span><span>A: Same notes, same pace. Ch. 9 continues Monday.</span></div>
+  <p class="s3-cap">A live handover in his own words. The class is verified and recorded.</p>
+  <div class="s3-pk"><span class="">D · verified recording</span></div>
+</li>
+<li class="s3-scene s3-m-ver">
+  <div class="s3-scene__top"><span class="s3-scene__n">05</span><span class="s3-tag">Verification handoff</span></div>
+  <div class="s3-who">Sir’s lectures → AI tutor</div><div class="s3-scr"><b>Licence</b><span>Arjun Sir · 412 lectures</span><span>Credit shown ✓</span><span>Royalty per use ✓</span></div>
+  <p class="s3-cap">His lectures are licensed to the AI tutor with credit and royalty, so learning never pauses.</p>
+  <div class="s3-pk"><span class="">D · licensed lecture model</span></div>
+</li>
+<li class="s3-scene s3-m-data">
+  <div class="s3-scene__top"><span class="s3-scene__n">06</span><span class="s3-tag">Data packet</span></div>
+  <div class="s3-who">Riya, 11:40 PM</div><div class="s3-scr"><b>AI · based on Arjun Sir’s lectures</b><span>“Socho: block par kitne forces lag rahe hain? Pehle free-body diagram banao…”</span></div>
+  <p class="s3-cap">A late-night doubt, answered in Sir’s style and clearly labelled as AI.</p>
+  <div class="s3-pk"><span class="">D · doubt + answer (stays in batch)</span></div>
+</li>
+<li class="s3-scene s3-m-set">
+  <div class="s3-scene__top"><span class="s3-scene__n">07</span><span class="s3-tag">Settlement</span></div>
+  <div class="s3-who">Riya + Papa</div><div class="s3-scr"><b>Family Decision Room</b><span>Syllabus done: 78%</span><span>Teacher change: handled ✓</span><span>Continue batch? Riya ✓ Papa ✓</span></div>
+  <p class="s3-cap">Father and daughter review progress together. Renewal needs both taps.</p>
+  <div class="s3-pk"><span class="">D · progress summary</span></div>
+</li>
+<li class="s3-scene s3-m-set">
+  <div class="s3-scene__top"><span class="s3-scene__n">08</span><span class="s3-tag">Settlement</span></div>
+  <div class="s3-flow"><span>Monthly fee</span><i>→</i><span>Trust Escrow</span><i>→</i><span>PW</span></div>
+  <p class="s3-cap">Next month’s fee releases to PW. The renewal abandoned in 2026 now continues.</p>
+  <div class="s3-pk"><span class="">D · escrow release</span><span class="is-ok">✓ Failure 6 + 8 resolved</span></div>
+</li>
+  </ol>
+  
+  <div class="s3-sub"><h5>High-fidelity POC · Riya’s student app · 4 screens</h5><a class="s3-open" href="sprints/sprint3-poc-a.webp" target="_blank" rel="noopener">Open full size ↗</a></div>
+  <figure class="s3-poc"><div class="s3-poc__img"><img src="sprints/sprint3-poc-a.webp" alt="Concept A high-fidelity POC screens: Verified Handover + AI Cover" loading="lazy" decoding="async"></div>
+    <figcaption><ol><li><b>A1 · PW speaks first</b><span class="s3-mini s3-m-trig">Trigger</span>The official plan reaches Riya before any rumour, with a Hindi voice note and a 3-day timeline.</li><li><b>A2 · Live handover</b><span class="s3-mini s3-m-ver">Verification handoff</span>Both teachers on one screen, recorded and verified. Q&amp;A answers the real worries.</li><li><b>A3 · AI doubt tutor</b><span class="s3-mini s3-m-data">Data packet</span>Clearly labelled as AI, built on Sir’s licensed lectures, credited and paid per use.</li><li><b>A4 · Family Decision Room</b><span class="s3-mini s3-m-set">Settlement</span>Progress and “teacher change handled”. Renewal needs both Riya and Papa to say yes.</li></ol></figcaption></figure>
+  <div class="s3-two">
+    <div class="s3-proof">
+      <h5>2026 friction, removed</h5>
+      <div class="s3-pr s3-pr--old"><span>2026 · Workflow 1 · latency gate</span><ol><li>Day 0 · teacher’s YouTube video</li><li>Day 1 · rumours in Telegram</li><li>Day 3+ · PW’s official notice</li><li>Loyalty missing, renewal abandoned</li></ol></div>
+      <div class="s3-pr s3-pr--new"><span>2031 · one digital path</span><ol><li>Hour 0 · exit logged = notice sent</li><li>Hour 1 · invite + voice note</li><li>Day 2 · live handover, AI cover between</li><li>Renewal continues</li></ol></div>
+      <p class="s3-why"><b>Why it’s permanent.</b> The exit and the notice are the same data event, so PW’s word always arrives before the rumour.</p>
+    </div>
+    <div class="s3-audit">
+      <h5>Contextual integrity audit · 2031 data packets</h5>
+      <div class="s3-tbl"><table><thead><tr><th>Packet</th><th>Sender → recipient</th><th>Info type</th><th>Transmission principle</th></tr></thead><tbody><tr><th scope="row">Faculty-change event</th><td>Teacher (via PW) → batch system + Regulator Ledger</td><td>Exit date, new teacher, handover slot</td><td>Exits are disclosed and handed over publicly; the ledger gets batch-level data only</td></tr><tr><th scope="row">Handover invite + voice note</th><td>PW app → enrolled students + linked parents</td><td>Class time, new teacher, plan</td><td>Only the enrolled batch; no marketing in the same message</td></tr><tr><th scope="row">Verified handover recording</th><td>Both teachers → the batch</td><td>Handover video</td><td>Teachers consent to what is said; it stays inside the batch</td></tr><tr><th scope="row">Licensed lectures + AI answers</th><td>PW content → AI tutor → student</td><td>Teacher’s lectures; student’s doubt</td><td>Licence with credit + royalty; doubts used only to answer, never for ads</td></tr></tbody></table></div>
+    </div>
+  </div>
+</div>
+<div class="s3-panel s3-panel--b" role="tabpanel" aria-labelledby="s3l-b">
+  <div class="s3-head s3-k-b">
+    <span class="s3-letter">B</span>
+    <div><h4 class="s3-title">Trust Escrow + Fair Refund</h4>
+    <p class="s3-fix">Money moves monthly, so a fair refund replaces the refund fight.</p>
+    <div class="s3-meta"><span>Family trust</span><span>Ideas 07 + 08</span><span class="is-kill">Kills: Media break + latency gates · W4</span></div></div>
+  </div>
+  <div class="s3-sub"><h5>POC interface · 5 screens</h5><div class="s3-legend"><i class="s3-m-trig"></i>Trigger<i class="s3-m-ver"></i>Verification<i class="s3-m-data"></i>Data packet<i class="s3-m-set"></i>Settlement</div></div>
+  <ol class="s3-board s3-board--5">
+<li class="s3-scene s3-m-set">
+  <div class="s3-scene__top"><span class="s3-scene__n">1</span><span class="s3-tag">Settlement</span></div>
+  <div class="s3-who">Home</div><div class="s3-scr"><b>Riya’s Money Safe</b><span>₹2,400 protected</span><span>₹1,600 released to PW (4 months)</span><span>Arjun Sir ✓ promise holding</span><span>Next release: ₹400 on 1 Jan</span></div>
+  <p class="s3-cap">The yearly fee waits in escrow and releases ₹400 a month while the promise holds.</p>
+  <div class="s3-pk"><span class="">D · escrow balance</span></div>
+</li>
+<li class="s3-scene s3-m-trig">
+  <div class="s3-scene__top"><span class="s3-scene__n">2</span><span class="s3-tag">Trigger</span></div>
+  <div class="s3-who">Alert</div><div class="s3-scr"><b>Teacher change alert</b><span>Arjun Sir is leaving · last class 15 Dec</span><span>Logged in Regulator Ledger ✓</span><span>▶ “Aapka paisa safe hai. Aap choose kar sakte hain.”</span></div>
+  <p class="s3-cap">The verified exit reaches the parent directly, with a voice note, before any rumour.</p>
+  <div class="s3-pk"><span class="">D · teacher-exit alert</span></div>
+</li>
+<li class="s3-scene s3-m-ver">
+  <div class="s3-scene__top"><span class="s3-scene__n">3</span><span class="s3-tag">Verification handoff</span></div>
+  <div class="s3-who">Choice</div><div class="s3-scr"><b>What do you want?</b><span>A · Stay with Neha Ma’am</span><span>B · Fair refund, ₹2,400 to UPI</span><span>Needs both taps: Riya ✓ Papa ☐</span></div>
+  <p class="s3-cap">Watch the verified handover, then decide together. Student and parent both tap.</p>
+  <div class="s3-pk"><span class="">D · refund decision</span></div>
+</li>
+<li class="s3-scene s3-m-data">
+  <div class="s3-scene__top"><span class="s3-scene__n">4</span><span class="s3-tag">Data packet</span></div>
+  <div class="s3-who">Auto-check</div><div class="s3-scr"><b>Checking automatically</b><span>Teacher change in ledger ✓</span><span>Months left: 6 ✓</span><span>6 × ₹400 = ₹2,400 ✓</span><span>Both family taps ✓</span></div>
+  <p class="s3-cap">The escrow checks the ledger itself. No screenshot, no ticket, no support agent.</p>
+  <div class="s3-pk"><span class="">D · refund ₹2,400 → Papa’s UPI</span></div>
+</li>
+<li class="s3-scene s3-m-set">
+  <div class="s3-scene__top"><span class="s3-scene__n">5</span><span class="s3-tag">Settlement</span></div>
+  <div class="s3-who">Settled</div><div class="s3-scr"><b>Refund credited</b><span>₹2,400 to UPI · today</span><span>Receipt saved to DigiLocker</span><span>If A: next ₹400 releases on 1 Jan</span></div>
+  <p class="s3-cap">Money arrives the same day. If they stayed, the next ₹400 simply releases.</p>
+  <div class="s3-pk"><span class="">D · refund instruction</span><span class="is-ok">✓ Trust kept either way</span></div>
+</li>
+  </ol>
+  <div class="s3-ergo"><div><b>Hindi voice notes</b>Parents in Tier 2/3 homes listen more than they read.</div><div><b>“Money safe” metaphor</b>Feels like the family gullak, not a banking product.</div><div><b>Two taps: child + parent</b>Matches how Indian families decide on fees together.</div><div><b>No screenshots, no forms</b>Removes the support-desk fight from W4.</div></div>
+  <div class="s3-sub"><h5>High-fidelity POC · The parent’s app · 5 screens</h5><a class="s3-open" href="sprints/sprint3-poc-b.webp" target="_blank" rel="noopener">Open full size ↗</a></div>
+  <figure class="s3-poc"><div class="s3-poc__img"><img src="sprints/sprint3-poc-b.webp" alt="Concept B high-fidelity POC screens: Trust Escrow + Fair Refund" loading="lazy" decoding="async"></div>
+    <figcaption><ol><li><b>B1 · Money Safe</b><span class="s3-mini s3-m-set">Settlement</span>The yearly fee waits in escrow and releases ₹400 a month. Feels like the family gullak.</li><li><b>B2 · Alert</b><span class="s3-mini s3-m-trig">Trigger</span>The exit, verified in the Regulator Ledger, reaches the parent with a Hindi voice note.</li><li><b>B3 → B4 · Choose, then auto-check</b><span class="s3-mini s3-m-ver">Verification handoff</span>Two family taps, then the escrow checks the ledger itself. No screenshot, no ticket.</li><li><b>B5 · Settled</b><span class="s3-mini s3-m-set">Settlement</span>₹2,400 to UPI the same day, receipt saved to DigiLocker.</li></ol></figcaption></figure>
+  <div class="s3-two">
+    <div class="s3-proof">
+      <h5>2026 friction, removed</h5>
+      <div class="s3-pr s3-pr--old"><span>2026 · Workflow 4 · media break + latency gates</span><ol><li>Refund form + payment screenshot</li><li>Support ticket, manual review 7–21 days</li><li>Bank reversal 5–7 days</li><li>Angry parent, lost renewal</li></ol></div>
+      <div class="s3-pr s3-pr--new"><span>2031 · one digital path</span><ol><li>Ledger event</li><li>Escrow auto-check</li><li>Two family taps</li><li>UPI the same day</li></ol></div>
+      <p class="s3-why"><b>Why it’s permanent.</b> The money was never fully handed over, so refunding is just “stop releasing”, not a claim to fight for.</p>
+    </div>
+    <div class="s3-audit">
+      <h5>Contextual integrity audit · 2031 data packets</h5>
+      <div class="s3-tbl"><table><thead><tr><th>Packet</th><th>Sender → recipient</th><th>Info type</th><th>Transmission principle</th></tr></thead><tbody><tr><th scope="row">Escrow balance</th><td>Escrow → student + linked parent</td><td>Amount paid, released, protected</td><td>Only the two linked family members see it; never shown to sales counsellors</td></tr><tr><th scope="row">Teacher-exit alert</th><td>Regulator Ledger → escrow → parent</td><td>Exit date, no personal reason</td><td>Only the fact of the exit travels; the teacher’s reasons stay private</td></tr><tr><th scope="row">Refund decision</th><td>Family (2 taps) → escrow</td><td>Choice A or B</td><td>Needs both consents; never used to score or retarget the family</td></tr><tr><th scope="row">Refund instruction</th><td>Escrow → bank (UPI) → DigiLocker</td><td>Amount + UPI ID</td><td>The bank gets amount + UPI only; receipt goes to the family’s own locker</td></tr></tbody></table></div>
+    </div>
+  </div>
+</div>
+<div class="s3-panel s3-panel--c" role="tabpanel" aria-labelledby="s3l-c">
+  <div class="s3-head s3-k-c">
+    <span class="s3-letter">C</span>
+    <div><h4 class="s3-title">Offline Classroom Box + Voice Alerts</h4>
+    <p class="s3-fix">Brings the ecosystem to Tier 2/3 centres with patchy internet and basic phones.</p>
+    <div class="s3-meta"><span>Learning everywhere</span><span>Ideas 05 + 06</span><span class="is-kill">Kills: Media break + latency gate · W3</span></div></div>
+  </div>
+  <div class="s3-sub"><h5>Storyboard · 8 scenes</h5><div class="s3-legend"><i class="s3-m-trig"></i>Trigger<i class="s3-m-ver"></i>Verification<i class="s3-m-data"></i>Data packet<i class="s3-m-set"></i>Settlement</div></div>
+  <ol class="s3-board s3-board--8">
+<li class="s3-scene s3-m-trig">
+  <div class="s3-scene__top"><span class="s3-scene__n">01</span><span class="s3-tag">Trigger</span></div>
+  <div class="s3-who">Centre, Gaya</div><div class="s3-scr"><b>Classroom Box</b><span>Internet: offline ✕</span><span>Local mode: ON ✓</span><span>Lecture pack: cached</span></div>
+  <p class="s3-cap">The internet is down again, but the Box on the wall keeps working offline.</p>
+  <div class="s3-pk"><span class="">M · Classroom Box</span></div>
+</li>
+<li class="s3-scene s3-m-ver">
+  <div class="s3-scene__top"><span class="s3-scene__n">02</span><span class="s3-tag">Verification handoff</span></div>
+  <div class="s3-who">Riya + ID card</div><div class="s3-scr"><b>Door tap</b><span>Riya ✓ 8:02 AM</span><span>Saved on Box 🔒</span></div>
+  <p class="s3-cap">An ID tap at the door logs attendance locally, encrypted. No paper register.</p>
+  <div class="s3-pk"><span class="">M · ID card</span><span class="">D · attendance log</span></div>
+</li>
+<li class="s3-scene s3-m-data">
+  <div class="s3-scene__top"><span class="s3-scene__n">03</span><span class="s3-tag">Data packet</span></div>
+  <div class="s3-who">Box</div><div class="s3-scr"><b>▶ Ch. 9 · Laws of Motion</b><span>Playing offline · 0 buffering</span><span>52 students in room</span></div>
+  <p class="s3-cap">The class watches the cached lecture with no buffering.</p>
+  <div class="s3-pk"><span class="">D · cached lecture pack</span></div>
+</li>
+<li class="s3-scene s3-m-data">
+  <div class="s3-scene__top"><span class="s3-scene__n">04</span><span class="s3-tag">Data packet</span></div>
+  <div class="s3-who">Centre manager</div><div class="s3-scr"><b>आज की हाज़िरी · Today</b><span>46 / 52 present</span><span>Aman: 3 din se absent ⚠</span><span>Sync: waiting for internet</span></div>
+  <p class="s3-cap">Today’s list in Hindi on the Box. Nothing to copy or type up later.</p>
+  <div class="s3-pk"><span class="">D · daily list (local)</span></div>
+</li>
+<li class="s3-scene s3-m-data">
+  <div class="s3-scene__top"><span class="s3-scene__n">05</span><span class="s3-tag">Data packet</span></div>
+  <div class="s3-flow"><span>Box</span><i>→</i><span>4:00 PM</span><i>→</i><span>PW central</span></div>
+  <p class="s3-cap">The internet returns and the encrypted log syncs on its own. No one retypes anything.</p>
+  <div class="s3-pk"><span class="">D · encrypted sync</span></div>
+</li>
+<li class="s3-scene s3-m-trig">
+  <div class="s3-scene__top"><span class="s3-scene__n">06</span><span class="s3-tag">Trigger</span></div>
+  <div class="s3-who">PW → Aman’s mother</div><div class="s3-say">📞 “Aman 3 din se class nahin aaye…”</div>
+  <p class="s3-cap">Three days absent triggers an automatic voice call to his mother, in Bhojpuri.</p>
+  <div class="s3-pk"><span class="">D · absence alert</span></div>
+</li>
+<li class="s3-scene s3-m-ver">
+  <div class="s3-scene__top"><span class="s3-scene__n">07</span><span class="s3-tag">Verification handoff</span></div>
+  <div class="s3-who">Mother · keypad phone</div><div class="s3-scr"><b>IVR</b><span>Press 1 → counsellor calls you</span><span>Press 2 → remind me tomorrow</span><span>She pressed: 1</span></div>
+  <p class="s3-cap">No app needed. The keypress is her consent for a callback.</p>
+  <div class="s3-pk"><span class="">D · callback request</span></div>
+</li>
+<li class="s3-scene s3-m-set">
+  <div class="s3-scene__top"><span class="s3-scene__n">08</span><span class="s3-tag">Settlement</span></div>
+  <div class="s3-who">Counsellor → Aman</div><div class="s3-scr"><b>Plan</b><span>Weekend catch-up</span><span>2 recorded classes</span><span>Back Monday ✓</span></div>
+  <p class="s3-cap">He was helping at the family shop. A catch-up plan keeps him enrolled.</p>
+  <div class="s3-pk"><span class="">D · catch-up plan</span><span class="is-ok">✓ Media break removed</span></div>
+</li>
+  </ol>
+  
+  <div class="s3-sub"><h5>High-fidelity POC · Wall tablet in a Tier 3 centre + a voice call</h5><a class="s3-open" href="sprints/sprint3-poc-c.webp" target="_blank" rel="noopener">Open full size ↗</a></div>
+  <figure class="s3-poc"><div class="s3-poc__img"><img src="sprints/sprint3-poc-c.webp" alt="Concept C high-fidelity POC screens: Offline Classroom Box + Voice Alerts" loading="lazy" decoding="async"></div>
+    <figcaption><ol><li><b>C1 · Door check-in</b><span class="s3-mini s3-m-ver">Verification handoff</span>An ID tap works offline. Attendance is born digital and encrypted on the Box.</li><li><b>C2 · Manager view in Hindi</b><span class="s3-mini s3-m-data">Data packet</span>Today’s count and a seat grid. Aman’s 3-day absence is flagged.</li><li><b>C3 · Offline lecture + auto-sync</b><span class="s3-mini s3-m-data">Data packet</span>Cached lectures play with zero buffering, and records sync when the internet returns.</li><li><b>C4 · Voice call in Bhojpuri</b><span class="s3-mini s3-m-set">Settlement</span>Works on any phone. Pressing 1 is the consent for a counsellor’s call.</li></ol></figcaption></figure>
+  <div class="s3-two">
+    <div class="s3-proof">
+      <h5>2026 friction, removed</h5>
+      <div class="s3-pr s3-pr--old"><span>2026 · Workflow 3 · media break + latency gate</span><ol><li>Paper register</li><li>Retyped into a sheet once a week</li><li>HQ spots a dropout 7+ days late</li><li>Student already gone</li></ol></div>
+      <div class="s3-pr s3-pr--new"><span>2031 · one digital path</span><ol><li>ID tap → local log</li><li>Auto-sync when online</li><li>Same-day voice alert → callback</li><li>Catch-up plan</li></ol></div>
+      <p class="s3-why"><b>Why it’s permanent.</b> There is no paper copy left to retype, and the Box works with or without internet.</p>
+    </div>
+    <div class="s3-audit">
+      <h5>Contextual integrity audit · 2031 data packets</h5>
+      <div class="s3-tbl"><table><thead><tr><th>Packet</th><th>Sender → recipient</th><th>Info type</th><th>Transmission principle</th></tr></thead><tbody><tr><th scope="row">Attendance log</th><td>Classroom Box → PW central</td><td>Present / absent + time</td><td>Attendance and safety only; encrypted on the Box, deleted locally after sync</td></tr><tr><th scope="row">Daily list for manager</th><td>Box → centre manager</td><td>Today’s count</td><td>Stays in the centre; the manager can’t export or share it</td></tr><tr><th scope="row">Absence voice alert</th><td>PW → parent’s registered number</td><td>Days absent only</td><td>Only the number given at admission; no ads or upsell in the call</td></tr><tr><th scope="row">Callback request</th><td>Parent (keypress) → counsellor</td><td>Wants a call</td><td>Keypress = consent; the reason for absence is not stored</td></tr></tbody></table></div>
+    </div>
+  </div>
+</div>
+</div>
+</div>
+
+<div class="spr-part"><span class="spr-part__n">03</span><h3 class="spr-h">What each concept fixes</h3></div>
+<div class="s3-sums"><article class="s3-sum s3-k-a"><div class="s3-sum__h"><span class="s3-letter">A</span>Verified Handover + AI Cover</div>
+<dl><dt>Sprint 1 failure</dt><dd>Loyalty was to the teacher, not PW</dd><dt>2026 friction removed</dt><dd>3+ days between the teacher’s video and PW’s notice</dd><dt>Key 2031 data packet</dt><dd>Faculty-change event in the Regulator Ledger</dd><dt>Cultural fit</dt><dd>Hinglish voice notes; the teacher is credited and paid, not erased</dd></dl></article><article class="s3-sum s3-k-b"><div class="s3-sum__h"><span class="s3-letter">B</span>Trust Escrow + Fair Refund</div>
+<dl><dt>Sprint 1 failure</dt><dd>Renewal abandoned; the refund fight</dd><dt>2026 friction removed</dt><dd>Payment screenshots, 7–21 day review</dd><dt>Key 2031 data packet</dt><dd>Escrow release or refund instruction to UPI</dd><dt>Cultural fit</dt><dd>A “money safe” like the family gullak; child and parent decide</dd></dl></article><article class="s3-sum s3-k-c"><div class="s3-sum__h"><span class="s3-letter">C</span>Offline Classroom Box + Voice Alerts</div>
+<dl><dt>Sprint 1 failure</dt><dd>Tier 2/3 centres invisible until too late</dd><dt>2026 friction removed</dt><dd>Paper register retyped weekly; dropouts seen 7+ days late</dd><dt>Key 2031 data packet</dt><dd>Encrypted attendance log synced from the Box</dd><dt>Cultural fit</dt><dd>Hindi on the Box; Bhojpuri voice calls on any phone</dd></dl></article></div>
+<p class="s3-key">Names are fictional · ₹ amounts illustrative · D = digital packet · M = material artifact</p>
       </div>
     </details>
   </section>
