@@ -1112,57 +1112,10 @@
     <p class="s3-fix">Brings the ecosystem to Tier 2/3 centres with patchy internet and basic phones.</p>
     <div class="s3-meta"><span>Learning everywhere</span><span>Ideas 05 + 06</span><span class="is-kill">Kills: Media break + latency gate · W3</span></div></div>
   </div>
-  <div class="s3-sub"><h5>Storyboard · 8 scenes</h5><div class="s3-legend"><i class="s3-m-trig"></i>Trigger<i class="s3-m-ver"></i>Verification<i class="s3-m-data"></i>Data packet<i class="s3-m-set"></i>Settlement</div></div>
-  <ol class="s3-board s3-board--8">
-<li class="s3-scene s3-m-trig">
-  <div class="s3-scene__top"><span class="s3-scene__n">01</span><span class="s3-tag">Trigger</span></div>
-  <div class="s3-who">Centre, Gaya</div><div class="s3-scr"><b>Classroom Box</b><span>Internet: offline ✕</span><span>Local mode: ON ✓</span><span>Lecture pack: cached</span></div>
-  <p class="s3-cap">The internet is down again, but the Box on the wall keeps working offline.</p>
-  <div class="s3-pk"><span class="">M · Classroom Box</span></div>
-</li>
-<li class="s3-scene s3-m-ver">
-  <div class="s3-scene__top"><span class="s3-scene__n">02</span><span class="s3-tag">Verification handoff</span></div>
-  <div class="s3-who">Riya + ID card</div><div class="s3-scr"><b>Door tap</b><span>Riya ✓ 8:02 AM</span><span>Saved on Box 🔒</span></div>
-  <p class="s3-cap">An ID tap at the door logs attendance locally, encrypted. No paper register.</p>
-  <div class="s3-pk"><span class="">M · ID card</span><span class="">D · attendance log</span></div>
-</li>
-<li class="s3-scene s3-m-data">
-  <div class="s3-scene__top"><span class="s3-scene__n">03</span><span class="s3-tag">Data packet</span></div>
-  <div class="s3-who">Box</div><div class="s3-scr"><b>▶ Ch. 9 · Laws of Motion</b><span>Playing offline · 0 buffering</span><span>52 students in room</span></div>
-  <p class="s3-cap">The class watches the cached lecture with no buffering.</p>
-  <div class="s3-pk"><span class="">D · cached lecture pack</span></div>
-</li>
-<li class="s3-scene s3-m-data">
-  <div class="s3-scene__top"><span class="s3-scene__n">04</span><span class="s3-tag">Data packet</span></div>
-  <div class="s3-who">Centre manager</div><div class="s3-scr"><b>आज की हाज़िरी · Today</b><span>46 / 52 present</span><span>Aman: 3 din se absent ⚠</span><span>Sync: waiting for internet</span></div>
-  <p class="s3-cap">Today’s list in Hindi on the Box. Nothing to copy or type up later.</p>
-  <div class="s3-pk"><span class="">D · daily list (local)</span></div>
-</li>
-<li class="s3-scene s3-m-data">
-  <div class="s3-scene__top"><span class="s3-scene__n">05</span><span class="s3-tag">Data packet</span></div>
-  <div class="s3-flow"><span>Box</span><i>→</i><span>4:00 PM</span><i>→</i><span>PW central</span></div>
-  <p class="s3-cap">The internet returns and the encrypted log syncs on its own. No one retypes anything.</p>
-  <div class="s3-pk"><span class="">D · encrypted sync</span></div>
-</li>
-<li class="s3-scene s3-m-trig">
-  <div class="s3-scene__top"><span class="s3-scene__n">06</span><span class="s3-tag">Trigger</span></div>
-  <div class="s3-who">PW → Aman’s mother</div><div class="s3-say">📞 “Aman 3 din se class nahin aaye…”</div>
-  <p class="s3-cap">Three days absent triggers an automatic voice call to his mother, in Bhojpuri.</p>
-  <div class="s3-pk"><span class="">D · absence alert</span></div>
-</li>
-<li class="s3-scene s3-m-ver">
-  <div class="s3-scene__top"><span class="s3-scene__n">07</span><span class="s3-tag">Verification handoff</span></div>
-  <div class="s3-who">Mother · keypad phone</div><div class="s3-scr"><b>IVR</b><span>Press 1 → counsellor calls you</span><span>Press 2 → remind me tomorrow</span><span>She pressed: 1</span></div>
-  <p class="s3-cap">No app needed. The keypress is her consent for a callback.</p>
-  <div class="s3-pk"><span class="">D · callback request</span></div>
-</li>
-<li class="s3-scene s3-m-set">
-  <div class="s3-scene__top"><span class="s3-scene__n">08</span><span class="s3-tag">Settlement</span></div>
-  <div class="s3-who">Counsellor → Aman</div><div class="s3-scr"><b>Plan</b><span>Weekend catch-up</span><span>2 recorded classes</span><span>Back Monday ✓</span></div>
-  <p class="s3-cap">He was helping at the family shop. A catch-up plan keeps him enrolled.</p>
-  <div class="s3-pk"><span class="">D · catch-up plan</span><span class="is-ok">✓ Media break removed</span></div>
-</li>
-  </ol>
+  <div class="s3-sub"><h5>POC interface · wall tablet in a Tier 3 centre + a voice call</h5><a class="s3-open" href="sprints/sprint3-poc-c.webp" target="_blank" rel="noopener">Open full size ↗</a></div>
+  <figure class="s3-poc"><div class="s3-poc__img"><img src="sprints/sprint3-poc-c.webp" alt="Concept C POC interface: Offline Classroom Box + Voice Alerts" loading="lazy" decoding="async"></div>
+    <figcaption><ol><li><b>C1 · Door check-in</b><span class="s3-mini s3-m-ver">Verification handoff</span>An ID tap works offline. Attendance is born digital and encrypted on the Box.</li><li><b>C2 · Manager view in Hindi</b><span class="s3-mini s3-m-data">Data packet</span>Today’s count and a seat grid. Aman’s 3-day absence is flagged.</li><li><b>C3 · Offline lecture + auto-sync</b><span class="s3-mini s3-m-data">Data packet</span>Cached lectures play with zero buffering, and records sync when the internet returns.</li><li><b>C4 · Voice call in Bhojpuri</b><span class="s3-mini s3-m-set">Settlement</span>Works on any phone. Pressing 1 is the consent for a counsellor’s call.</li></ol></figcaption></figure>
+  
   <div class="s3-two">
     <div class="s3-proof">
       <h5>2026 friction, removed</h5>
