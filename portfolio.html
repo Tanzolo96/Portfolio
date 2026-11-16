@@ -729,16 +729,130 @@
   }
   @media (prefers-reduced-motion:reduce){#s3c-a:checked ~ .s3-panels .s3-panel--a,#s3c-b:checked ~ .s3-panels .s3-panel--b,#s3c-c:checked ~ .s3-panels .s3-panel--c{animation:none}#sprints .s3-tabbar label{transition:none}}
   #sprints .spr-acc[hidden] + .spr-acc{border-top:1px solid var(--line)}
+  /* ---- Sprint 1 ---- */
+  #sprints .s1-setup{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+  #sprints .s1-setup div{border-radius:12px;background:#EAF0FD;padding:12px 14px;font-size:14px;line-height:1.5;color:var(--ink)}
+  #sprints .s1-setup div:nth-child(2){background:#EFEAFB}
+  #sprints .s1-setup div:nth-child(3){background:#FDEEEA}
+  #sprints .s1-setup span{display:block;font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--sub);margin-bottom:4px}
+  #sprints .s1-blocks{margin-top:12px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+  #sprints .s1-blk{--b:#2F5BD3;--bb:#EAF0FD;border:1px solid var(--line);border-radius:14px;background:#fff;overflow:hidden}
+  #sprints .s1-b2{--b:#6B4BB8;--bb:#EFEAFB}
+  #sprints .s1-b3{--b:#9A6A0B;--bb:#FBF1DC}
+  #sprints .s1-b4{--b:#1E7D44;--bb:#E7F4EC}
+  #sprints .s1-blk__h{background:var(--bb);padding:12px 16px;font-family:var(--display);font-weight:700;font-size:17px;letter-spacing:-0.01em;color:var(--ink)}
+  #sprints .s1-blk__h span{display:block;font-family:var(--mono);font-weight:400;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--b);margin-bottom:2px}
+  #sprints .s1-blk ul{list-style:none;margin:0;padding:4px 16px 12px}
+  #sprints .s1-blk li{padding:9px 0;border-top:1px solid var(--line);font-size:13.5px;line-height:1.5;color:var(--sub)}
+  #sprints .s1-blk li:first-child{border-top:0}
+  #sprints .s1-blk li b{display:block;font-weight:600;color:var(--ink);font-size:13.5px}
+  #sprints .s1-acts{grid-template-columns:repeat(3,minmax(0,1fr))}
+  #sprints .s1-row{margin-top:8px;border-radius:8px;padding:8px 10px;font-size:13px;line-height:1.45;color:var(--body)}
+  #sprints .s1-row span{display:block;font-family:var(--mono);font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;margin-bottom:2px}
+  #sprints .s1-row--opp{background:#FDF3D7}
+  #sprints .s1-row--opp span{color:#9A6A0B}
+  #sprints .s1-row--art{background:var(--panel);color:var(--sub)}
+  #sprints .s1-row--art span{color:var(--sub)}
+  #sprints .s1-row--fail{background:#FDF0F1}
+  #sprints .s1-row--fail span{color:#C8102E}
+  #sprints .s1-row em{font-style:normal;display:inline-grid;place-items:center;width:15px;height:15px;border-radius:4px;font-family:var(--mono);font-size:9px;margin-right:6px;vertical-align:1px}
+  #sprints .s1-m{background:#FDE3CF;color:#B4530B}
+  #sprints .s1-d{background:#D3F2EE;color:#0F766E}
+  #sprints .s1-act .spr-q{margin-bottom:4px}
+  #sprints .s1-map{margin:0;border:1px solid var(--line);border-radius:16px;background:#fff;padding:clamp(10px,2vw,20px)}
+  #sprints .s1-map__img img{display:block;width:100%;height:auto}
+  #sprints .s1-legend{margin-top:12px;padding-top:12px;border-top:1px solid var(--line);display:flex;flex-wrap:wrap;gap:6px 16px;font-family:var(--mono);font-size:10.5px;letter-spacing:.02em;color:var(--sub)}
+  #sprints .s1-legend span{display:inline-flex;align-items:center;gap:6px}
+  #sprints .s1-k{width:14px;height:10px;border-radius:3px;border:1.5px solid var(--ink);background:#fff}
+  #sprints .s1-k--n{border-color:#8B5CF6;background:#DDD6FE}
+  #sprints .s1-k--opp{border-color:#E9A90C;background:#FCD34D}
+  #sprints .s1-k--d{border-color:#5ED3C4;background:#CCF5EF}
+  #sprints .s1-k--m{border-color:#F6A15A;background:#FDE3CF}
+  #sprints .s1-k--ring{width:12px;height:12px;border-radius:50%;border:2.5px solid #D0384E;background:none}
+  #sprints .s1-l{width:18px;height:0;border-top:2px solid var(--faint)}
+  #sprints .s1-l--dash{border-top-style:dashed}
+  #sprints .s1-gates{margin-top:12px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+  #sprints .s1-gate{border-radius:12px;background:#FDF3D7;padding:12px 14px}
+  #sprints .s1-gate h5{font-family:var(--display);font-weight:700;font-size:14px;line-height:1.3;color:#8A5A00}
+  #sprints .s1-gate p{margin-top:6px;font-size:13px;line-height:1.5;color:var(--body)}
+  #sprints .s1-gate--ant{background:var(--ink)}
+  #sprints .s1-gate--ant h5{color:#F2C14E}
+  #sprints .s1-gate--ant p{color:#E9E7E1}
+  @media (max-width:1099px){#sprints .s1-acts{grid-template-columns:repeat(2,minmax(0,1fr))}#sprints .s1-gates{grid-template-columns:repeat(2,minmax(0,1fr))}}
+  @media (max-width:800px){#sprints .s1-setup,#sprints .s1-blocks{grid-template-columns:minmax(0,1fr)}}
+  @media (max-width:700px){
+    #sprints .s1-acts,#sprints .s1-gates{grid-template-columns:minmax(0,1fr)}
+    #sprints .s1-map__img{overflow-x:auto;-webkit-overflow-scrolling:touch}
+    #sprints .s1-map__img img{width:auto;height:340px;max-width:none}
+  }
   </style>
     <div class="block__head">
       <div class="block__num"><b>✷</b> / Sprints</div>
       <div class="block__aside">Coursework · PhysicsWallah, 2026 → 2031</div>
     </div>
-    <!-- Sprint 1 is hidden until its content is added: remove the hidden attribute to show it. -->
-    <details class="spr-acc spr-acc--s1" hidden>
-      <summary>Sprint 1<span class="spr-meta">Actors · present-day map</span><span class="spr-plus" aria-hidden="true"></span></summary>
+    <details class="spr-acc spr-acc--s1">
+      <summary>Sprint 1<span class="spr-meta">Canvas · actors · present map</span><span class="spr-plus" aria-hidden="true"></span></summary>
       <div class="spr-body">
-<!-- SPRINT 1 CONTENT: 1.1 Malerba canvas, 1.2 (if in brief), 1.3 actor cards + present-day map -->
+<p class="spr-lede">The starting point. How PhysicsWallah works today, who holds the power, and exactly where it breaks when a star teacher leaves mid-year.</p>
+
+<div class="spr-part"><span class="spr-part__n">01</span><h3 class="spr-h">Sectoral ecosystem canvas</h3></div>
+<p class="spr-sub">Franco Malerba’s four building blocks of a sectoral system of innovation, applied to PW.</p>
+<div class="s1-setup"><div><span>Platform &amp; domain</span>PhysicsWallah (PW), an EdTech platform for JEE and NEET prep: online batches, offline centres, recorded lectures.</div><div><span>Core workflow</span>A student joins a batch taught by a teacher, attends live and recorded classes, and the family pays and renews every year.</div><div><span>The question</span>What happens to this workflow when the teacher the student joined for leaves mid-year?</div></div>
+<div class="s1-blocks"><article class="s1-blk s1-b1"><div class="s1-blk__h"><span>Block 1</span>Knowledge &amp; technology base</div><ul><li><b>Learning tools</b>Live and recorded classes, practice sheets (DPPs), online tests, doubt chat.</li><li><b>Platform core</b>An app that links each student to a batch, a teacher and a timetable.</li><li><b>Payments &amp; identity</b>UPI and AutoPay for fees, OTP for refunds, APAAR and DigiLocker for records.</li><li><b>Learning curves</b>Teachers take years to build a YouTube following. AI tutoring is new. Centres still use paper registers.</li></ul></article><article class="s1-blk s1-b2"><div class="s1-blk__h"><span>Block 2</span>Actors &amp; networks</div><ul><li><b>Competitors</b>Unacademy, Vedantu, Allen, Aakash. BYJU’S still shapes how parents see edtech.</li><li><b>Startups &amp; tools</b>AI doubt-solvers, test-prep apps, teachers selling their own courses.</li><li><b>On the ground</b>Centre managers, counsellors and callers. Star teachers with their own audience.</li><li><b>Suppliers</b>Payment gateways, UPI apps, loan providers, video streaming.</li><li><b>Others</b>Parents, students, exam bodies like NTA, regulators, consumer forums.</li></ul></article><article class="s1-blk s1-b3"><div class="s1-blk__h"><span>Block 3</span>Institutions &amp; governance</div><ul><li><b>Laws</b>Consumer Protection Act 2019 covers refunds and false claims. DPDP Act 2023 needs a parent’s consent for a child’s data.</li><li><b>Coaching &amp; payment rules</b>The 2024 coaching guidelines include fee refunds. RBI rules cover auto-pay.</li><li><b>Standards</b>UPI (NPCI) for payments; APAAR and DigiLocker for records.</li><li><b>Unwritten norms</b>Students follow a teacher, not a company. Teachers announce a move on their own channel. Families avoid switching in an exam year.</li></ul></article><article class="s1-blk s1-b4"><div class="s1-blk__h"><span>Block 4</span>Demand &amp; selection</div><ul><li><b>Users</b>Class 11–12 students and droppers for JEE and NEET, many from small towns. A parent pays.</li><li><b>How they buy</b>One yearly fee upfront, by UPI, auto-pay or a loan. Price-sensitive.</li><li><b>What gets in the way</b>Weak internet, Hindi and regional languages, paper attendance at centres.</li><li><b>Switching</b>Teacher first, platform second. Leaving mid-year can cost a year; following a teacher to another channel is free.</li><li><b>Fears</b>Mis-selling or a refused refund (as with BYJU’S), losing the year, misuse of a child’s data.</li></ul></article></div>
+<p class="spr-eco"><b>Where the system strains</b>Moving is one click, the teacher’s audience sits outside PW, the rules cover refunds but not loyalty, and families pick the teacher first. That is why “teacher left” hurts.</p>
+
+<div class="spr-part"><span class="spr-part__n">02</span><h3 class="spr-h">Actor action cards</h3></div>
+<p class="spr-sub">Six actors around the failure point: a star teacher leaves mid-year and students stop renewing. Three human, three non-human.</p>
+<div class="spr-grid s1-acts"><article class="spr-act spr-act--h s1-act">
+  <div class="spr-act__top"><i class="spr-b">Human</i></div>
+  <h4 class="spr-title">Student</h4>
+  <p class="spr-q">“I joined for my teacher, not for PW. If Sir leaves mid-year, I may lose the year.”</p>
+  <div class="s1-row s1-row--opp"><span>OPP gate</span>Stay in a paid batch taught by the same teacher who brought them in.</div>
+  <div class="s1-row s1-row--art"><span>Artifacts</span><em class="s1-m">M</em>Printed DPPs, notebooks, centre ID card<br><em class="s1-d">D</em>Enrollment ID, watch, doubt and test history</div>
+  <div class="s1-row s1-row--fail"><span>Failure action</span>Stops attending, skips renewal, asks for a refund and follows the teacher.</div>
+</article><article class="spr-act spr-act--h s1-act">
+  <div class="spr-act__top"><i class="spr-b">Human</i></div>
+  <h4 class="spr-title">Parent / Guardian</h4>
+  <p class="spr-q">“I paid for the teacher my child trusts. If they’re gone, PW broke its promise.”</p>
+  <div class="s1-row s1-row--opp"><span>OPP gate</span>Renews only if the child still wants the batch and there’s a clear refund path.</div>
+  <div class="s1-row s1-row--art"><span>Artifacts</span><em class="s1-m">M</em>Printed fee receipt, batch brochure<br><em class="s1-d">D</em>UPI reference, invoice, education-loan e-sign</div>
+  <div class="s1-row s1-row--fail"><span>Failure action</span>Refuses next year’s fee, demands a refund, complains online.</div>
+</article><article class="spr-act spr-act--h s1-act">
+  <div class="spr-act__top"><i class="spr-b">Human</i></div>
+  <h4 class="spr-title">Star Teacher</h4>
+  <p class="spr-q">“Students come for me. PW earns the revenue, but I bring the audience.”</p>
+  <div class="s1-row s1-row--opp"><span>OPP gate</span>Pay, creative control and notice period stay acceptable, or they exit.</div>
+  <div class="s1-row s1-row--art"><span>Artifacts</span><em class="s1-m">M</em>Signed contract, studio whiteboard<br><em class="s1-d">D</em>Lecture files, PW login, own YouTube and Telegram</div>
+  <div class="s1-row s1-row--fail"><span>Failure action</span>Leaves mid-year, announces it on their channel, takes the fans to a rival.</div>
+</article><article class="spr-act spr-act--n s1-act">
+  <div class="spr-act__top"><i class="spr-b spr-b--n">Non-human</i></div>
+  <h4 class="spr-title">PW Batch &amp; Enrollment System</h4>
+  <p class="spr-q">“Treats a batch as a product. It can swap a teacher in one click, but not the students’ trust.”</p>
+  <div class="s1-row s1-row--opp"><span>OPP gate</span>A paid entitlement plus an assigned teacher for every class.</div>
+  <div class="s1-row s1-row--art"><span>Artifacts</span><em class="s1-m">M</em>Centre attendance register<br><em class="s1-d">D</em>Entitlement token, batch ID, schedule, “teacher changed” push</div>
+  <div class="s1-row s1-row--fail"><span>Failure action</span>Silent swap → timetable gaps and confusion → churn. Renewal reminders ignored.</div>
+</article><article class="spr-act spr-act--n s1-act">
+  <div class="spr-act__top"><i class="spr-b spr-b--n">Non-human</i></div>
+  <h4 class="spr-title">Payment &amp; Refund Gateway</h4>
+  <p class="spr-q">“Only sees transactions. A refund is a rule check, not a relationship.”</p>
+  <div class="s1-row s1-row--opp"><span>OPP gate</span>A verified UPI mandate and OTP; refunds only inside the policy window.</div>
+  <div class="s1-row s1-row--art"><span>Artifacts</span><em class="s1-m">M</em>Printed invoice<br><em class="s1-d">D</em>Transaction ID, autopay mandate, OTP log, refund ticket</div>
+  <div class="s1-row s1-row--fail"><span>Failure action</span>Autopay cancelled, refund denied → chargeback and complaints.</div>
+</article><article class="spr-act spr-act--n s1-act">
+  <div class="spr-act__top"><i class="spr-b spr-b--n">Non-human</i></div>
+  <h4 class="spr-title">Teacher’s YouTube Channel</h4>
+  <p class="spr-q">“The channel, not PW, holds the audience, and the algorithm follows the teacher.”</p>
+  <div class="s1-row s1-row--opp"><span>OPP gate</span>The teacher owns the channel and its subscribers.</div>
+  <div class="s1-row s1-row--art"><span>Artifacts</span><em class="s1-m">M</em>Student’s smartphone<br><em class="s1-d">D</em>Subscriber list, alerts, “I’m leaving PW” video, new-batch link</div>
+  <div class="s1-row s1-row--fail"><span>Failure action</span>One video moves the whole fan base to a rival overnight.</div>
+</article></div>
+<p class="s3-key">M = material artifact · D = digital artifact · OPP = the condition an actor needs before it will take part</p>
+
+<div class="spr-part"><span class="spr-part__n">03</span><h3 class="spr-h">Present horizon map</h3></div>
+<p class="spr-sub">The 2026 value network for “my favourite teacher left”, with actor-network layers on top. <a class="s3-open" href="sprints/sprint1-present-horizon-map.webp" target="_blank" rel="noopener">Open full size ↗</a></p>
+<figure class="s1-map"><div class="s1-map__img"><img src="sprints/sprint1-present-horizon-map.webp" alt="Present horizon map: PhysicsWallah’s 2026 value network when a star teacher leaves, showing actors, artifacts, three OPP gates, the missing loyalty to PW and the abandoned renewal" loading="lazy" decoding="async" width="2801" height="1382"></div>
+<figcaption class="s1-legend"><span><i class="s1-k s1-k--h"></i>Human actor</span><span><i class="s1-k s1-k--n"></i>Non-human actor</span><span><i class="s1-k s1-k--opp"></i>OPP gate</span><span><i class="s1-k s1-k--d"></i>Digital artifact</span><span><i class="s1-k s1-k--m"></i>Material artifact</span><span><i class="s1-l"></i>Tangible (money, access)</span><span><i class="s1-l s1-l--dash"></i>Intangible (trust, loyalty)</span><span><i class="s1-k s1-k--ring"></i>Failure node</span></figcaption></figure>
+<div class="s1-gates"><article class="s1-gate"><h5>OPP 1 · Teacher contract &amp; notice period</h5><p>Breached when the teacher exits mid-year. The contract covers lectures, but nothing stops the teacher taking the audience along.</p></article><article class="s1-gate"><h5>OPP 2 · Batch-teacher continuity</h5><p>The batch can swap teachers in one click, but the student stayed for this teacher. Access continues; loyalty does not.</p></article><article class="s1-gate"><h5>OPP 3 · Renewal payment &amp; refund window</h5><p>The parent won’t renew without a reason, and the refund request runs into policy rules, which turns into complaints.</p></article><article class="s1-gate s1-gate--ant"><h5>ANT insight</h5><p>The teacher’s YouTube channel is a non-human actor with more pull than PW’s own app. It carries the trust, so whoever controls the channel controls the students.</p></article></div>
       </div>
     </details>
     <details class="spr-acc">
