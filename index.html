@@ -728,15 +728,25 @@
     #sprints .s3-score .s3-cn--no::after{content:"–";font-size:12px}
   }
   @media (prefers-reduced-motion:reduce){#s3c-a:checked ~ .s3-panels .s3-panel--a,#s3c-b:checked ~ .s3-panels .s3-panel--b,#s3c-c:checked ~ .s3-panels .s3-panel--c{animation:none}#sprints .s3-tabbar label{transition:none}}
+  #sprints .spr-acc[hidden] + .spr-acc{border-top:1px solid var(--line)}
   </style>
     <div class="block__head">
       <div class="block__num"><b>✷</b> / Sprints</div>
       <div class="block__aside">Coursework · PhysicsWallah, 2026 → 2031</div>
     </div>
-    <details class="spr-acc">
-      <summary>Sprint 1<span class="spr-meta">10 ideas · STEEP</span><span class="spr-plus" aria-hidden="true"></span></summary>
+    <!-- Sprint 1 is hidden until its content is added: remove the hidden attribute to show it. -->
+    <details class="spr-acc spr-acc--s1" hidden>
+      <summary>Sprint 1<span class="spr-meta">Actors · present-day map</span><span class="spr-plus" aria-hidden="true"></span></summary>
       <div class="spr-body">
-<p class="spr-lede">PhysicsWallah, 2026 → 2031. Ten ideas, two per STEEP sector, each built to remove one real 2026 pain point.</p>
+<!-- SPRINT 1 CONTENT: 1.1 Malerba canvas, 1.2 (if in brief), 1.3 actor cards + present-day map -->
+      </div>
+    </details>
+    <details class="spr-acc">
+      <summary>Sprint 2<span class="spr-meta">STEEP ideas · clusters · network · actors</span><span class="spr-plus" aria-hidden="true"></span></summary>
+      <div class="spr-body">
+<p class="spr-lede">PhysicsWallah, 2026 → 2031. Ten ideas, two per STEEP sector, each built to remove one real 2026 pain point. Then how they group up, reshape the value network, and change what every actor needs.</p>
+
+<div class="spr-part"><span class="spr-part__n">01</span><h3 class="spr-h">Ten ideas on the STEEP horizon</h3></div>
 <div class="spr-grid spr-grid--5 spr-grid--sec">
 <article class="spr-card" style="--c:#B4417A;--cb:#FBEAF2">
   <div class="spr-tag">Social · 01</div>
@@ -829,14 +839,9 @@
   </details>
 </article>
 </div>
-      </div>
-    </details>
-    <details class="spr-acc">
-      <summary>Sprint 2<span class="spr-meta">Clusters · network · actors</span><span class="spr-plus" aria-hidden="true"></span></summary>
-      <div class="spr-body">
-<p class="spr-lede">The same “teacher left” failure, revisited for 2031: how the ten ideas group up, reshape the value network, and change what every actor needs.</p>
 
-<div class="spr-part"><span class="spr-part__n">01</span><h3 class="spr-h">Three clusters set the 2031 rules</h3></div>
+
+<div class="spr-part"><span class="spr-part__n">02</span><h3 class="spr-h">Three clusters set the 2031 rules</h3></div>
 <div class="spr-cls">
 <article class="spr-cl spr-c1">
   <div class="spr-cl__h">Cluster 1 · Continuity</div>
@@ -862,7 +867,7 @@
 </div>
 <p class="spr-eco"><b>The 2031 ecosystem</b>Value no longer depends on one star teacher. It rests on a recorded promise that PW, the family and the regulator can all see.</p>
 
-<div class="spr-part"><span class="spr-part__n">02</span><h3 class="spr-h">Value network, 2026 → 2031</h3></div>
+<div class="spr-part"><span class="spr-part__n">03</span><h3 class="spr-h">Value network, 2026 → 2031</h3></div>
 <div class="spr-vn">
 <div class="spr-vn__row spr-vn__hd" aria-hidden="true"><div></div><div>2026 · Sprint 1 network</div><div>2031 · Speculated network</div></div>
 <div class="spr-vn__row">
@@ -873,7 +878,7 @@
 <div class="spr-vn__row">
   <div class="spr-vn__th">Roles</div>
   <div class="spr-vn__a"><span class="spr-vn__y">2026</span>Student, parent, star teacher, PW app, payment gateway, YouTube, rival.</div>
-  <div class="spr-vn__b"><span class="spr-vn__y">2031</span>Five new roles join: AI tutor, escrow, passport, consent manager, regulator ledger.<span class="spr-vn__ids">Ideas 03 · 04 · 08 · 09 · 10</span></div>
+  <div class="spr-vn__b"><span class="spr-vn__y">2031</span>Four new roles join: AI tutor, trust escrow, passport &amp; consent, regulator ledger.<span class="spr-vn__ids">Ideas 03 · 04 · 08 · 09 · 10</span></div>
 </div>
 <div class="spr-vn__row">
   <div class="spr-vn__th">The fee</div>
@@ -912,7 +917,7 @@
   <div class="spr-box spr-box--risk"><h5>New risks to watch</h5><ul><li>The AI tutor may feel like a cheap substitute</li><li>Escrow slows PW’s cash flow</li><li>Star teachers may refuse to license lectures</li></ul></div>
 </div>
 
-<div class="spr-part"><span class="spr-part__n">03</span><h3 class="spr-h">Actors &amp; what they need to take part</h3></div>
+<div class="spr-part"><span class="spr-part__n">04</span><h3 class="spr-h">Actors &amp; what they need to take part</h3></div>
 <p class="spr-sub">Each actor’s Obligatory Passage Point (OPP), the condition it needs before it will join in, in 2026 and in 2031. Four non-human actors are new.</p>
 <div class="spr-grid spr-grid--5">
 <article class="spr-act spr-act--h">
